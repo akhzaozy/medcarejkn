@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.port === '5173' ? 'http://localhost:3000/api' : '/api');
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV && typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api');
 
 export async function fetchDashboard(params = {}) {
   const query = new URLSearchParams();
