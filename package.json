@@ -1,0 +1,13 @@
+{
+  "name": "jkn-integrity-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix backend run dev & npm --prefix frontend run dev",
+    "dev:all": "npm --prefix backend run dev & npm --prefix frontend run dev",
+    "backend": "npm --prefix backend run dev",
+    "frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix backend start"
+  }
+}

@@ -1,0 +1,45 @@
+signal_id,claim_id,claim_item_id,signal_type,severity,reason_code,reason_detail,created_at,data_status
+SIG-0009-U,CLM-0009,,UNUSUAL_UTILIZATION,MEDIUM,UTILIZATION_SIGNAL,Synthetic provider utilization pattern inserted for pattern-review testing,,SYNTHETIC
+SIG-0010-U,CLM-0010,,UNUSUAL_UTILIZATION,MEDIUM,UTILIZATION_SIGNAL,Synthetic provider utilization pattern inserted for pattern-review testing,,SYNTHETIC
+SIG-0011-U,CLM-0011,,UNUSUAL_UTILIZATION,MEDIUM,UTILIZATION_SIGNAL,Synthetic provider utilization pattern inserted for pattern-review testing,,SYNTHETIC
+SIG-0012-U,CLM-0012,,UNUSUAL_UTILIZATION,MEDIUM,UTILIZATION_SIGNAL,Synthetic provider utilization pattern inserted for pattern-review testing,,SYNTHETIC
+SIG-0013-S,CLM-0013,,IDENTICAL_RECORD_PATTERN,MEDIUM,RECORD_SIMILARITY,Synthetic high-similarity supporting-record pattern inserted for testing,,SYNTHETIC
+SIG-0014-S,CLM-0014,,IDENTICAL_RECORD_PATTERN,MEDIUM,RECORD_SIMILARITY,Synthetic high-similarity supporting-record pattern inserted for testing,,SYNTHETIC
+SIG-0015-S,CLM-0015,,IDENTICAL_RECORD_PATTERN,MEDIUM,RECORD_SIMILARITY,Synthetic high-similarity supporting-record pattern inserted for testing,,SYNTHETIC
+SIG-0016-S,CLM-0016,,IDENTICAL_RECORD_PATTERN,MEDIUM,RECORD_SIMILARITY,Synthetic high-similarity supporting-record pattern inserted for testing,,SYNTHETIC
+SIG-0017-2,CLM-0017,CI-0017-2,PARTIAL_SUPPORT,MEDIUM,EVIDENCE_PARTIAL,Only part of claimed quantity matched to service evidence in synthetic test,,SYNTHETIC
+SIG-0018-2,CLM-0018,CI-0018-2,PARTIAL_SUPPORT,MEDIUM,EVIDENCE_PARTIAL,Only part of claimed quantity matched to service evidence in synthetic test,,SYNTHETIC
+SIG-0019-2,CLM-0019,CI-0019-2,PARTIAL_SUPPORT,MEDIUM,EVIDENCE_PARTIAL,Only part of claimed quantity matched to service evidence in synthetic test,,SYNTHETIC
+SIG-0020-2,CLM-0020,CI-0020-2,PARTIAL_SUPPORT,MEDIUM,EVIDENCE_PARTIAL,Only part of claimed quantity matched to service evidence in synthetic test,,SYNTHETIC
+SIG-0021-2,CLM-0021,CI-0021-2,PARTIAL_SUPPORT,MEDIUM,EVIDENCE_PARTIAL,Only part of claimed quantity matched to service evidence in synthetic test,,SYNTHETIC
+SIG-0022-2,CLM-0022,CI-0022-2,PARTIAL_SUPPORT,MEDIUM,EVIDENCE_PARTIAL,Only part of claimed quantity matched to service evidence in synthetic test,,SYNTHETIC
+SIG-0023-2,CLM-0023,CI-0023-2,PARTIAL_SUPPORT,MEDIUM,EVIDENCE_PARTIAL,Only part of claimed quantity matched to service evidence in synthetic test,,SYNTHETIC
+SIG-0024-2,CLM-0024,CI-0024-2,PARTIAL_SUPPORT,MEDIUM,EVIDENCE_PARTIAL,Only part of claimed quantity matched to service evidence in synthetic test,,SYNTHETIC
+SIG-0025-1,CLM-0025,CI-0025-1,PHANTOM_BILLING,HIGH,EVIDENCE_GAP,Claimed service quantity lacks matched service evidence in synthetic test,,SYNTHETIC
+SIG-0025-2,CLM-0025,CI-0025-2,PHANTOM_BILLING,HIGH,EVIDENCE_GAP,Claimed service quantity lacks matched service evidence in synthetic test,,SYNTHETIC
+SIG-0026-1,CLM-0026,CI-0026-1,PHANTOM_BILLING,HIGH,EVIDENCE_GAP,Claimed service quantity lacks matched service evidence in synthetic test,,SYNTHETIC
+SIG-0026-2,CLM-0026,CI-0026-2,PHANTOM_BILLING,HIGH,EVIDENCE_GAP,Claimed service quantity lacks matched service evidence in synthetic test,,SYNTHETIC
+SIG-0027-1,CLM-0027,CI-0027-1,PHANTOM_BILLING,HIGH,EVIDENCE_GAP,Claimed service quantity lacks matched service evidence in synthetic test,,SYNTHETIC
+SIG-0027-2,CLM-0027,CI-0027-2,PHANTOM_BILLING,HIGH,EVIDENCE_GAP,Claimed service quantity lacks matched service evidence in synthetic test,,SYNTHETIC
+SIG-0027-U,CLM-0027,,UNUSUAL_UTILIZATION,MEDIUM,UTILIZATION_SIGNAL,Synthetic provider utilization pattern inserted for pattern-review testing,,SYNTHETIC
+SIG-0027-S,CLM-0027,,IDENTICAL_RECORD_PATTERN,MEDIUM,RECORD_SIMILARITY,Synthetic high-similarity supporting-record pattern inserted for testing,,SYNTHETIC
+SIG-0028-1,CLM-0028,CI-0028-1,PHANTOM_BILLING,HIGH,EVIDENCE_GAP,Claimed service quantity lacks matched service evidence in synthetic test,,SYNTHETIC
+SIG-0028-2,CLM-0028,CI-0028-2,PHANTOM_BILLING,HIGH,EVIDENCE_GAP,Claimed service quantity lacks matched service evidence in synthetic test,,SYNTHETIC
+SIG-0028-U,CLM-0028,,UNUSUAL_UTILIZATION,MEDIUM,UTILIZATION_SIGNAL,Synthetic provider utilization pattern inserted for pattern-review testing,,SYNTHETIC
+SIG-0028-S,CLM-0028,,IDENTICAL_RECORD_PATTERN,MEDIUM,RECORD_SIMILARITY,Synthetic high-similarity supporting-record pattern inserted for testing,,SYNTHETIC
+SIG-0029-1,CLM-0029,CI-0029-1,PHANTOM_BILLING,HIGH,EVIDENCE_GAP,Claimed service quantity lacks matched service evidence in synthetic test,,SYNTHETIC
+SIG-0029-2,CLM-0029,CI-0029-2,PHANTOM_BILLING,HIGH,EVIDENCE_GAP,Claimed service quantity lacks matched service evidence in synthetic test,,SYNTHETIC
+SIG-0030-1,CLM-0030,CI-0030-1,PHANTOM_BILLING,HIGH,EVIDENCE_GAP,Claimed service quantity lacks matched service evidence in synthetic test,,SYNTHETIC
+SIG-0030-2,CLM-0030,CI-0030-2,PHANTOM_BILLING,HIGH,EVIDENCE_GAP,Claimed service quantity lacks matched service evidence in synthetic test,,SYNTHETIC
+SIG-0031-1,CLM-0031,CI-0031-1,PHANTOM_BILLING,HIGH,EVIDENCE_GAP,Claimed service quantity lacks matched service evidence in synthetic test,,SYNTHETIC
+SIG-0031-2,CLM-0031,CI-0031-2,PHANTOM_BILLING,HIGH,EVIDENCE_GAP,Claimed service quantity lacks matched service evidence in synthetic test,,SYNTHETIC
+SIG-0031-U,CLM-0031,,UNUSUAL_UTILIZATION,MEDIUM,UTILIZATION_SIGNAL,Synthetic provider utilization pattern inserted for pattern-review testing,,SYNTHETIC
+SIG-0031-S,CLM-0031,,IDENTICAL_RECORD_PATTERN,MEDIUM,RECORD_SIMILARITY,Synthetic high-similarity supporting-record pattern inserted for testing,,SYNTHETIC
+SIG-0032-1,CLM-0032,CI-0032-1,PHANTOM_BILLING,HIGH,EVIDENCE_GAP,Claimed service quantity lacks matched service evidence in synthetic test,,SYNTHETIC
+SIG-0032-2,CLM-0032,CI-0032-2,PHANTOM_BILLING,HIGH,EVIDENCE_GAP,Claimed service quantity lacks matched service evidence in synthetic test,,SYNTHETIC
+SIG-0037-U,CLM-0037,,UNUSUAL_UTILIZATION,MEDIUM,UTILIZATION_SIGNAL,Synthetic provider utilization pattern inserted for pattern-review testing,,SYNTHETIC
+SIG-0037-S,CLM-0037,,IDENTICAL_RECORD_PATTERN,MEDIUM,RECORD_SIMILARITY,Synthetic high-similarity supporting-record pattern inserted for testing,,SYNTHETIC
+SIG-0038-U,CLM-0038,,UNUSUAL_UTILIZATION,MEDIUM,UTILIZATION_SIGNAL,Synthetic provider utilization pattern inserted for pattern-review testing,,SYNTHETIC
+SIG-0038-S,CLM-0038,,IDENTICAL_RECORD_PATTERN,MEDIUM,RECORD_SIMILARITY,Synthetic high-similarity supporting-record pattern inserted for testing,,SYNTHETIC
+SIG-0039-U,CLM-0039,,UNUSUAL_UTILIZATION,MEDIUM,UTILIZATION_SIGNAL,Synthetic provider utilization pattern inserted for pattern-review testing,,SYNTHETIC
+SIG-0040-U,CLM-0040,,UNUSUAL_UTILIZATION,MEDIUM,UTILIZATION_SIGNAL,Synthetic provider utilization pattern inserted for pattern-review testing,,SYNTHETIC

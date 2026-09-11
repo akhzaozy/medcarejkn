@@ -1,0 +1,1279 @@
+/* ==========================================================================
+   MEDCARE JKN - MINIMALIST CLINICAL DSS DESIGN SYSTEM
+   Modern, Clean, Authentic Healthcare UI Dashboard
+   ========================================================================== */
+
+:root {
+  /* Color Palette */
+  --mc-bg: #edf3f4;
+  --mc-bg-soft: #f4f8f8;
+  --mc-card-bg: #ffffff;
+  --mc-card-border: #e3ecee;
+  --mc-card-border-subtle: #edf2f4;
+  
+  /* Primary & Accents (Authentic Deep Teal & Fresh Mint/Cyan) */
+  --mc-teal-primary: #007a78;
+  --mc-teal-dark: #005f5d;
+  --mc-teal-light: #e6f6f5;
+  --mc-teal-subtle: rgba(0, 122, 120, 0.08);
+  --mc-teal-glow: rgba(0, 122, 120, 0.18);
+  
+  --mc-cyan-accent: #0ea5e9;
+  --mc-cyan-soft: #e0f2fe;
+  
+  --mc-mint-accent: #10b981;
+  --mc-mint-soft: #ecfdf5;
+  
+  /* Typography Colors */
+  --mc-text-heading: #1e293b;
+  --mc-text-body: #334155;
+  --mc-text-muted: #64748b;
+  --mc-text-light: #94a3b8;
+  
+  /* Shadows */
+  --mc-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.03), 0 1px 2px rgba(15, 23, 42, 0.02);
+  --mc-shadow-card: 0 10px 30px -5px rgba(22, 60, 68, 0.05), 0 2px 8px rgba(22, 60, 68, 0.03);
+  --mc-shadow-hover: 0 18px 40px -8px rgba(22, 60, 68, 0.09), 0 4px 12px rgba(22, 60, 68, 0.04);
+  --mc-shadow-teal: 0 12px 32px -4px rgba(0, 122, 120, 0.28);
+  
+  /* Radii */
+  --mc-radius-sm: 10px;
+  --mc-radius-md: 16px;
+  --mc-radius-lg: 24px;
+  --mc-radius-xl: 32px;
+  --mc-radius-full: 9999px;
+  
+  /* Fonts */
+  --mc-font: 'Figtree', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Base Wrapper */
+.med-container {
+  font-family: var(--mc-font);
+  background-color: var(--mc-bg);
+  min-height: 100vh;
+  color: var(--mc-text-body);
+  padding: 0 2.25rem 3.5rem 2.25rem;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  box-sizing: border-box;
+}
+
+.med-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* ==========================================================================
+   HEADER COMPONENT (Sticky on Scroll)
+   ========================================================================== */
+.med-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.95rem 0;
+  background: rgba(237, 243, 244, 0.92);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(227, 236, 238, 0.9);
+  margin-bottom: 1.25rem;
+  transition: all 0.25s ease;
+}
+
+.med-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  text-decoration: none;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.med-logo-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: #e6f6f5;
+  border: 1px solid #c5ebe9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mc-teal-primary);
+  box-shadow: 0 2px 8px rgba(0, 122, 120, 0.1);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.med-logo:hover .med-logo-badge {
+  transform: scale(1.05);
+  background: #007a78;
+  color: #ffffff;
+}
+
+.med-logo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 6px);
+  grid-gap: 3.5px;
+}
+
+.med-logo-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--mc-teal-primary);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.med-logo:hover .med-logo-dot:nth-child(odd) {
+  transform: scale(1.2);
+  background-color: var(--mc-cyan-accent);
+}
+
+.med-logo-text {
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #1a3339;
+}
+
+.med-logo-text span {
+  color: var(--mc-teal-primary);
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin-left: 0.25rem;
+}
+
+.med-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--mc-radius-full);
+  border: 1px solid rgba(227, 236, 238, 0.85);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.med-nav-item {
+  position: relative;
+  background: transparent;
+  border: none;
+  font-family: var(--mc-font);
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--mc-text-muted);
+  padding: 0.55rem 1.15rem;
+  border-radius: var(--mc-radius-full);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  outline: none;
+}
+
+.med-nav-item:hover {
+  color: var(--mc-text-heading);
+}
+
+.med-nav-item.active {
+  color: var(--mc-teal-primary);
+  font-weight: 700;
+}
+
+.med-nav-active-pill {
+  position: absolute;
+  bottom: 4px;
+  left: 20%;
+  right: 20%;
+  height: 2.5px;
+  background: var(--mc-teal-primary);
+  border-radius: 4px;
+}
+
+.med-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.med-profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--mc-card-bg);
+  padding: 0.35rem 0.95rem 0.35rem 0.4rem;
+  border-radius: var(--mc-radius-full);
+  border: 1px solid var(--mc-card-border);
+  box-shadow: var(--mc-shadow-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.med-profile-badge:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.med-profile-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.med-profile-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--mc-text-heading);
+  line-height: 1.2;
+}
+
+.med-profile-sub {
+  font-size: 0.74rem;
+  color: var(--mc-text-muted);
+  line-height: 1;
+}
+
+/* ==========================================================================
+   HERO / GREETING & QUICK VITALS ROW
+   ========================================================================== */
+.med-hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1.5rem 0 2.25rem 0;
+  flex-wrap: wrap;
+  gap: 1.75rem;
+}
+
+.med-greeting-col {
+  flex: 1;
+  min-width: 300px;
+}
+
+.med-greeting-title {
+  font-size: 2.35rem;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  color: #1a2f35;
+  margin: 0 0 0.4rem 0;
+  line-height: 1.15;
+}
+
+.med-greeting-title strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.med-greeting-subtitle {
+  font-size: 0.96rem;
+  color: var(--mc-text-muted);
+  margin: 0;
+  font-weight: 400;
+}
+
+.med-vitals-group {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+  flex-wrap: wrap;
+}
+
+.med-vital-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: var(--mc-card-bg);
+  padding: 0.65rem 1.2rem 0.65rem 0.75rem;
+  border-radius: var(--mc-radius-full);
+  border: 1px solid var(--mc-card-border);
+  box-shadow: var(--mc-shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.med-vital-pill:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(22, 60, 68, 0.06);
+}
+
+.med-vital-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.med-vital-icon-box.teal {
+  background: #eef8f8;
+  color: #008a85;
+}
+
+.med-vital-icon-box.cyan {
+  background: #f0f9ff;
+  color: #0284c7;
+}
+
+.med-vital-icon-box.badge-box {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.med-vital-val {
+  font-size: 1.22rem;
+  font-weight: 700;
+  color: var(--mc-text-heading);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.med-vital-lbl {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--mc-text-muted);
+  line-height: 1.2;
+}
+
+/* ==========================================================================
+   GRID DASHBOARD LAYOUT (3 COLUMNS)
+   ========================================================================== */
+.med-grid {
+  display: grid;
+  grid-template-columns: 320px 1.4fr 340px;
+  gap: 1.75rem;
+  align-items: stretch;
+}
+
+@media (max-width: 1280px) {
+  .med-grid {
+    grid-template-columns: 300px 1fr;
+  }
+  .med-col-right {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.75rem;
+  }
+}
+
+@media (max-width: 960px) {
+  .med-grid {
+    grid-template-columns: 1fr;
+  }
+  .med-col-right {
+    grid-column: auto;
+    grid-template-columns: 1fr;
+  }
+}
+
+.med-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+/* General Card */
+.med-card {
+  background: var(--mc-card-bg);
+  border-radius: var(--mc-radius-lg);
+  border: 1px solid var(--mc-card-border);
+  box-shadow: var(--mc-shadow-card);
+  padding: 1.55rem;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.med-card:hover {
+  box-shadow: var(--mc-shadow-hover);
+}
+
+/* Card Header */
+.med-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.med-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.med-card-icon-pill {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--mc-teal-light);
+  color: var(--mc-teal-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.med-card-title {
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--mc-text-heading);
+  margin: 0;
+}
+
+.med-card-link {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--mc-teal-primary);
+  text-decoration: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: none;
+  padding: 0;
+  transition: opacity 0.2s ease;
+}
+
+.med-card-link:hover {
+  opacity: 0.8;
+}
+
+/* ==========================================================================
+   LEFT COLUMN: AUDIT TIMELINE & VIDEO PREVIEW
+   ========================================================================== */
+.med-calendar-strip {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin-bottom: 1.35rem;
+}
+
+.med-calendar-day {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.6rem 0.2rem;
+  border-radius: var(--mc-radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--mc-font);
+}
+
+.med-calendar-day:hover {
+  background: var(--mc-bg-soft);
+}
+
+.med-calendar-day.active {
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 122, 120, 0.12);
+  border: 1px solid rgba(0, 122, 120, 0.2);
+}
+
+.med-cal-dayname {
+  font-size: 0.68rem;
+  color: var(--mc-text-light);
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.med-calendar-day.active .med-cal-dayname {
+  color: var(--mc-teal-primary);
+  font-weight: 600;
+}
+
+.med-cal-daynum {
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: var(--mc-text-heading);
+}
+
+.med-calendar-day.active .med-cal-daynum {
+  color: var(--mc-teal-primary);
+}
+
+.med-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+  position: relative;
+}
+
+.med-timeline-track {
+  position: absolute;
+  top: 18px;
+  bottom: 24px;
+  left: 23px;
+  width: 2px;
+  background: #e2e8f0;
+  z-index: 0;
+}
+
+.med-timeline-item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 0.85rem;
+  background: #fbfdfe;
+  border: 1px solid var(--mc-card-border);
+  border-radius: var(--mc-radius-md);
+  padding: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.med-timeline-item:hover {
+  background: #ffffff;
+  border-color: rgba(0, 122, 120, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 122, 120, 0.06);
+}
+
+.med-timeline-badge {
+  background: #e6f6f5;
+  color: var(--mc-teal-primary);
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  height: fit-content;
+  flex-shrink: 0;
+}
+
+.med-timeline-content {
+  flex: 1;
+}
+
+.med-timeline-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.med-timeline-role {
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: var(--mc-text-heading);
+}
+
+.med-timeline-count {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.med-timeline-sub {
+  font-size: 0.77rem;
+  color: var(--mc-text-muted);
+  margin-top: 0.25rem;
+  margin-bottom: 0.65rem;
+}
+
+.med-avatar-cluster {
+  display: flex;
+  align-items: center;
+}
+
+.med-cluster-avatar {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  margin-left: -7px;
+  object-fit: cover;
+  background: #cbd5e1;
+}
+
+.med-cluster-avatar:first-child {
+  margin-left: 0;
+}
+
+/* Doctor Video Preview Card */
+.med-doctor-card {
+  position: relative;
+  border-radius: var(--mc-radius-lg);
+  overflow: hidden;
+  height: 230px;
+  background: #0f172a;
+  cursor: pointer;
+  box-shadow: var(--mc-shadow-card);
+  border: 1px solid var(--mc-card-border);
+}
+
+.med-doctor-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.med-doctor-card:hover .med-doctor-img {
+  transform: scale(1.04);
+}
+
+.med-doctor-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.58) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.15rem;
+}
+
+.med-doctor-top-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.med-doctor-expand-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.med-doctor-expand-btn:hover {
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(1.08);
+}
+
+.med-doctor-badge-bottom {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.55rem 0.95rem;
+  border-radius: var(--mc-radius-md);
+  color: #ffffff;
+  width: fit-content;
+}
+
+.med-online-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 3.5px rgba(16, 185, 129, 0.35);
+  animation: medPulse 2s infinite ease-in-out;
+}
+
+@keyframes medPulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.med-doctor-badge-text {
+  font-size: 0.77rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* ==========================================================================
+   CENTER COLUMN: HEALTH / INTEGRITY SCORE & REPORT CHART
+   ========================================================================== */
+.med-score-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-top: 0.4rem;
+  margin-bottom: 1.35rem;
+}
+
+.med-score-big {
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #1a3339;
+  line-height: 1;
+  margin: 0;
+}
+
+.med-score-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #edf8f7;
+  color: var(--mc-teal-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.32rem 0.75rem;
+  border-radius: var(--mc-radius-full);
+  margin-top: 0.45rem;
+}
+
+.med-score-cards-right {
+  display: flex;
+  gap: 0.85rem;
+}
+
+.med-mini-metric-box {
+  background: #f8fafb;
+  border: 1px solid var(--mc-card-border);
+  border-radius: var(--mc-radius-md);
+  padding: 0.75rem 1rem;
+  min-width: 95px;
+}
+
+.med-mini-val {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--mc-text-heading);
+}
+
+.med-mini-lbl {
+  font-size: 0.72rem;
+  color: var(--mc-text-muted);
+}
+
+/* Natural Clinical Audit Reconciliation Meters */
+.med-audit-meters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 0.6rem;
+  padding-top: 1rem;
+  border-top: 1px solid #edf2f5;
+}
+
+.med-audit-meter-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.med-meter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+}
+
+.med-meter-label {
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.med-meter-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.med-meter-percent {
+  font-weight: 800;
+  color: var(--mc-teal-primary);
+  font-size: 0.82rem;
+}
+
+.med-meter-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.12rem 0.5rem;
+  border-radius: 9999px;
+  background: #e6f6f5;
+  color: var(--mc-teal-primary);
+}
+
+.med-meter-track {
+  width: 100%;
+  height: 7px;
+  background: #edf3f5;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.med-meter-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #007a78 0%, #0d9488 100%);
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Daily Clinical Summary Card (Left Column) */
+.med-daily-summary-card {
+  background: var(--mc-card-bg);
+  border-radius: var(--mc-radius-lg);
+  border: 1px solid var(--mc-card-border);
+  box-shadow: var(--mc-shadow-card);
+  padding: 1.35rem 1.45rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.med-daily-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  border-radius: 12px;
+  background: #f8fafb;
+  border: 1px solid #edf2f5;
+  transition: all 0.2s ease;
+}
+
+.med-daily-stat-row:hover {
+  background: #ffffff;
+  border-color: #c5ebe9;
+}
+
+.med-daily-stat-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.med-daily-stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.med-daily-stat-dot.teal { background: #007a78; }
+.med-daily-stat-dot.amber { background: #f59e0b; }
+.med-daily-stat-dot.slate { background: #94a3b8; }
+
+.med-daily-stat-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.med-daily-stat-num {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--mc-teal-primary);
+}
+
+/* Report Chart */
+.med-chart-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #f1f5f7;
+  padding: 0.25rem;
+  border-radius: var(--mc-radius-full);
+}
+
+.med-chart-tab-btn {
+  background: transparent;
+  border: none;
+  font-family: var(--mc-font);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--mc-text-muted);
+  padding: 0.35rem 0.9rem;
+  border-radius: var(--mc-radius-full);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.med-chart-tab-btn.active {
+  background: #ffffff;
+  color: var(--mc-teal-primary);
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.med-chart-container {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  margin-top: 1rem;
+}
+
+.med-svg-chart {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.med-chart-guideline {
+  stroke: #cbd5e1;
+  stroke-dasharray: 4 4;
+  stroke-width: 1.5;
+}
+
+.med-chart-x-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  padding: 0 0.5rem;
+}
+
+.med-chart-x-label {
+  font-size: 0.76rem;
+  color: var(--mc-text-light);
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   RIGHT COLUMN: TREATMENT PLAN & FIELD VERIFICATION
+   ========================================================================== */
+.med-treatment-card {
+  background: linear-gradient(155deg, #0d7976 0%, #005f5d 100%);
+  color: #ffffff;
+  border: none;
+  box-shadow: var(--mc-shadow-teal);
+}
+
+.med-treatment-card .med-card-title {
+  color: #ffffff;
+}
+
+.med-treatment-card .med-card-icon-pill {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.med-treatment-body {
+  margin-top: 1.25rem;
+}
+
+.med-counter-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.med-big-counter {
+  font-size: 3.4rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: #ffffff;
+}
+
+.med-counter-desc {
+  font-size: 0.96rem;
+  font-weight: 600;
+  color: #e2faf8;
+  line-height: 1.25;
+}
+
+.med-counter-freq {
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.7);
+  display: block;
+  margin-top: 0.2rem;
+}
+
+.med-week-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  height: 60px;
+  margin-top: 1.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.med-week-bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1;
+}
+
+.med-week-bar {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.med-week-bar.active {
+  background: #ffffff;
+}
+
+.med-week-day-label {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+.med-btn-treatment {
+  margin-top: 1.35rem;
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: var(--mc-radius-full);
+  border: none;
+  background: #ffffff;
+  color: var(--mc-teal-primary);
+  font-family: var(--mc-font);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.med-btn-treatment:hover {
+  background: #f0fdfc;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+/* Field Verification Route Map */
+.med-route-map-box {
+  position: relative;
+  width: 100%;
+  height: 165px;
+  background: #eef5f6;
+  border-radius: var(--mc-radius-md);
+  overflow: hidden;
+  border: 1px solid var(--mc-card-border-subtle);
+  margin-top: 0.5rem;
+}
+
+.med-map-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.med-delivery-status-pill {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(227, 236, 238, 0.85);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--mc-radius-full);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--mc-text-heading);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.med-faskes-details {
+  margin-top: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.med-faskes-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--mc-text-heading);
+  line-height: 1.2;
+}
+
+.med-faskes-sub {
+  font-size: 0.75rem;
+  color: var(--mc-text-muted);
+}
+
+.med-action-btn {
+  background: var(--mc-teal-light);
+  color: var(--mc-teal-primary);
+  border: none;
+  font-family: var(--mc-font);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.42rem 0.9rem;
+  border-radius: var(--mc-radius-full);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.med-action-btn:hover {
+  background: var(--mc-teal-primary);
+  color: #ffffff;
+}
+
+/* Modals */
+.med-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.med-telehealth-modal {
+  background: #ffffff;
+  border-radius: var(--mc-radius-xl);
+  max-width: 920px;
+  width: 100%;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--mc-card-border);
+}
+
+/* ==========================================================================
+   SUB-PAGE MODERN MINIMALIST SYSTEM
+   ========================================================================== */
+.med-subpage-card {
+  background: var(--mc-card-bg);
+  border-radius: var(--mc-radius-lg);
+  border: 1px solid var(--mc-card-border);
+  box-shadow: var(--mc-shadow-card);
+  padding: 1.75rem;
+  margin-bottom: 1.75rem;
+  box-sizing: border-box;
+}
+
+.med-pill-input {
+  width: 100%;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--mc-radius-full);
+  border: 1.5px solid var(--mc-card-border);
+  background: #ffffff;
+  color: var(--mc-text-heading);
+  font-family: var(--mc-font);
+  font-size: 0.88rem;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.med-pill-input:focus {
+  border-color: var(--mc-teal-primary);
+  box-shadow: 0 0 0 3px var(--mc-teal-subtle);
+}
+
+.med-pill-btn-primary {
+  background: var(--mc-teal-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--mc-radius-full);
+  padding: 0.65rem 1.5rem;
+  font-family: var(--mc-font);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: var(--mc-shadow-teal);
+  transition: all 0.2s ease;
+}
+
+.med-pill-btn-primary:hover {
+  background: var(--mc-teal-dark);
+  transform: translateY(-1px);
+}
+
+.med-pill-btn-outline {
+  background: #ffffff;
+  color: var(--mc-teal-primary);
+  border: 1.5px solid var(--mc-card-border);
+  border-radius: var(--mc-radius-full);
+  padding: 0.6rem 1.35rem;
+  font-family: var(--mc-font);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: var(--mc-shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.med-pill-btn-outline:hover {
+  border-color: var(--mc-teal-primary);
+  color: var(--mc-teal-dark);
+  transform: translateY(-1px);
+}
+
+/* Minimalist Table */
+.med-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--mc-radius-md);
+  border: 1px solid var(--mc-card-border);
+}
+
+.med-clean-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.med-clean-table thead {
+  background: #f8fafc;
+  border-bottom: 1px solid var(--mc-card-border);
+}
+
+.med-clean-table th {
+  padding: 0.85rem 1.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--mc-text-muted);
+}
+
+.med-clean-table td {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--mc-card-border-subtle);
+  color: var(--mc-text-body);
+}
+
+.med-clean-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.med-clean-table tbody tr:hover {
+  background-color: #f8fbfb;
+}
+
+.med-clean-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+@media (max-width: 900px) {
+  .med-login-split {
+    grid-template-columns: 1fr !important;
+  }
+}
+

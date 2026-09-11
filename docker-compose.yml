@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jkn_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-jkn_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-jkn_password}
+      POSTGRES_DB: ${DB_NAME:-jkn_integrity}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    networks:
+      - jkn-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-jkn_user} -d ${DB_NAME:-jkn_integrity}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jkn_backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-jkn_integrity}
+      DB_USER: ${DB_USER:-jkn_user}
+      DB_PASSWORD: ${DB_PASSWORD:-jkn_password}
+      CORS_ORIGIN: "http://localhost http://localhost:80 http://localhost:5173"
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - jkn-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: jkn_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - jkn-network
+
+volumes:
+  pgdata:
+
+networks:
+  jkn-network:
+    driver: bridge

@@ -1,0 +1,380 @@
+/* ============================================================
+   medCare JKN Integrity Intelligence — Clean Clinical Theme
+   Unified Teal/Mint Palette (matches Minimalist Dashboard)
+   ============================================================ */
+
+:root {
+  --font-sans: 'Figtree', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* medCare Brand Colors — Teal/Mint Palette */
+  --mc-primary: #007a78;
+  --mc-primary-dark: #005f5d;
+  --mc-primary-light: #10b981;
+  --mc-primary-subtle: #e6f6f5;
+  --mc-primary-bg: #edf3f4;
+
+  --mc-bg-page: #edf3f4;
+  --mc-bg-card: #ffffff;
+  --mc-bg-card-subtle: #f4f8f8;
+
+  --mc-text-title: #0f172a;
+  --mc-text-body: #475569;
+  --mc-text-muted: #94a3b8;
+
+  --mc-border: #e3ecee;
+  --mc-border-light: #edf2f4;
+
+  --mc-shadow-sm: 0 4px 15px rgba(0, 122, 120, 0.06);
+  --mc-shadow-md: 0 10px 30px rgba(0, 122, 120, 0.08);
+  --mc-shadow-lg: 0 20px 45px rgba(0, 122, 120, 0.12);
+
+  --radius-pill: 9999px;
+  --radius-card: 24px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--mc-bg-page);
+  color: var(--mc-text-body);
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+  overflow-x: clip;
+}
+
+/* App Wrapper */
+.medcare-app {
+  min-height: 100vh;
+  background: radial-gradient(circle at 85% 10%, #e6f6f5 0%, transparent 40%),
+              radial-gradient(circle at 15% 50%, #e6f6f5 0%, transparent 35%),
+              linear-gradient(180deg, #edf3f4 0%, #e8f0f1 100%);
+}
+
+/* Header */
+.medcare-header {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 1.25rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.medcare-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+}
+
+.medcare-logo-text {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--mc-primary);
+  letter-spacing: -0.03em;
+}
+
+.medcare-logo-text span {
+  color: var(--mc-text-title);
+}
+
+.medcare-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(227, 236, 238, 0.85);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.medcare-nav-link {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--mc-text-muted);
+  transition: color 0.2s;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0.55rem 1.15rem;
+  border-radius: var(--radius-pill);
+  position: relative;
+}
+
+.medcare-nav-link:hover {
+  color: var(--mc-text-title);
+}
+
+.medcare-nav-link.active {
+  color: var(--mc-primary);
+  font-weight: 700;
+}
+
+.btn-pill-primary {
+  background: var(--mc-primary);
+  color: #ffffff;
+  padding: 0.65rem 1.6rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 122, 120, 0.3);
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.btn-pill-primary:hover {
+  background: var(--mc-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 122, 120, 0.4);
+}
+
+.btn-pill-outline {
+  background: #ffffff;
+  color: var(--mc-primary);
+  padding: 0.65rem 1.6rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1.5px solid var(--mc-primary);
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.btn-pill-outline:hover {
+  background: var(--mc-primary-subtle);
+  transform: translateY(-2px);
+}
+
+/* Sections */
+.medcare-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--mc-primary);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.section-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--mc-text-title);
+  letter-spacing: -0.02em;
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+/* Hero */
+.hero-wrapper {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  align-items: center;
+  gap: 2rem;
+  padding: 2.5rem 0 4rem;
+}
+
+.hero-pill-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  background: #e6f6f5;
+  color: #005f5d;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.hero-title {
+  font-size: 3.1rem;
+  font-weight: 800;
+  color: var(--mc-text-title);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  margin-bottom: 1.25rem;
+}
+
+.hero-desc {
+  font-size: 0.98rem;
+  color: var(--mc-text-body);
+  line-height: 1.7;
+  margin-bottom: 2rem;
+  max-width: 480px;
+}
+
+/* 4 Quick Feature Cards */
+.quick-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-top: -1.5rem;
+  margin-bottom: 4rem;
+}
+
+.quick-card {
+  border-radius: var(--radius-card);
+  padding: 1.75rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.25s ease;
+  box-shadow: var(--mc-shadow-md);
+  text-align: center;
+}
+
+.quick-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--mc-shadow-lg);
+}
+
+.quick-card-blue {
+  background: linear-gradient(135deg, #007a78 0%, #005f5d 100%);
+  color: #ffffff;
+}
+
+.quick-card-white {
+  background: #ffffff;
+  color: var(--mc-text-title);
+}
+
+.quick-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+}
+
+/* Our Speciality Banner */
+.speciality-banner {
+  background: linear-gradient(135deg, #005f5d 0%, #007a78 100%);
+  border-radius: 28px;
+  padding: 2.25rem 3rem;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--mc-shadow-lg);
+  margin-bottom: 4rem;
+}
+
+/* 3 Doctor Cards */
+.doctor-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.75rem;
+  margin-bottom: 2.5rem;
+}
+
+.doctor-card {
+  background: #ffffff;
+  border-radius: var(--radius-card);
+  padding: 1.75rem;
+  text-align: center;
+  box-shadow: var(--mc-shadow-md);
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.doctor-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--mc-shadow-lg);
+}
+
+.doctor-arch-frame {
+  width: 140px;
+  height: 155px;
+  border-radius: 70px 70px 24px 24px;
+  background: linear-gradient(180deg, #007a78 0%, #10b981 100%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+  box-shadow: 0 10px 20px rgba(0, 122, 120, 0.2);
+}
+
+/* Modal for Investigation Details */
+.medcare-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.medcare-modal-content {
+  background: #ffffff;
+  border-radius: 28px;
+  max-width: 1100px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+  padding: 2.25rem;
+  position: relative;
+}
+
+/* Spin animation */
+.spin-anim {
+  animation: medcare-spin 1s linear infinite;
+}
+
+@keyframes medcare-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 968px) {
+  .hero-wrapper {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .hero-desc {
+    margin: 0 auto 2rem;
+  }
+  .quick-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .doctor-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .speciality-banner {
+    flex-direction: column;
+    text-align: center;
+    gap: 1.5rem;
+  }
+}
