@@ -87,7 +87,7 @@ export async function loginUser(credentials) {
     return data.data;
   } catch (err) {
     if (err.message === 'Load failed' || err.message === 'Failed to fetch' || err.name === 'TypeError') {
-      throw new Error('Koneksi ke backend (http://localhost:3000) gagal dihubungi. Pastikan server backend sedang aktif.');
+      throw new Error(`Koneksi ke API backend (${API_BASE}) gagal dihubungi. Pastikan server backend sedang aktif.`);
     }
     throw err;
   }

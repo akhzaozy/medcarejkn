@@ -163,14 +163,14 @@ export default function LoginPage({ onLoginSuccess }) {
     } catch (err) {
       const errMsg = err.message || 'Username atau kata sandi salah. Silakan coba lagi.';
       setError(errMsg);
-      const isConnectionError = errMsg.includes('Koneksi') || errMsg.includes('backend') || errMsg.includes('Load failed') || errMsg.includes('Failed to fetch') || errMsg.includes('port 3000');
+      const isConnectionError = errMsg.includes('Koneksi') || errMsg.includes('backend') || errMsg.includes('Load failed') || errMsg.includes('Failed to fetch') || errMsg.includes('API');
 
       setAlertConfig({
         isOpen: true,
         type: 'error',
-        title: isConnectionError ? 'Koneksi Server Terputus' : 'Autentikasi Gagal',
+        title: isConnectionError ? 'Koneksi Backend Terputus' : 'Autentikasi Gagal',
         message: isConnectionError
-          ? 'Sistem mendeteksi server backend port 3000 belum siap atau sambungan terputus. Anda dapat langsung masuk dengan Mode Demo tanpa hambatan.'
+          ? 'Sistem mendeteksi server backend belum siap atau sambungan proxy terputus. Anda dapat langsung masuk dengan Mode Demo tanpa hambatan.'
           : 'Username atau kata sandi tidak cocok dengan data verifikator terdaftar. Silakan periksa kembali akun Anda.',
         details: errMsg,
         primaryAction: {
