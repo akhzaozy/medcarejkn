@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { loginUser } from '../api/client';
+import { loginUser, setDemoMode } from '../api/client';
+
 import DoctorMascotAvatar from '../components/illustrations/DoctorMascotAvatar';
 import AnimatedAlertModal from '../components/common/AnimatedAlertModal';
 import { 
@@ -64,6 +65,7 @@ export default function LoginPage({ onLoginSuccess }) {
   };
 
   const handleFallbackLogin = () => {
+    setDemoMode(true);
     setAlertConfig(prev => ({ ...prev, isOpen: false }));
     const trimmed = username.trim().toLowerCase();
     let fallbackUser = {
@@ -613,7 +615,35 @@ export default function LoginPage({ onLoginSuccess }) {
               <span>{loading ? 'Memverifikasi Akses...' : 'Masuk ke Sistem'}</span>
               <ArrowRight size={17} />
             </motion.button>
+
+            {/* Direct Demo Mode button */}
+            <button
+              type="button"
+              onClick={handleFallbackLogin}
+              style={{
+                width: '100%',
+                background: '#f1f5f9',
+                color: '#334155',
+                border: '1px solid #cbd5e1',
+                borderRadius: '12px',
+                padding: '0.65rem 1rem',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#e2e8f0'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#f1f5f9'}
+            >
+              <Sparkles size={14} color="#007a78" />
+              <span>Masuk Mode Demo Langsung (Data Sintetis)</span>
+            </button>
           </form>
+
 
           {/* Quick Credential Hint / Staff Switcher */}
           <div style={{

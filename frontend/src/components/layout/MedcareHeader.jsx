@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LogOut } from 'lucide-react';
+import { LogOut, Sparkles } from 'lucide-react';
+import { isDemoMode } from '../../api/client';
+
 
 export default function MedcareHeader({ 
   activeSection = 'landing', 
@@ -71,18 +73,37 @@ export default function MedcareHeader({
       {/* User Profile Badge & Logout */}
       <div className="med-header-right">
         {currentUser ? (
-          <div className="med-profile-badge" title="Info akun">
-            <img
-              src="/assets/user_fedrik.jpg"
-              alt={displayName}
-              className="med-profile-avatar"
-              onError={(e) => {
-                e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80';
-              }}
-            />
-            <div>
-              <div className="med-profile-name">{displayName}</div>
-              <div className="med-profile-sub">{displayRole}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {isDemoMode() && (
+              <span style={{
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                background: '#fef3c7',
+                color: '#b45309',
+                border: '1px solid #fde68a',
+                padding: '3px 8px',
+                borderRadius: '8px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <Sparkles size={11} />
+                Mode Demo
+              </span>
+            )}
+            <div className="med-profile-badge" title="Info akun">
+              <img
+                src="/assets/user_fedrik.jpg"
+                alt={displayName}
+                className="med-profile-avatar"
+                onError={(e) => {
+                  e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80';
+                }}
+              />
+              <div>
+                <div className="med-profile-name">{displayName}</div>
+                <div className="med-profile-sub">{displayRole}</div>
+              </div>
             </div>
           </div>
         ) : (
