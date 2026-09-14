@@ -535,7 +535,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                   gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
                   gap: '1.5rem'
                 }}>
-                  {cases.map(c => {
+                  {cases.map((c, index) => {
                     const isPhantom = c.primary_risk_mode === 'PHANTOM_BILLING';
                     const isGhost = c.primary_risk_mode === 'GHOST_ENROLLEE';
                     const isWrong = c.primary_risk_mode === 'WRONG_DIAGNOSIS';
