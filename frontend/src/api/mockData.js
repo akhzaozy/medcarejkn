@@ -27,6 +27,7 @@ export const MOCK_CASES = [
   {
     case_id: 'CASE-PB-001',
     claim_id: 'CLM-2026-00142',
+    patient_id: 'PAT-SYN-001',
     primary_risk_mode: 'PHANTOM_BILLING',
     review_priority: 'HIGH',
     case_status: 'OPEN',
@@ -47,6 +48,7 @@ export const MOCK_CASES = [
   {
     case_id: 'CASE-PB-002',
     claim_id: 'CLM-2026-00189',
+    patient_id: 'PAT-SYN-002',
     primary_risk_mode: 'PHANTOM_BILLING',
     review_priority: 'HIGH',
     case_status: 'IN_REVIEW',
@@ -67,6 +69,7 @@ export const MOCK_CASES = [
   {
     case_id: 'CASE-PB-003',
     claim_id: 'CLM-2026-00204',
+    patient_id: 'PAT-SYN-003',
     primary_risk_mode: 'UPCODING',
     review_priority: 'MEDIUM',
     case_status: 'OPEN',
@@ -87,6 +90,7 @@ export const MOCK_CASES = [
   {
     case_id: 'CASE-PB-004',
     claim_id: 'CLM-2026-00255',
+    patient_id: 'PAT-SYN-004',
     primary_risk_mode: 'DUPLICATE_CLAIM',
     review_priority: 'LOW',
     case_status: 'CONFIRMED',
@@ -107,6 +111,7 @@ export const MOCK_CASES = [
   {
     case_id: 'CASE-PB-005',
     claim_id: 'CLM-2026-00312',
+    patient_id: 'PAT-SYN-005',
     primary_risk_mode: 'PHANTOM_BILLING',
     review_priority: 'HIGH',
     case_status: 'OPEN',
@@ -127,6 +132,7 @@ export const MOCK_CASES = [
   {
     case_id: 'CASE-PB-006',
     claim_id: 'CLM-2026-00388',
+    patient_id: 'PAT-SYN-006',
     primary_risk_mode: 'UNNECESSARY_PROCEDURES',
     review_priority: 'MEDIUM',
     case_status: 'OPEN',
@@ -147,6 +153,7 @@ export const MOCK_CASES = [
   {
     case_id: 'CASE-PB-007',
     claim_id: 'CLM-2026-00421',
+    patient_id: 'PAT-SYN-007',
     primary_risk_mode: 'PHANTOM_BILLING',
     review_priority: 'HIGH',
     case_status: 'IN_REVIEW',
@@ -167,6 +174,7 @@ export const MOCK_CASES = [
   {
     case_id: 'CASE-PB-008',
     claim_id: 'CLM-2026-00490',
+    patient_id: 'PAT-SYN-008',
     primary_risk_mode: 'PHANTOM_BILLING',
     review_priority: 'HIGH',
     case_status: 'OPEN',
@@ -272,6 +280,8 @@ export function getMockCaseDetails(caseId) {
   return {
     case: {
       ...c,
+      patient_id: c.patient_id || 'PAT-SYN-001',
+      service_date: c.service_date || '2026-02-24',
       admission_date: '2026-02-24',
       discharge_date: '2026-02-28',
       los: 4,

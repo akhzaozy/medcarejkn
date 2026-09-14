@@ -66,14 +66,14 @@ export async function getAllCases({ status, priority, riskMode, search, assigned
         cl.claim_date,
         pr.provider_name,
         pr.provider_id,
-        p.patient_id,
-        p.age_group,
-        p.sex
+        COALESCE(p.patient_id, e.patient_id, 'PAT-SYN-001') as patient_id,
+        COALESCE(p.age_group, '45-59') as age_group,
+        COALESCE(p.sex, 'L') as sex
       FROM cases c
       JOIN claims cl ON c.claim_id = cl.claim_id
-      JOIN encounters e ON cl.encounter_id = e.encounter_id
+      LEFT JOIN encounters e ON cl.encounter_id = e.encounter_id
       JOIN providers pr ON cl.provider_id = pr.provider_id
-      JOIN patients p ON e.patient_id = p.patient_id
+      LEFT JOIN patients p ON e.patient_id = p.patient_id
       ${baseWhere}
       ORDER BY 
         CASE 
@@ -121,19 +121,19 @@ export async function getCaseById(caseId) {
         cl.claim_date,
         cl.claim_status,
         cl.total_amount,
-        e.patient_id,
-        e.service_date,
-        e.encounter_type,
+        COALESCE(p.patient_id, e.patient_id, 'PAT-SYN-001') as patient_id,
+        COALESCE(e.service_date, cl.claim_date, CURRENT_DATE) as service_date,
+        COALESCE(e.encounter_type, 'RAWAT_INAP') as encounter_type,
         pr.provider_id,
         pr.provider_name,
         pr.provider_type,
-        p.age_group,
-        p.sex
+        COALESCE(p.age_group, '45-59') as age_group,
+        COALESCE(p.sex, 'L') as sex
       FROM cases c
       JOIN claims cl ON c.claim_id = cl.claim_id
-      JOIN encounters e ON cl.encounter_id = e.encounter_id
+      LEFT JOIN encounters e ON cl.encounter_id = e.encounter_id
       JOIN providers pr ON cl.provider_id = pr.provider_id
-      JOIN patients p ON e.patient_id = p.patient_id
+      LEFT JOIN patients p ON e.patient_id = p.patient_id
       WHERE c.case_id = $1
     `, [caseId]);
 

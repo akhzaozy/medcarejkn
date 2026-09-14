@@ -323,7 +323,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
             <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem', color: '#475569', flexWrap: 'wrap', lineHeight: 1.6 }}>
               <div>Nomor Klaim: <strong style={{ color: '#0f172a', fontWeight: 700 }}>{c.claim_id}</strong></div>
               <div>Faskes: <strong style={{ color: '#0f172a' }}>{c.provider_name}</strong> ({c.provider_id})</div>
-              <div>Pasien: <strong style={{ color: '#0f172a', fontWeight: 700 }}>{c.patient_id}</strong> ({genderLabel}, {ageLabel})</div>
+              <div>Pasien: <strong style={{ color: '#0f172a', fontWeight: 700 }}>{c.patient_id || 'PAT-SYN-001'}</strong> ({genderLabel}, {ageLabel})</div>
               <div>Tgl Layanan: <strong style={{ color: '#0f172a' }}>{formatDateIndo(c.service_date)}</strong></div>
             </div>
 
@@ -408,7 +408,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
         </div>
 
         <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.65, margin: '0 0 1.25rem 0' }}>
-          Klaim berkas <strong>{c.case_id}</strong> diajukan oleh <strong>{c.provider_name}</strong> atas pelayanan pasien <strong>{c.patient_id}</strong> ({genderLabel}, {ageLabel}) dengan nilai tagihan <strong>{totalClaim}</strong>. 
+          Klaim berkas <strong>{c.case_id}</strong> diajukan oleh <strong>{c.provider_name}</strong> atas pelayanan pasien <strong>{c.patient_id || 'PAT-SYN-001'}</strong> ({genderLabel}, {ageLabel}) dengan nilai tagihan <strong>{totalClaim}</strong>. 
           Pemeriksaan audit klinis mengidentifikasi indikasi <strong>{riskLabel}</strong> karena {c.review_focus || 'ditemukan ketidaksesuaian lembar tagihan rumah sakit dengan catatan rekam jejak medis fisik'}. 
           Tingkat pembuktian rekam medis terverifikasi adalah <strong>{c.evidence_coverage_pct || 0}%</strong>, sehingga terdapat selisih pembuktian (evidence gap) sebesar <strong>{totalGapCount}</strong> yang tidak memiliki dukungan dokumen medis.
         </p>

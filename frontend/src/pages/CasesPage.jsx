@@ -553,7 +553,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                               {c.provider_name}
                             </div>
                             <div style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', gap: '8px', marginTop: '2px' }}>
-                              <span>Pasien: <strong style={{ color: '#334155' }}>{c.patient_id}</strong></span>
+                              <span>Pasien: <strong style={{ color: '#334155' }}>{c.patient_id || 'PAT-SYN-001'}</strong></span>
                               <span>•</span>
                               <span>{formatGender(c.sex)}, {formatAgeGroup(c.age_group)}</span>
                               <span>•</span>
