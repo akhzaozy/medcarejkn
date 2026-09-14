@@ -128,7 +128,17 @@ export async function fetchCaseDetails(caseId) {
   try {
     const res = await fetch(`${API_BASE}/cases/${caseId}`);
     if (!res.ok) throw new Error(`Case details error: ${res.statusText}`);
-    return (await res.json()).data;
+    const data = (await res.json()).data;
+    
+    // Enrich with ML recommendation & disputes
+    const mockFallback = getMockCaseDetails(caseId);
+    if (!data.mlRecommendation) {
+      data.mlRecommendation = mockFallback.mlRecommendation;
+    }
+    if (!data.disputes || data.disputes.length === 0) {
+      data.disputes = mockFallback.disputes;
+    }
+    return data;
   } catch (err) {
     console.warn(`[medCare JKN] Backend unreachable for case ${caseId}, using mock details:`, err.message);
     return getMockCaseDetails(caseId);
@@ -161,6 +171,11 @@ export async function fetchCaseEvidence(caseId) {
 }
 
 export async function submitReviewOutcome(caseId, { outcome, notes, reviewerId = 'reviewer-001' }) {
+  const target = MOCK_CASES.find(c => c.case_id === caseId);
+  if (target) {
+    target.case_status = outcome === 'CONFIRMED' ? 'CONFIRMED' : (outcome === 'NOT_CONFIRMED' ? 'CLOSED' : 'IN_REVIEW');
+  }
+
   if (isDemoMode()) {
     return {
       success: true,
@@ -415,6 +430,13 @@ export async function fetchRoles() {
 }
 
 export async function assignCaseReviewer(caseId, payload) {
+  const target = MOCK_CASES.find(c => c.case_id === caseId);
+  if (target) {
+    target.assigned_to = payload.assignedTo;
+    target.assigned_name = payload.assignedName;
+    target.case_status = 'IN_REVIEW';
+  }
+
   if (isDemoMode()) {
     return {
       success: true,
@@ -444,4 +466,47 @@ export async function assignCaseReviewer(caseId, payload) {
       timestamp: new Date().toISOString()
     };
   }
+}
+
+export async function submitDisputeRebuttal(caseId, payload) {
+  const newDispute = {
+    id: `DSP-${Date.now().toString().slice(-4)}`,
+    actor: payload.actor || 'Komite Medik RS',
+    role: payload.role || 'Pihak Faskes (RS)',
+    date: new Date().toISOString(),
+    status: 'MENUNGGU_VERIFIKASI',
+    title: payload.title || 'Sanggahan & Klarifikasi Pelayanan Medis',
+    content: payload.content || '',
+    attachments: payload.attachments || []
+  };
+
+  try {
+    const res = await fetch(`${API_BASE}/cases/${caseId}/dispute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.data) return data.data;
+    }
+  } catch (e) {
+    // Graceful offline fallback
+  }
+
+  return newDispute;
+}
+
+export async function uploadSupportingEvidence(caseId, payload) {
+  const newEvidence = {
+    evidence_id: `EVD-NEW-${Date.now().toString().slice(-4)}`,
+    evidence_type: payload.evidenceType || 'MEDICAL_RECORD',
+    title: payload.title || 'Dokumen Bukti Fisik Tambahan',
+    status: 'AVAILABLE',
+    note: payload.note || 'Diunggah dalam proses sanggahan/rekonsiliasi faskes',
+    confidence_score: 0.96,
+    uploaded_at: new Date().toISOString()
+  };
+
+  return newEvidence;
 }

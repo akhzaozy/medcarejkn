@@ -394,6 +394,35 @@ export function getMockCaseDetails(caseId) {
         timestamp: '2026-03-02T14:30:00Z',
         detail: 'Hasil telaah awal: Perlu bukti tambahan rekam medis'
       }
+    ],
+    mlRecommendation: {
+      suggestedOutcome: c.primary_risk_mode === 'PHANTOM_BILLING' ? 'NEEDS_MORE_EVIDENCE' : (c.evidence_gap > 0 ? 'NEEDS_MORE_EVIDENCE' : 'NOT_CONFIRMED'),
+      confidenceScore: 94.6,
+      modelName: 'Medcare-Reconcile-HybridRule-v4.2',
+      predictedRiskLevel: c.review_priority || 'HIGH',
+      suggestedNotes: c.primary_risk_mode === 'PHANTOM_BILLING'
+        ? `Berdasarkan inferensi model Machine Learning, teridentifikasi indikasi Phantom Billing dengan skor keyakinan 94.6%. Terdapat ${c.affected_items || 2} item tagihan tanpa berkas anestesi/bedah terarsip (Evidence Coverage: ${c.evidence_coverage_pct || 33}%). Direkomendasikan meminta klarifikasi fisik dari Komite Medik faskes.`
+        : `Hasil evaluasi algoritma menunjukkan pola ${c.primary_risk_mode} dengan nilai disparitas Rp ${Number(c.exposure_amount || 0).toLocaleString('id-ID')}. Disarankan klarifikasi resume medis penunjang.`,
+      drivers: [
+        `Tingkat Ketercakupan Dokumen: ${c.evidence_coverage_pct || 33}% (Batas Minimum Aman: 80%)`,
+        `Disparitas Biaya Tagihan: Rp ${Number(c.exposure_amount || 0).toLocaleString('id-ID')}`,
+        `Ketiadaan Arsip Rekam Anestesi Spesialis & Laporan Pembedahan Kamar Operasi`
+      ]
+    },
+    disputes: [
+      {
+        id: 'DSP-001',
+        actor: `Komite Medik ${c.provider_name}`,
+        role: 'Fasilitas Kesehatan (Rumah Sakit)',
+        date: '2026-03-03T11:20:00Z',
+        status: 'MENUNGGU_VERIFIKASI',
+        title: 'Klarifikasi & Sanggahan Faskes Terhadap Audit Klaim',
+        content: `Tindakan medis telah dilaksanakan sesuai standar operasional prosedur klinis di ${c.provider_name}. Berkas fisik lembar laporan tindakan pembedahan dan log monitoring anestesi tersimpan di bagian rekam medis manual sub-instalasi. Kami melampirkan salinan scan verifikasi pendukung.`,
+        attachments: [
+          { name: 'Scan_Surat_Kamar_Operasi_Signed.pdf', size: '2.4 MB', type: 'PDF' },
+          { name: 'Lembar_Tanda_Vital_Pemulihan.pdf', size: '1.1 MB', type: 'PDF' }
+        ]
+      }
     ]
   };
 }

@@ -36,6 +36,32 @@ export default function CasesPage({ onSelectCase, currentUser }) {
     loadCases();
   }, [filters, activeQueueTab, page]);
 
+  const [stageCounts, setStageCounts] = useState({ all: 0, open: 0, inReview: 0, completed: 0 });
+
+  const loadStats = async () => {
+    try {
+      const q = { limit: 'ALL' };
+      if (isClinician && currentUser) {
+        q.assignedTo = currentUser.username;
+        q.riskMode = 'PHANTOM_BILLING';
+      }
+      const res = await fetchCases(q);
+      const allItems = res?.data || (Array.isArray(res) ? res : []);
+      const totalAll = res?.total !== undefined ? res.total : allItems.length;
+      const open = allItems.filter(c => c.case_status === 'OPEN').length;
+      const inReview = allItems.filter(c => c.case_status === 'IN_REVIEW').length;
+      const completed = allItems.filter(c => c.case_status === 'CONFIRMED' || c.case_status === 'NOT_CONFIRMED' || c.case_status === 'CLOSED').length;
+      setStageCounts({
+        all: totalAll,
+        open: open || (totalAll - inReview - completed),
+        inReview,
+        completed
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const loadCases = async () => {
     try {
       setLoading(true);
@@ -48,7 +74,9 @@ export default function CasesPage({ onSelectCase, currentUser }) {
       } else if (activeQueueTab === 'assigned' && currentUser) {
         queryFilters.assignedTo = currentUser.username;
       } else if (activeQueueTab === 'all') {
-        delete queryFilters.assignedTo;
+        if (!filters.assignedTo || filters.assignedTo === 'ALL') {
+          delete queryFilters.assignedTo;
+        }
       }
       const res = await fetchCases(queryFilters);
       
@@ -59,6 +87,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
       setCases(rawData);
       setTotalCases(totalCount);
       setTotalPages(totalP);
+      loadStats();
     } catch (err) {
       console.error(err);
     } finally {
@@ -85,10 +114,10 @@ export default function CasesPage({ onSelectCase, currentUser }) {
   };
 
   const handleSwitchTab = (tab) => {
-    if (isClinician) return; // Prevent clinician from accessing other doctors' cases
+    if (isClinician) return;
     setActiveQueueTab(tab);
     if (tab === 'assigned') {
-      setFilters(prev => ({ ...prev, assignedTo: currentUser?.username || 'ALL' }));
+      setFilters(prev => ({ ...prev, assignedTo: 'dr.anindya' }));
     } else {
       setFilters(prev => {
         const copy = { ...prev };
@@ -97,11 +126,6 @@ export default function CasesPage({ onSelectCase, currentUser }) {
       });
     }
   };
-
-  // Helper stats for pipeline
-  const countOpen = cases.filter(c => c.case_status === 'OPEN').length;
-  const countInReview = cases.filter(c => c.case_status === 'IN_REVIEW').length;
-  const countCompleted = cases.filter(c => c.case_status === 'CONFIRMED' || c.case_status === 'NOT_CONFIRMED' || c.case_status === 'CLOSED').length;
 
   return (
     <div style={{ paddingBottom: '3rem' }}>
@@ -199,7 +223,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b' }}>SEMUA KASUS</span>
               <span style={{ background: '#e2e8f0', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, color: '#334155' }}>
-                {cases.length}
+                {stageCounts.all || totalCases}
               </span>
             </div>
             <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
@@ -225,7 +249,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#2563eb' }}>TAHAP 1: KASUS BARU</span>
               <span style={{ background: '#dbeafe', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, color: '#1d4ed8' }}>
-                {countOpen}
+                {stageCounts.open}
               </span>
             </div>
             <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
@@ -251,7 +275,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#d97706' }}>TAHAP 2: DALAM TELAAH</span>
               <span style={{ background: '#fef3c7', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, color: '#b45309' }}>
-                {countInReview}
+                {stageCounts.inReview}
               </span>
             </div>
             <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
@@ -277,7 +301,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#16a34a' }}>TAHAP 3: SELESAI</span>
               <span style={{ background: '#dcfce7', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, color: '#15803d' }}>
-                {countCompleted}
+                {stageCounts.completed}
               </span>
             </div>
             <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
@@ -350,6 +374,26 @@ export default function CasesPage({ onSelectCase, currentUser }) {
               <option value="CLOSED">CLOSED (Selesai)</option>
             </select>
           </div>
+
+          {/* Assigned Doctor (Staff Only) */}
+          {!isClinician && (
+            <div>
+              <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--mc-text-heading)', marginBottom: '0.45rem' }}>
+                Tenaga Medis Ditugaskan
+              </label>
+              <select
+                value={filters.assignedTo || 'ALL'}
+                onChange={e => handleFilterChange('assignedTo', e.target.value)}
+                className="med-pill-input"
+                style={{ cursor: 'pointer' }}
+              >
+                <option value="ALL">Semua Dokter DPJP</option>
+                <option value="dr.anindya">dr. Anindya Kusuma, Sp.PK</option>
+                <option value="dr.budi">dr. Budi Santoso, Sp.A</option>
+                <option value="dr.ratna">dr. Ratna Dewi, Sp.PD</option>
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -359,9 +403,9 @@ export default function CasesPage({ onSelectCase, currentUser }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ fontSize: '0.92rem', color: '#475569', fontWeight: 600 }}>
             {isClinician ? (
-              <>Menampilkan <strong style={{ color: '#059669' }}>{cases.length}</strong> kasus Phantom Billing terverifikasi khusus Anda</>
+              <>Menampilkan <strong style={{ color: '#059669' }}>{totalCases > 0 ? (page - 1) * limit + 1 : 0} - {Math.min(page * limit, totalCases)}</strong> dari <strong>{totalCases.toLocaleString('id-ID')}</strong> kasus Phantom Billing terverifikasi khusus Anda</>
             ) : (
-              <>Menampilkan <strong style={{ color: '#007a78' }}>{cases.length}</strong> kasus klaim aktif</>
+              <>Menampilkan <strong style={{ color: '#007a78' }}>{totalCases > 0 ? (page - 1) * limit + 1 : 0} - {Math.min(page * limit, totalCases)}</strong> dari <strong>{totalCases.toLocaleString('id-ID')}</strong> kasus klaim aktif</>
             )}
           </div>
 
@@ -525,9 +569,22 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                           {/* Top Card Header */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.85rem' }}>
                             <div>
-                              <span style={{ fontWeight: 800, color: isClinician ? '#059669' : '#007a78', fontSize: '1.05rem' }}>
-                                {c.case_id}
-                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                                <span style={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  background: '#f1f5f9',
+                                  color: '#475569',
+                                  padding: '2px 7px',
+                                  borderRadius: '6px',
+                                  fontVariantNumeric: 'tabular-nums'
+                                }}>
+                                  #{(page - 1) * limit + index + 1}
+                                </span>
+                                <span style={{ fontWeight: 800, color: isClinician ? '#059669' : '#007a78', fontSize: '1.05rem' }}>
+                                  {c.case_id}
+                                </span>
+                              </div>
                               <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
                                 Klaim: <span style={{ fontWeight: 700, color: '#334155' }}>{c.claim_id}</span>
                               </div>
@@ -678,6 +735,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
             <table className="med-clean-table">
               <thead>
                 <tr>
+                  <th style={{ width: '60px', textAlign: 'center' }}>No.</th>
                   <th>Case ID</th>
                   <th>Claim ID</th>
                   <th>Fasilitas Kesehatan</th>
@@ -695,13 +753,13 @@ export default function CasesPage({ onSelectCase, currentUser }) {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={isClinician ? 9 : 10} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                    <td colSpan={isClinician ? 10 : 11} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
                       Memuat antrean penelaahan kasus...
                     </td>
                   </tr>
                 ) : cases.length === 0 ? (
                   <tr>
-                    <td colSpan={isClinician ? 9 : 10} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                    <td colSpan={isClinician ? 10 : 11} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
                       Tidak ada kasus yang memenuhi kriteria filter.
                     </td>
                   </tr>
@@ -717,6 +775,9 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                       onMouseEnter={e => e.currentTarget.style.background = '#edf3f4'}
                       onMouseLeave={e => e.currentTarget.style.background = index % 2 === 0 ? '#ffffff' : '#fbfcfe'}
                     >
+                      <td style={{ padding: '1.1rem 0.75rem', textAlign: 'center', fontWeight: 700, color: '#64748b', fontVariantNumeric: 'tabular-nums' }}>
+                        {(page - 1) * limit + index + 1}
+                      </td>
                       <td style={{ padding: '1.1rem 1.25rem', fontWeight: 800, color: '#007a78' }}>
                         {c.case_id}
                       </td>
@@ -836,7 +897,11 @@ export default function CasesPage({ onSelectCase, currentUser }) {
             gap: '1rem'
           }}>
             <div style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>
-              Menampilkan data ke <strong style={{ color: isClinician ? '#059669' : '#007a78' }}>{(page - 1) * limit + 1} - {Math.min(page * limit, totalCases)}</strong> dari <strong>{totalCases.toLocaleString('id-ID')}</strong> kasus total (Halaman {page} dari {totalPages})
+              {totalCases === 0 ? (
+                'Tidak ada data kasus yang sesuai kriteria.'
+              ) : (
+                <>Menampilkan data ke <strong style={{ color: isClinician ? '#059669' : '#007a78' }}>{(page - 1) * limit + 1} - {Math.min(page * limit, totalCases)}</strong> dari <strong>{totalCases.toLocaleString('id-ID')}</strong> kasus total (Halaman {page} dari {totalPages})</>
+              )}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

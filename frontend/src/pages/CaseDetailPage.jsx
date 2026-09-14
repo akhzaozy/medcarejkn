@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { fetchCaseDetails, fetchCaseEvidence, submitReviewOutcome, assignCaseReviewer } from '../api/client';
+import { 
+  fetchCaseDetails, fetchCaseEvidence, submitReviewOutcome, 
+  assignCaseReviewer, uploadSupportingEvidence, submitDisputeRebuttal 
+} from '../api/client';
 import { PriorityBadge, StatusBadge, CaseStatusPill } from '../components/common/Badge';
 import { 
   formatRiskMode, formatCaseStatus, formatEncounterType, 
@@ -10,7 +13,8 @@ import {
   ArrowLeft, FileText, CheckCircle2, AlertTriangle, Clock, 
   Send, ShieldAlert, FileSearch, UserCheck, HelpCircle, 
   UserPlus, Stethoscope, CheckCheck, Receipt, ClipboardCheck,
-  ChevronRight, AlertCircle, Sparkles, Building2, User, Activity
+  ChevronRight, AlertCircle, Sparkles, Building2, User, Activity,
+  Upload, MessageSquare, Plus, Paperclip, X, Check
 } from 'lucide-react';
 
 export default function CaseDetailPage({ caseId, onBack, currentUser }) {
@@ -23,6 +27,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
+  const [appliedMl, setAppliedMl] = useState(false);
 
   // Assignment state (Staff JKN)
   const [assignee, setAssignee] = useState('dr.anindya');
@@ -30,6 +35,22 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
   const [assignNotes, setAssignNotes] = useState('');
   const [assigning, setAssigning] = useState(false);
   const [assignSuccess, setAssignSuccess] = useState(false);
+
+  // Supporting Evidence Upload Modal
+  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  const [evidenceDocType, setEvidenceDocType] = useState('SURGICAL_REPORT');
+  const [evidenceDocTitle, setEvidenceDocTitle] = useState('');
+  const [evidenceDocNote, setEvidenceDocNote] = useState('');
+  const [evidenceUploading, setEvidenceUploading] = useState(false);
+  const [evidenceSuccess, setEvidenceSuccess] = useState(false);
+
+  // Dispute / Sanggahan Modal
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [disputeTitle, setDisputeTitle] = useState('');
+  const [disputeContent, setDisputeContent] = useState('');
+  const [disputeActor, setDisputeActor] = useState('');
+  const [disputeSubmitting, setDisputeSubmitting] = useState(false);
+  const [disputeSuccess, setDisputeSuccess] = useState(false);
 
   useEffect(() => {
     loadCaseData();
@@ -90,6 +111,111 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
       alert('Gagal menyimpan hasil review');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleApplyMlRecommendation = (mlRec) => {
+    if (!mlRec) return;
+    setOutcome(mlRec.suggestedOutcome || 'NEEDS_MORE_EVIDENCE');
+    setNotes(mlRec.suggestedNotes || '');
+    setAppliedMl(true);
+    setTimeout(() => setAppliedMl(false), 3500);
+  };
+
+  const handleUploadEvidence = async (e) => {
+    e.preventDefault();
+    if (!evidenceDocTitle.trim()) {
+      alert('Mohon isi judul dokumen bukti fisik.');
+      return;
+    }
+    try {
+      setEvidenceUploading(true);
+      const newEv = await uploadSupportingEvidence(caseId, {
+        evidenceType: evidenceDocType,
+        title: evidenceDocTitle,
+        note: evidenceDocNote || 'Dokumen fisik verifikasi disusulkan faskes'
+      });
+
+      setDetails(prev => {
+        if (!prev) return prev;
+        const copy = { ...prev };
+        copy.evidenceLinks = [newEv, ...(copy.evidenceLinks || [])];
+        if (copy.case) {
+          copy.case.evidence_coverage_pct = 100;
+          copy.case.evidence_gap = 0;
+        }
+        return copy;
+      });
+
+      setEvidenceChain(prev => {
+        if (!prev) return prev;
+        const copy = { ...prev };
+        if (copy.items && copy.items.length > 0) {
+          copy.items = copy.items.map(it => ({
+            ...it,
+            supportedQuantity: it.claimedQuantity,
+            evidenceGap: 0,
+            coveragePct: 100,
+            calculatedStatus: 'SUPPORTED',
+            evidenceLinks: [newEv, ...(it.evidenceLinks || [])]
+          }));
+        }
+        return copy;
+      });
+
+      setEvidenceSuccess(true);
+      setTimeout(() => {
+        setEvidenceSuccess(false);
+        setShowEvidenceModal(false);
+        setEvidenceDocTitle('');
+        setEvidenceDocNote('');
+      }, 1500);
+    } catch (err) {
+      console.error(err);
+      alert('Gagal melampirkan bukti pendukung.');
+    } finally {
+      setEvidenceUploading(false);
+    }
+  };
+
+  const handleAddDispute = async (e) => {
+    e.preventDefault();
+    if (!disputeTitle.trim() || !disputeContent.trim()) {
+      alert('Mohon lengkapi judul dan isi klarifikasi/sanggahan.');
+      return;
+    }
+    try {
+      setDisputeSubmitting(true);
+      const newDsp = await submitDisputeRebuttal(caseId, {
+        actor: disputeActor || `Komite Medik ${details?.case?.provider_name || 'Faskes Terkait'}`,
+        role: 'Fasilitas Kesehatan (Rumah Sakit)',
+        title: disputeTitle,
+        content: disputeContent,
+        attachments: [
+          { name: `${disputeTitle.replace(/[^a-zA-Z0-9]/g, '_')}_Lampiran.pdf`, size: '2.1 MB', type: 'PDF' }
+        ]
+      });
+
+      setDetails(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          disputes: [newDsp, ...(prev.disputes || [])]
+        };
+      });
+
+      setDisputeSuccess(true);
+      setTimeout(() => {
+        setDisputeSuccess(false);
+        setShowDisputeModal(false);
+        setDisputeTitle('');
+        setDisputeContent('');
+      }, 1500);
+    } catch (err) {
+      console.error(err);
+      alert('Gagal mengajukan sanggahan.');
+    } finally {
+      setDisputeSubmitting(false);
     }
   };
 
@@ -567,14 +693,25 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
 
       {/* ==================== 6. EVIDENCE CHAIN TRACEABILITY ==================== */}
       <div className="med-subpage-card" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ marginBottom: '1.25rem' }}>
-          <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <FileSearch size={18} color="#007a78" />
-            Penelusuran Rantai Keterbuktian Medis (Evidence Chain)
-          </h3>
-          <p style={{ fontSize: '0.84rem', color: '#64748b', margin: 0 }}>
-            Hierarki audit pembuktian: Berkas Kasus &rarr; Klaim Faskes &rarr; Item Tindakan &rarr; Dokumen Bukti Fisik
-          </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FileSearch size={18} color="#007a78" />
+              Penelusuran Rantai Keterbuktian Medis (Evidence Chain)
+            </h3>
+            <p style={{ fontSize: '0.84rem', color: '#64748b', margin: 0 }}>
+              Hierarki audit pembuktian: Berkas Kasus &rarr; Klaim Faskes &rarr; Item Tindakan &rarr; Dokumen Bukti Fisik
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowEvidenceModal(true)}
+            className="med-pill-btn-primary"
+            style={{ padding: '0.5rem 1.1rem', fontSize: '0.78rem' }}
+          >
+            <Upload size={14} />
+            + Unggah Bukti Pendukung Baru
+          </button>
         </div>
 
         {/* Clean Connected Stepper Nodes (NO ASCII arrows) */}
@@ -767,6 +904,118 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
         </div>
       </div>
 
+      {/* ==================== 7B. DISPUTE & REBUTTAL RECONCILIATION TRAIL ==================== */}
+      <div className="med-subpage-card" style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MessageSquare size={18} color="#007a78" />
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Alur Sanggahan &amp; Rekonsiliasi Faskes (Dispute Trail)
+              </h3>
+            </div>
+            <p style={{ fontSize: '0.84rem', color: '#64748b', margin: '4px 0 0 0' }}>
+              Kanal klarifikasi resmi antara Rumah Sakit / Komite Medik dengan Verifikator BPJS Kesehatan
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowDisputeModal(true)}
+            className="med-pill-btn-primary"
+            style={{ padding: '0.5rem 1.1rem', fontSize: '0.78rem' }}
+          >
+            <Plus size={14} />
+            + Ajukan Sanggahan / Tanggapan Faskes
+          </button>
+        </div>
+
+        {/* Dispute List */}
+        {(!details?.disputes || details.disputes.length === 0) ? (
+          <div style={{ padding: '2rem', textAlign: 'center', background: '#f8fafc', borderRadius: '14px', border: '1px dashed #cbd5e1' }}>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
+              Belum ada surat sanggahan atau klarifikasi yang didaftarkan oleh Fasilitas Kesehatan untuk berkas ini.
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {details.disputes.map((dsp) => (
+              <div
+                key={dsp.id}
+                style={{
+                  background: '#fbfcfe',
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: '16px',
+                  padding: '1.25rem'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '8px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontWeight: 800, color: '#007a78', fontSize: '0.88rem' }}>
+                        {dsp.actor}
+                      </span>
+                      <span style={{ fontSize: '0.74rem', background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                        {dsp.role}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
+                      {formatDateTimeIndo(dsp.date)} • Ref: {dsp.id}
+                    </div>
+                  </div>
+                  <span style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    padding: '3px 10px',
+                    borderRadius: '20px',
+                    background: dsp.status === 'DITERIMA' ? '#dcfce7' : dsp.status === 'DITOLAK' ? '#fee2e2' : '#fef3c7',
+                    color: dsp.status === 'DITERIMA' ? '#15803d' : dsp.status === 'DITOLAK' ? '#b91c1c' : '#b45309'
+                  }}>
+                    {dsp.status === 'DITERIMA' ? 'Sanggahan Diterima' : dsp.status === 'DITOLAK' ? 'Sanggahan Ditolak' : 'Menunggu Verifikasi DPJP'}
+                  </span>
+                </div>
+
+                <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9rem', marginBottom: '0.4rem' }}>
+                  {dsp.title}
+                </div>
+                <p style={{ fontSize: '0.84rem', color: '#334155', margin: '0 0 0.85rem 0', lineHeight: 1.55 }}>
+                  {dsp.content}
+                </p>
+
+                {/* Attachments */}
+                {dsp.attachments && dsp.attachments.length > 0 && (
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
+                    {dsp.attachments.map((att, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: '#ffffff',
+                          border: '1px solid #cbd5e1',
+                          padding: '4px 10px',
+                          borderRadius: '8px',
+                          fontSize: '0.74rem',
+                          fontWeight: 700,
+                          color: '#0f172a',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => alert(`Dokumen Terverifikasi: ${att.name}`)}
+                        title="Klik untuk melihat dokumen lampiran"
+                      >
+                        <Paperclip size={13} color="#007a78" />
+                        <span>{att.name}</span>
+                        <span style={{ color: '#94a3b8', fontSize: '0.68rem' }}>({att.size})</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* ==================== 8. REVIEW OUTCOME & AUDIT TRAIL PANELS ==================== */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
         
@@ -868,6 +1117,99 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
               <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '14px', padding: '0.85rem 1.25rem', marginBottom: '1.25rem', color: '#059669', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <CheckCircle2 size={18} />
                 Keputusan telaah klinis berhasil disimpan &amp; dicatat ke histori audit trail!
+              </div>
+            )}
+
+            {/* Machine Learning Decision Advisor */}
+            {details?.mlRecommendation && (
+              <div style={{
+                background: 'linear-gradient(135deg, #f0fdfa 0%, #e6f6f5 100%)',
+                border: '1.5px solid #99f6e4',
+                borderRadius: '16px',
+                padding: '1.25rem',
+                marginBottom: '1.25rem',
+                boxShadow: '0 4px 15px rgba(0, 122, 120, 0.05)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{
+                      background: '#007a78',
+                      color: '#ffffff',
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      letterSpacing: '0.04em'
+                    }}>
+                      <Sparkles size={13} />
+                      REKOMENDASI MACHINE LEARNING
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: '#0d9488', fontWeight: 700 }}>
+                      Engine: {details.mlRecommendation.modelName}
+                    </span>
+                  </div>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    background: '#ffffff',
+                    border: '1px solid #ccfbf1',
+                    padding: '3px 10px',
+                    borderRadius: '20px',
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                    color: '#0f766e'
+                  }}>
+                    <Activity size={13} />
+                    <span>Tingkat Keyakinan: {details.mlRecommendation.confidenceScore}%</span>
+                  </div>
+                </div>
+
+                <div style={{ fontSize: '0.84rem', color: '#134e4a', fontWeight: 700, marginBottom: '0.3rem' }}>
+                  Saran Putusan AI: <span style={{ color: details.mlRecommendation.suggestedOutcome === 'CONFIRMED' ? '#e11d48' : '#0f766e', fontWeight: 800 }}>
+                    {details.mlRecommendation.suggestedOutcome === 'NEEDS_MORE_EVIDENCE' ? 'MINTA KONFIRMASI BERKAS FISIK (Evidence Gap Terdeteksi)' : details.mlRecommendation.suggestedOutcome === 'CONFIRMED' ? 'TERBUKTI FRAUD / PHANTOM' : 'KLAIM WAJAR'}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#334155', margin: '0 0 0.65rem 0', lineHeight: 1.45 }}>
+                  {details.mlRecommendation.suggestedNotes}
+                </p>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    {(details.mlRecommendation.drivers || []).map((drv, i) => (
+                      <div key={i} style={{ fontSize: '0.72rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#0d9488' }}></span>
+                        <span>{drv}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleApplyMlRecommendation(details.mlRecommendation)}
+                    style={{
+                      background: appliedMl ? '#059669' : '#007a78',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      padding: '0.55rem 1rem',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 8px rgba(0,122,120,0.2)',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Sparkles size={13} />
+                    {appliedMl ? 'Saran AI Berhasil Diterapkan!' : 'Terapkan Saran AI ke Formulir'}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1005,6 +1347,374 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
           </div>
         </div>
       </div>
+
+      {/* MODAL 1: Unggah Dokumen Bukti Pendukung Baru */}
+      {showEvidenceModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '20px',
+            maxWidth: '540px',
+            width: '100%',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            border: '1px solid #e2e8f0',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              padding: '1.25rem 1.5rem',
+              borderBottom: '1px solid #f1f5f9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: '#f8fafc'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '10px',
+                  background: '#e6f6f5',
+                  color: '#007a78',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Upload size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                    Unggah Bukti Pendukung Rekam Medis
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>
+                    Lampirkan dokumen fisik/digital untuk menutupi kesenjangan bukti klaim
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEvidenceModal(false)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {evidenceSuccess ? (
+              <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center' }}>
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  background: '#dcfce7',
+                  color: '#16a34a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 1rem auto'
+                }}>
+                  <Check size={28} />
+                </div>
+                <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                  Dokumen Bukti Berhasil Dilampirkan!
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b' }}>
+                  Coverage verifikasi audit otomatis diperbarui menjadi 100% dan dicatat pada audit trail kasus.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleUploadEvidence} style={{ padding: '1.5rem' }}>
+                <div style={{ marginBottom: '1.1rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
+                    Tipe Dokumen Rekam Medis
+                  </label>
+                  <select
+                    value={evidenceDocType}
+                    onChange={(e) => setEvidenceDocType(e.target.value)}
+                    className="med-pill-input"
+                    style={{ width: '100%' }}
+                  >
+                    <option value="SURGICAL_REPORT">Laporan Operasi / Catatan Prosedur Bedah</option>
+                    <option value="LAB_RESULT">Hasil Pemeriksaan Laboratorium &amp; Patologi</option>
+                    <option value="NURSING_NOTE">Catatan Perkembangan Pasien Terintegrasi (CPPT)</option>
+                    <option value="PATIENT_SIGNATURE">Bukti Tanda Tangan &amp; Kehadiran Pasien (Absensi Sidik Jari)</option>
+                    <option value="BILLING_SUMMARY">Rincian Billing Apotek / Obat / BHP</option>
+                    <option value="RADIOLOGY_IMAGE">Hasil Radiologi / USG / MRI / Rontgen</option>
+                  </select>
+                </div>
+
+                <div style={{ marginBottom: '1.1rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
+                    Nama Dokumen / Nomor Registrasi Berkas <span style={{ color: '#e11d48' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: Laporan Operasi Laparoskopi No. RM-2024-9981"
+                    value={evidenceDocTitle}
+                    onChange={(e) => setEvidenceDocTitle(e.target.value)}
+                    className="med-pill-input"
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
+                    Catatan Verifikasi / Keterangan Dokumen
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Tuliskan keterangan validitas stempel dokter, keabsahan tanda tangan, atau catatan medis..."
+                    value={evidenceDocNote}
+                    onChange={(e) => setEvidenceDocNote(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '12px',
+                      border: '1.5px solid #cbd5e1',
+                      background: '#ffffff',
+                      fontSize: '0.85rem',
+                      fontFamily: 'inherit',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div style={{
+                  padding: '1rem',
+                  border: '2px dashed #94a3b8',
+                  borderRadius: '12px',
+                  textAlign: 'center',
+                  background: '#f8fafc',
+                  marginBottom: '1.5rem',
+                  cursor: 'pointer'
+                }}>
+                  <Paperclip size={22} color="#007a78" style={{ marginBottom: '0.3rem' }} />
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a' }}>
+                    Klik untuk memilih berkas scan (PDF / JPG / DICOM)
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>
+                    Maksimum ukuran berkas 25 MB per dokumen. Otomatis tervalidasi SHA-256 integrity hash.
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowEvidenceModal(false)}
+                    className="med-pill-btn-outline"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={evidenceUploading}
+                    className="med-pill-btn-primary"
+                  >
+                    <Upload size={15} />
+                    {evidenceUploading ? 'Mengunggah & Memvalidasi...' : 'Simpan & Verifikasi Berkas'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: Ajukan Sanggahan / Tanggapan Faskes */}
+      {showDisputeModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '20px',
+            maxWidth: '580px',
+            width: '100%',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            border: '1px solid #e2e8f0',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              padding: '1.25rem 1.5rem',
+              borderBottom: '1px solid #f1f5f9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: '#f8fafc'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '10px',
+                  background: '#fef3c7',
+                  color: '#d97706',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <MessageSquare size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                    Pengajuan Sanggahan &amp; Rekonsiliasi Faskes
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>
+                    Formulir resmi klarifikasi medis dari Rumah Sakit / Klinik kepada BPJS Kesehatan
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDisputeModal(false)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {disputeSuccess ? (
+              <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center' }}>
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  background: '#dcfce7',
+                  color: '#16a34a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 1rem auto'
+                }}>
+                  <Check size={28} />
+                </div>
+                <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                  Sanggahan Resmi Berhasil Terkirim!
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b' }}>
+                  Sanggahan telah dicatat dalam Alur Rekonsiliasi Kasus dan diteruskan kepada Tim Telaah Medis BPJS Kesehatan.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleAddDispute} style={{ padding: '1.5rem' }}>
+                <div style={{ marginBottom: '1.1rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
+                    Perwakilan Penanggung Jawab / Pihak Penyanggah
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={`Contoh: Komite Medik ${details?.case?.provider_name || 'RSUD Dr. Soetomo'}`}
+                    value={disputeActor}
+                    onChange={(e) => setDisputeActor(e.target.value)}
+                    className="med-pill-input"
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '1.1rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
+                    Judul Pokok Sanggahan / Tanggapan <span style={{ color: '#e11d48' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: Klarifikasi Kesesuaian Koding Tindakan Bedah Terhadap Rekam Medis"
+                    value={disputeTitle}
+                    onChange={(e) => setDisputeTitle(e.target.value)}
+                    className="med-pill-input"
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
+                    Uraian Argumen Klinis &amp; Penjelasan Medis <span style={{ color: '#e11d48' }}>*</span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    required
+                    placeholder="Jelaskan secara rinci kondisi pasien, indikasi klinis tindakan, ketersediaan DPJP, dan dasar pertimbangan medis faskes..."
+                    value={disputeContent}
+                    onChange={(e) => setDisputeContent(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '12px',
+                      border: '1.5px solid #cbd5e1',
+                      background: '#ffffff',
+                      fontSize: '0.85rem',
+                      fontFamily: 'inherit',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div style={{
+                  padding: '0.9rem',
+                  border: '1.5px dashed #cbd5e1',
+                  borderRadius: '12px',
+                  background: '#f8fafc',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}>
+                  <Paperclip size={18} color="#007a78" />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f172a' }}>
+                      Lampirkan Berkas Bukti Sanggahan (PDF Berstempel Faskes)
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                      Surat Pengantar Direktur RS &amp; Resume Medis Terlampir
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.72rem', background: '#e2e8f0', padding: '3px 8px', borderRadius: '6px', fontWeight: 600, color: '#475569' }}>
+                    Pilih File
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowDisputeModal(false)}
+                    className="med-pill-btn-outline"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={disputeSubmitting}
+                    className="med-pill-btn-primary"
+                  >
+                    <Send size={15} />
+                    {disputeSubmitting ? 'Mengirim Sanggahan...' : 'Kirim Sanggahan Resmi'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
