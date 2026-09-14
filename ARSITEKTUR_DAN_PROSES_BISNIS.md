@@ -201,15 +201,47 @@ Mesin audit melakukan perbandingan matematis antara klaim dengan fakta rekam med
 1. **Quantity Claimed ($Q_{claim}$)**: Jumlah item/prosedur yang ditagihkan.
 2. **Quantity Supported ($Q_{supp}$)**: Jumlah bukti fisik/digital yang sah dan tertanggal sama.
 3. **Evidence Gap**:
-   $$\text{Gap} = Q_{claim} - Q_{supp}$$
+   $$\text{Gap} = \max(0, Q_{claim} - Q_{supp})$$
 4. **Coverage Percentage**:
-   $$\text{Coverage} = \left(\frac{Q_{supp}}{Q_{claim}}\right) \times 100\%$$
+   $$\text{Coverage (\%)} = \begin{cases} 100\%, & \text{jika } Q_{claim} = 0 \\ \min\left(100\%, \left(\frac{Q_{supp}}{Q_{claim}}\right) \times 100\%\right), & \text{jika } Q_{claim} > 0 \end{cases}$$
+5. **Financial Exposure (Potensi Kerugian Finansial)**:
+   $$\text{Exposure Amount} = \sum_{i=1}^n (\text{Evidence Gap}_i \times \text{Unit Price}_i)$$
 
-Status hasil rekonsiliasi per item:
-- **`SUPPORTED`**: $100\%$ didukung bukti rekam jejak valid.
-- **`PARTIAL`**: Hanya sebagian tindakan yang memiliki berkas pendukung.
-- **`UNSUPPORTED`**: $0$ berkas pendukung ditemukan (*zero-match*), indikasi kuat Phantom Billing.
-- **`UNAVAILABLE`**: Berkas tidak dapat diakses karena gangguan integrasi/server faskes. Sistem secara otomatis menahan (*hold*) kesimpulan.
+### 3.1 Formulasi Matematis, Logika Klasifikasi & Metrik Evaluasi Model (ML Benchmark)
+
+#### A. Logika Klasifikasi Status Bukti (*Deterministic Decision Engine*)
+Sistem mengklasifikasikan status bukti tindakan klaim ke dalam 4 kondisi formal:
+$$\text{Status Bukti} = \begin{cases} 
+\text{UNAVAILABLE}, & \text{jika } \text{Evidence Available} = \text{false} \implies \text{Priority} = \text{NO\_CONCLUSION} \\
+\text{SUPPORTED}, & \text{jika } Q_{supp} \ge Q_{claim} \\
+\text{PARTIAL}, & \text{jika } 0 < Q_{supp} < Q_{claim} \\
+\text{UNSUPPORTED}, & \text{jika } Q_{supp} = 0 \land \text{Evidence Available} = \text{true} \implies \text{Signal} = \text{PHANTOM\_BILLING}
+\end{cases}$$
+
+#### B. Rumus Metrik Evaluasi Model (Benchmark 20.388 Data Klaim NHIS)
+Pada service evaluasi sistem (`validationService.js` & `ValidationPage.jsx`), performa algoritma deteksi terhadap dataset acuan (Ground Truth) diuji menggunakan metrik baku Machine Learning untuk multi-kelas ($C = \{\text{No Fraud, Phantom Billing, Ghost Enrollee, Wrong Diagnosis}\}$):
+
+1. **Akurasi (Accuracy)**:
+   $$\text{Accuracy} = \frac{\sum_{c \in C} TP_c}{N_{\text{total}}}$$
+2. **Presisi Per Kelas (Precision)**:
+   $$\text{Precision}_c = \frac{TP_c}{TP_c + FP_c}$$
+3. **Recall / Sensitivitas Per Kelas (Recall)**:
+   $$\text{Recall}_c = \frac{TP_c}{TP_c + FN_c}$$
+4. **F1-Score (Harmonic Mean)**:
+   $$\text{F1-Score}_c = 2 \times \frac{\text{Precision}_c \times \text{Recall}_c}{\text{Precision}_c + \text{Recall}_c}$$
+5. **Macro-Averaged F1-Score**:
+   $$\text{Macro F1} = \frac{1}{|C|} \sum_{c \in C} \text{F1-Score}_c$$
+
+#### C. Matriks Pembobotan Skor Risiko (Clinical Risk Scoring)
+Sistem menghitung probabilitas keyakinan (*confidence score*) dan tingkat urgensi telaah (*priority score*) berdasarkan modus anomali:
+* **Wrong Diagnosis (Inkonsistensi Demografi/Gender vs Diagnosis)**:
+  $$\text{Risk Score} = 95, \quad \text{Confidence} = 0.98, \quad \text{Priority} = \text{HIGH}$$
+* **Phantom Billing (Disparitas Berkas / Tindakan Fiktif Tanpa Bukti)**:
+  $$\text{Risk Score} = 90, \quad \text{Confidence} = 0.94, \quad \text{Priority} = \text{HIGH}$$
+* **Ghost Enrollee (Kunjungan Administratif Tanpa Presensi Fisik)**:
+  $$\text{Risk Score} = 75, \quad \text{Confidence} = 0.92, \quad \text{Priority} = \text{MEDIUM}$$
+* **Compliant / No Fraud (Klaim Wajar & Terkonfirmasi Berkas)**:
+  $$\text{Risk Score} = 10, \quad \text{Confidence} = 0.95, \quad \text{Priority} = \text{LOW}$$
 
 ### Tahap 3: Deteksi Anomali & Pengelompokan Modus Risiko
 Sistem menganalisis sinyal anomali ke dalam kategori modus kecurangan:

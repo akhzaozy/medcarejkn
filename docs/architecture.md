@@ -399,6 +399,20 @@ Coverage = 7 / 10 × 100%
          = 70%
 ```
 
+### D. Financial Exposure (Potensi Kerugian Finansial)
+
+$$\text{Exposure Amount} = \sum_{i=1}^n (\text{Evidence Gap}_i \times \text{Unit Price}_i)$$
+
+### E. Rumus Metrik Evaluasi Model / Benchmark Machine Learning (NHIS Validation Set)
+
+Pengujian akurasi algoritma deteksi terhadap data ground truth dievaluasi menggunakan metrik baku klasifikasi Machine Learning:
+
+* **Accuracy**: $\frac{TP + TN}{TP + TN + FP + FN}$
+* **Precision**: $\frac{TP}{TP + FP}$
+* **Recall (Sensitivity)**: $\frac{TP}{TP + FN}$
+* **F1-Score**: $2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}$
+* **Macro F1-Score**: Rata-rata F1 seluruh kelas fraud ($C = \{\text{No Fraud, Phantom Billing, Ghost Enrollee, Wrong Diagnosis}\}$).
+
 ------------------------------------------------------------------------
 
 ## 8. Evidence Status
