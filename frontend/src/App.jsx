@@ -142,6 +142,7 @@ export default function App() {
           onOpenQueue={handleOpenQueue}
           onOpenInput={handleOpenInput}
           onOpenGuide={handleOpenGuide}
+          onSelectCase={handleSelectCase}
           currentUser={currentUser}
           onLogout={handleLogout}
         />

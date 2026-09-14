@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { 
   fetchCaseDetails, fetchCaseEvidence, submitReviewOutcome, 
-  assignCaseReviewer, uploadSupportingEvidence, submitDisputeRebuttal 
+  assignCaseReviewer, uploadSupportingEvidence, submitDisputeRebuttal,
+  takeCaseOwnership, sendClarificationRequestToClinician
 } from '../api/client';
 import { PriorityBadge, StatusBadge, CaseStatusPill } from '../components/common/Badge';
 import { 
@@ -14,7 +15,7 @@ import {
   Send, ShieldAlert, FileSearch, UserCheck, HelpCircle, 
   UserPlus, Stethoscope, CheckCheck, Receipt, ClipboardCheck,
   ChevronRight, AlertCircle, Sparkles, Building2, User, Activity,
-  Upload, MessageSquare, Plus, Paperclip, X, Check
+  Upload, MessageSquare, Plus, Paperclip, X, Check, RefreshCw
 } from 'lucide-react';
 
 export default function CaseDetailPage({ caseId, onBack, currentUser }) {
@@ -28,13 +29,23 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
   const [submitting, setSubmitting] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
   const [appliedMl, setAppliedMl] = useState(false);
+  const [mlReevaluated, setMlReevaluated] = useState(false);
 
-  // Assignment state (Staff JKN)
+  // Assignment & Ownership state (Staff JKN)
   const [assignee, setAssignee] = useState('dr.anindya');
   const [assigneeName, setAssigneeName] = useState('dr. Anindya Kusuma, Sp.PK');
   const [assignNotes, setAssignNotes] = useState('');
   const [assigning, setAssigning] = useState(false);
   const [assignSuccess, setAssignSuccess] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [claimSuccess, setClaimSuccess] = useState(false);
+
+  // Clarification Inquiry Modal (Staff JKN to DPJP)
+  const [showInquiryModal, setShowInquiryModal] = useState(false);
+  const [inquiryTitle, setInquiryTitle] = useState('Permintaan Klarifikasi Medis & Kelengkapan Bukti Fisik');
+  const [inquiryContent, setInquiryContent] = useState('');
+  const [inquirySubmitting, setInquirySubmitting] = useState(false);
+  const [inquirySuccess, setInquirySuccess] = useState(false);
 
   // Supporting Evidence Upload Modal
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
@@ -44,11 +55,14 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
   const [evidenceUploading, setEvidenceUploading] = useState(false);
   const [evidenceSuccess, setEvidenceSuccess] = useState(false);
 
-  // Dispute / Sanggahan Modal
+  // Dispute / Sanggahan Modal (DPJP / Faskes with Mandatory Evidence)
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [disputeTitle, setDisputeTitle] = useState('');
   const [disputeContent, setDisputeContent] = useState('');
   const [disputeActor, setDisputeActor] = useState('');
+  const [disputeDocType, setDisputeDocType] = useState('SURGICAL_REPORT');
+  const [disputeDocTitle, setDisputeDocTitle] = useState('');
+  const [disputeDocNote, setDisputeDocNote] = useState('');
   const [disputeSubmitting, setDisputeSubmitting] = useState(false);
   const [disputeSuccess, setDisputeSuccess] = useState(false);
 
@@ -114,6 +128,51 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
     }
   };
 
+  const handleTakeOwnership = async () => {
+    try {
+      setClaiming(true);
+      await takeCaseOwnership(caseId, currentUser);
+      setClaimSuccess(true);
+      setTimeout(() => setClaimSuccess(false), 3500);
+      await loadCaseData();
+    } catch (err) {
+      console.error(err);
+      alert('Gagal mengambil alih kasus.');
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  const handleSendClarification = async (e) => {
+    e.preventDefault();
+    if (!inquiryTitle.trim() || !inquiryContent.trim()) {
+      alert('Mohon isi judul dan rincian pertanyaan klarifikasi investigasi.');
+      return;
+    }
+    try {
+      setInquirySubmitting(true);
+      await sendClarificationRequestToClinician(caseId, {
+        staffName: currentUser?.name || 'Ahmad Fauzi, S.E.',
+        targetDoctor: assigneeName,
+        targetDoctorId: assignee,
+        title: inquiryTitle,
+        content: inquiryContent
+      });
+      setInquirySuccess(true);
+      setTimeout(() => {
+        setInquirySuccess(false);
+        setShowInquiryModal(false);
+        setInquiryContent('');
+      }, 1500);
+      await loadCaseData();
+    } catch (err) {
+      console.error(err);
+      alert('Gagal mengirimkan pertanyaan klarifikasi ke DPJP.');
+    } finally {
+      setInquirySubmitting(false);
+    }
+  };
+
   const handleApplyMlRecommendation = (mlRec) => {
     if (!mlRec) return;
     setOutcome(mlRec.suggestedOutcome || 'NEEDS_MORE_EVIDENCE');
@@ -130,46 +189,23 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
     }
     try {
       setEvidenceUploading(true);
-      const newEv = await uploadSupportingEvidence(caseId, {
+      await uploadSupportingEvidence(caseId, {
         evidenceType: evidenceDocType,
         title: evidenceDocTitle,
-        note: evidenceDocNote || 'Dokumen fisik verifikasi disusulkan faskes'
-      });
-
-      setDetails(prev => {
-        if (!prev) return prev;
-        const copy = { ...prev };
-        copy.evidenceLinks = [newEv, ...(copy.evidenceLinks || [])];
-        if (copy.case) {
-          copy.case.evidence_coverage_pct = 100;
-          copy.case.evidence_gap = 0;
-        }
-        return copy;
-      });
-
-      setEvidenceChain(prev => {
-        if (!prev) return prev;
-        const copy = { ...prev };
-        if (copy.items && copy.items.length > 0) {
-          copy.items = copy.items.map(it => ({
-            ...it,
-            supportedQuantity: it.claimedQuantity,
-            evidenceGap: 0,
-            coveragePct: 100,
-            calculatedStatus: 'SUPPORTED',
-            evidenceLinks: [newEv, ...(it.evidenceLinks || [])]
-          }));
-        }
-        return copy;
+        note: evidenceDocNote || 'Dokumen fisik verifikasi disusulkan faskes',
+        uploadedBy: currentUser?.name || 'Staff / DPJP'
       });
 
       setEvidenceSuccess(true);
+      setMlReevaluated(true);
       setTimeout(() => {
         setEvidenceSuccess(false);
         setShowEvidenceModal(false);
         setEvidenceDocTitle('');
         setEvidenceDocNote('');
       }, 1500);
+      setTimeout(() => setMlReevaluated(false), 6000);
+      await loadCaseData();
     } catch (err) {
       console.error(err);
       alert('Gagal melampirkan bukti pendukung.');
@@ -186,31 +222,51 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
     }
     try {
       setDisputeSubmitting(true);
-      const newDsp = await submitDisputeRebuttal(caseId, {
-        actor: disputeActor || `Komite Medik ${details?.case?.provider_name || 'Faskes Terkait'}`,
-        role: 'Fasilitas Kesehatan (Rumah Sakit)',
+      const attachments = [];
+      
+      // If doctor/hospital provided mandatory proof document
+      if (disputeDocTitle.trim()) {
+        attachments.push({
+          name: `${disputeDocTitle.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+          size: '2.4 MB',
+          type: 'PDF'
+        });
+
+        // Also register into case supporting evidence!
+        await uploadSupportingEvidence(caseId, {
+          evidenceType: disputeDocType,
+          title: disputeDocTitle,
+          note: disputeDocNote || 'Dokumen fisik verifikasi resmi dalam berkas sanggahan',
+          uploadedBy: disputeActor || currentUser?.name || 'Komite Medik Faskes'
+        });
+      } else {
+        attachments.push({
+          name: `${disputeTitle.replace(/[^a-zA-Z0-9]/g, '_')}_Lampiran.pdf`,
+          size: '1.9 MB',
+          type: 'PDF'
+        });
+      }
+
+      await submitDisputeRebuttal(caseId, {
+        actor: disputeActor || (currentUser?.role === 'clinical_reviewer' ? currentUser.name : `Komite Medik ${details?.case?.provider_name || 'Faskes'}`),
+        role: currentUser?.role === 'clinical_reviewer' ? 'Dokter Penelaah Medis (DPJP)' : 'Fasilitas Kesehatan (Rumah Sakit)',
         title: disputeTitle,
         content: disputeContent,
-        attachments: [
-          { name: `${disputeTitle.replace(/[^a-zA-Z0-9]/g, '_')}_Lampiran.pdf`, size: '2.1 MB', type: 'PDF' }
-        ]
-      });
-
-      setDetails(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          disputes: [newDsp, ...(prev.disputes || [])]
-        };
+        attachments
       });
 
       setDisputeSuccess(true);
+      setMlReevaluated(true);
       setTimeout(() => {
         setDisputeSuccess(false);
         setShowDisputeModal(false);
         setDisputeTitle('');
         setDisputeContent('');
+        setDisputeDocTitle('');
+        setDisputeDocNote('');
       }, 1500);
+      setTimeout(() => setMlReevaluated(false), 6000);
+      await loadCaseData();
     } catch (err) {
       console.error(err);
       alert('Gagal mengajukan sanggahan.');

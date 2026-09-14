@@ -257,26 +257,379 @@ export const MOCK_USERS = [
   },
   {
     id: 'usr-staff-001',
-    username: 'staff.jkn',
+    username: 'staff.ahmad',
     email: 'ahmad.fauzi@bpjs-kesehatan.go.id',
     password: 'jkn',
     name: 'Ahmad Fauzi, S.E.',
-    role: 'jkn_staff',
-    roleLabel: 'Verifikator JKN Pusat',
-    title: 'Staff Verifikator Klaim BPJS Kesehatan',
+    role: 'staff_jkn',
+    roleLabel: 'Senior Verifikator JKN',
+    title: 'Senior Verifikator & Triage Klaim BPJS',
+    unit: 'Kedeputian Jaminan Pelayanan Kesehatan',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    capabilities: [
+      'Memantau Antrean Audit Klaim Nasional',
+      'Mengambil Alih Kasus (Take Ownership)',
+      'Mengirimkan Klarifikasi ke DPJP',
+      'Mengunci & Menerbitkan Berita Acara Rekonsiliasi'
+    ]
+  },
+  {
+    id: 'usr-staff-002',
+    username: 'staff.adit',
+    email: 'aditya.pratama@bpjs-kesehatan.go.id',
+    password: 'jkn',
+    name: 'Aditya Pratama, S.Kep.',
+    role: 'staff_jkn',
+    roleLabel: 'Verifikator Klaim JKN',
+    title: 'Verifikator Klaim & Investigasi Faskes',
     unit: 'Kedeputian Jaminan Pelayanan Kesehatan',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
     capabilities: [
       'Memantau Antrean Audit Klaim Nasional',
-      'Melakukan Penugasan Berkas ke DPJP',
-      'Mengunci & Menerbitkan Berita Acara Rekonsiliasi',
-      'Akses Rekapitulasi Potensi Fraud Faskes'
+      'Mengambil Alih Kasus (Take Ownership)',
+      'Mengirimkan Klarifikasi ke DPJP',
+      'Menganalisis Kesenjangan Bukti'
     ]
   }
 ];
 
+// Persistent dynamic state store for cases during session
+export const CASE_DYNAMIC_STORE = {};
+
+export function calculateCaseMlRecommendation(caseObj, uploadedEvidences = [], disputes = []) {
+  const hasUploadedEvidence = uploadedEvidences && uploadedEvidences.length > 0;
+  const hasHospitalDispute = disputes && disputes.some(d => d.role?.includes('Fasilitas Kesehatan') || d.role?.includes('Pihak Faskes') || d.role?.includes('DPJP') || d.role?.includes('Dokter'));
+
+  if (hasUploadedEvidence) {
+    // Evidence attached! Anomaly resolved or greatly reduced
+    return {
+      suggestedOutcome: 'NOT_CONFIRMED',
+      confidenceScore: 13.8,
+      modelName: 'Medcare-Reconcile-HybridRule-v4.2 (Re-evaluated)',
+      predictedRiskLevel: 'LOW',
+      suggestedNotes: `Inferensi AI (Re-evaluasi Berkas): Bukti fisik pendukung rekam medis (${uploadedEvidences.map(e => e.title).join(', ')}) telah diverifikasi keabsahannya. Celah bukti kuantitas telah terpenuhi (Coverage 100%). Rekomendasi ML: Klaim valid dan dapat disetujui.`,
+      drivers: [
+        `Kesenjangan Bukti (Evidence Gap): 0 item (Terselesaikan)`,
+        `Validitas Berkas Fisik: ${uploadedEvidences.length} dokumen baru terverifikasi SHA-256`,
+        `Kepatuhan Regulasi PMK No. 16/2019: Terpenuhi`
+      ]
+    };
+  }
+
+  if (hasHospitalDispute) {
+    // Dispute received from hospital, but awaiting full verification
+    return {
+      suggestedOutcome: 'NEEDS_MORE_EVIDENCE',
+      confidenceScore: 61.4,
+      modelName: 'Medcare-Reconcile-HybridRule-v4.2 (Re-evaluated)',
+      predictedRiskLevel: 'MEDIUM',
+      suggestedNotes: `Inferensi AI (Re-evaluasi Sanggahan): Klarifikasi resmi dari pihak faskes/DPJP telah diterima. Namun dokumen fisik asli berstempel basah/tanda tangan basah DPJP masih belum lengkap di arsip digital. Rekomendasi ML: Mintakan konfirmasi berkas fisik penunjang.`,
+      drivers: [
+        `Tanggapan resmi faskes: ${disputes[0]?.title || 'Sanggahan Diterima'}`,
+        `Tingkat Ketercakupan Dokumen Saat Ini: ${caseObj.evidence_coverage_pct || 33}%`,
+        `Status Rekonsiliasi: Dialog aktif antara Verifikator & DPJP`
+      ]
+    };
+  }
+
+  // Default initial assessment before rebuttal or new evidence
+  if (caseObj.primary_risk_mode === 'PHANTOM_BILLING') {
+    return {
+      suggestedOutcome: 'NEEDS_MORE_EVIDENCE',
+      confidenceScore: 94.6,
+      modelName: 'Medcare-Reconcile-HybridRule-v4.2',
+      predictedRiskLevel: caseObj.review_priority || 'HIGH',
+      suggestedNotes: `Berdasarkan inferensi model Machine Learning, teridentifikasi indikasi Phantom Billing dengan skor keyakinan 94.6%. Terdapat ${caseObj.affected_items || 2} item tagihan tanpa berkas anestesi/bedah terarsip (Evidence Coverage: ${caseObj.evidence_coverage_pct || 33}%). Direkomendasikan meminta klarifikasi fisik dari Komite Medik faskes.`,
+      drivers: [
+        `Tingkat Ketercakupan Dokumen: ${caseObj.evidence_coverage_pct || 33}% (Batas Minimum Aman: 80%)`,
+        `Disparitas Biaya Tagihan: Rp ${Number(caseObj.exposure_amount || 0).toLocaleString('id-ID')}`,
+        `Ketiadaan Arsip Rekam Anestesi Spesialis & Laporan Pembedahan Kamar Operasi di ${caseObj.provider_name}`
+      ]
+    };
+  }
+
+  if (caseObj.primary_risk_mode === 'WRONG_DIAGNOSIS') {
+    return {
+      suggestedOutcome: 'NEEDS_MORE_EVIDENCE',
+      confidenceScore: 89.2,
+      modelName: 'Medcare-Reconcile-HybridRule-v4.2',
+      predictedRiskLevel: caseObj.review_priority || 'HIGH',
+      suggestedNotes: `Inferensi AI mendeteksi inkonsistensi koding klinis antara diagnosa utama klaim dengan resume terapi penunjang di ${caseObj.provider_name}. Skor keyakinan anomali 89.2%. Disarankan verifikasi diagnosa oleh Dokter DPJP Spesialis.`,
+      drivers: [
+        `Inkonsistensi Diagnosa INA-CBG terhadap Rekam Medis CPPT`,
+        `Disparitas Biaya: Rp ${Number(caseObj.exposure_amount || 0).toLocaleString('id-ID')}`,
+        `Hasil pemeriksaan penunjang kritis belum mencerminkan tingkat keparahan klaim`
+      ]
+    };
+  }
+
+  // Ghost enrollee or general
+  return {
+    suggestedOutcome: 'CONFIRMED',
+    confidenceScore: 96.2,
+    modelName: 'Medcare-Reconcile-HybridRule-v4.2',
+    predictedRiskLevel: 'CRITICAL',
+    suggestedNotes: `Inferensi AI mendeteksi potensi Ghost Enrollee pada faskes ${caseObj.provider_name}. Tidak ditemukan log presensi biometrik sidik jari pasien pada tanggal pelayanan. Skor anomali 96.2%.`,
+    drivers: [
+      `Presensi Biometrik Pasien: 0 log tercatat di server fingerprint BPJS`,
+      `Validitas Kependudukan Dukcapil: Perlu klarifikasi identitas fisik`,
+      `Disparitas Tagihan: Rp ${Number(caseObj.exposure_amount || 0).toLocaleString('id-ID')}`
+    ]
+  };
+}
+
 export function getMockCaseDetails(caseId) {
   const c = MOCK_CASES.find(item => item.case_id === caseId) || MOCK_CASES[0];
+  
+  if (!CASE_DYNAMIC_STORE[caseId]) {
+    // Initialize case state: OPEN cases have NO pre-existing fake disputes!
+    const isPhantom = c.primary_risk_mode === 'PHANTOM_BILLING';
+    const isWrong = c.primary_risk_mode === 'WRONG_DIAGNOSIS';
+    const isGhost = c.primary_risk_mode === 'GHOST_ENROLLEE';
+
+    let primaryDiag = 'K35.8 (Apendisitis Akut Lainnya)';
+    let primaryProc = '47.01 (Apendektomi Laparoskopi)';
+    let claimItems = [];
+    let evidenceLinks = [];
+
+    if (isPhantom) {
+      primaryDiag = 'K35.8 (Apendisitis Akut Lainnya)';
+      primaryProc = '47.01 (Apendektomi Laparoskopi)';
+      claimItems = [
+        {
+          item_id: 'ITM-001',
+          item_code: 'PROC-47.01',
+          item_description: 'Tindakan Laparoskopi Apendektomi',
+          item_type: 'PROCEDURE',
+          quantity: 1,
+          unit_price: 24500000,
+          total_price: 24500000,
+          evidence_status: 'MISSING',
+          disparity_note: 'Tidak ada laporan pembedahan / video intraoperatif bertanda tangan DPJP bedah'
+        },
+        {
+          item_id: 'ITM-002',
+          item_code: 'ANASTH-01',
+          item_description: 'Pelayanan Anestesi Umum Inhalasi',
+          item_type: 'ANESTHESIA',
+          quantity: 1,
+          unit_price: 6800000,
+          total_price: 6800000,
+          evidence_status: 'MISSING',
+          disparity_note: 'Lembar catatan hemodinamik pemulihan anestesi kosong'
+        },
+        {
+          item_id: 'ITM-003',
+          item_code: 'ROOM-BEDAH',
+          item_description: 'Rawat Inap Ruang Perawatan Bedah',
+          item_type: 'ACCOMMODATION',
+          quantity: 3,
+          unit_price: 1400000,
+          total_price: 4200000,
+          evidence_status: 'VERIFIED',
+          disparity_note: 'Catatan perawat bangsal reguler terverifikasi'
+        }
+      ];
+      evidenceLinks = [
+        {
+          evidence_id: 'EVD-001',
+          evidence_type: 'SURGICAL_REPORT',
+          title: `Laporan Operasi Bedah (${c.provider_name})`,
+          status: 'UNAVAILABLE',
+          note: 'Dokumen fisik tidak ditemukan dalam arsip digital faskes',
+          confidence_score: 0.10
+        },
+        {
+          evidence_id: 'EVD-002',
+          evidence_type: 'ANESTHESIA_LOG',
+          title: 'Catatan Rekam Anestesi',
+          status: 'UNAVAILABLE',
+          note: 'Tidak ada tanda tangan dokter spesialis anestesiologi',
+          confidence_score: 0.05
+        },
+        {
+          evidence_id: 'EVD-003',
+          evidence_type: 'NURSING_NOTE',
+          title: 'Catatan Keperawatan Rawat Inap (CPPT)',
+          status: 'AVAILABLE',
+          note: 'Catatan infus dan vital sign bangsal reguler lengkap',
+          confidence_score: 0.95
+        }
+      ];
+    } else if (isWrong) {
+      primaryDiag = 'J45.9 (Asma Bronkial Eksaserbasi Akut Berat)';
+      primaryProc = '96.71 (Continuous Mechanical Ventilation < 96 jam)';
+      claimItems = [
+        {
+          item_id: 'ITM-001',
+          item_code: 'ICU-VENT-01',
+          item_description: 'Pelayanan Rawat Intensif ICU dengan Ventilator Mekanik',
+          item_type: 'ACCOMMODATION',
+          quantity: 3,
+          unit_price: 5500000,
+          total_price: 16500000,
+          evidence_status: 'MISSING',
+          disparity_note: 'Hasil Analisa Gas Darah (AGD) tidak menunjukkan gagal nafas akut'
+        },
+        {
+          item_id: 'ITM-002',
+          item_code: 'MED-NEBUL-02',
+          item_description: 'Terapi Inhalasi & Bronkodilator Kontinu',
+          item_type: 'DRUG',
+          quantity: 6,
+          unit_price: 450000,
+          total_price: 2700000,
+          evidence_status: 'MISSING',
+          disparity_note: 'Hanya tercatat 1 kali nebulisasi di IGD sebelum rawat inap'
+        },
+        {
+          item_id: 'ITM-003',
+          item_code: 'XRAY-THORAX',
+          item_description: 'Pemeriksaan Radiologi Foto Rontgen Thorax PA',
+          item_type: 'DIAGNOSTIC',
+          quantity: 1,
+          unit_price: 750000,
+          total_price: 750000,
+          evidence_status: 'VERIFIED',
+          disparity_note: 'Foto rontgen terarsip, cor dan pulmo batas normal'
+        }
+      ];
+      evidenceLinks = [
+        {
+          evidence_id: 'EVD-001',
+          evidence_type: 'LAB_RESULT',
+          title: `Hasil Laboratorium Analisa Gas Darah (${c.provider_name})`,
+          status: 'UNAVAILABLE',
+          note: 'Tidak ditemukan bukti AGD yang mendukung indikasi ventilator',
+          confidence_score: 0.15
+        },
+        {
+          evidence_id: 'EVD-002',
+          evidence_type: 'NURSING_NOTE',
+          title: 'Lembar Observasi Ventilator ICU',
+          status: 'UNAVAILABLE',
+          note: 'Data PEEP & fraksi oksigen tidak terekam pada rekam medis',
+          confidence_score: 0.08
+        },
+        {
+          evidence_id: 'EVD-003',
+          evidence_type: 'RADIOLOGY_IMAGE',
+          title: 'Hasil Foto Rontgen Thorax PA',
+          status: 'AVAILABLE',
+          note: 'Hasil radiologi normal, tidak mendukung status asma berat mengancam jiwa',
+          confidence_score: 0.90
+        }
+      ];
+    } else {
+      // Ghost Enrollee
+      primaryDiag = 'N18.5 (Gagal Ginjal Kronik Stadium 5)';
+      primaryProc = '39.95 (Hemodialisis Berkala)';
+      claimItems = [
+        {
+          item_id: 'ITM-001',
+          item_code: 'HD-REG-01',
+          item_description: 'Paket Tindakan Hemodialisis Rutin',
+          item_type: 'PROCEDURE',
+          quantity: 1,
+          unit_price: 4950000,
+          total_price: 4950000,
+          evidence_status: 'MISSING',
+          disparity_note: 'Log mesin dialisis faskes tidak mencatat identitas dialyzer pasien'
+        },
+        {
+          item_id: 'ITM-002',
+          item_code: 'PRESENSI-FINGER',
+          item_description: 'Validasi Biometrik Presensi Sidik Jari Pasien',
+          item_type: 'ADMINISTRATIVE',
+          quantity: 1,
+          unit_price: 0,
+          total_price: 0,
+          evidence_status: 'MISSING',
+          disparity_note: 'Tidak ada rekaman sidik jari pasien pada mesin presensi elektronik faskes'
+        },
+        {
+          item_id: 'ITM-003',
+          item_code: 'MED-EPO-3000',
+          item_description: 'Paket Obat Eritropoietin (EPO) 3000 IU',
+          item_type: 'DRUG',
+          quantity: 2,
+          unit_price: 850000,
+          total_price: 1700000,
+          evidence_status: 'MISSING',
+          disparity_note: 'Formulir serah terima farmasi tanpa tanda tangan penerima'
+        }
+      ];
+      evidenceLinks = [
+        {
+          evidence_id: 'EVD-001',
+          evidence_type: 'PATIENT_SIGNATURE',
+          title: 'Presensi Biometrik Sidik Jari Pasien (Fingerprint BPJS)',
+          status: 'UNAVAILABLE',
+          note: 'Tidak ada log presensi sidik jari pada tanggal pelayanan klaim',
+          confidence_score: 0.02
+        },
+        {
+          evidence_id: 'EVD-002',
+          evidence_type: 'MEDICAL_RECORD',
+          title: 'Log Operasional Mesin Hemodialisis',
+          status: 'UNAVAILABLE',
+          note: 'Nomor seri mesin tidak tercatat di rekam medis digital',
+          confidence_score: 0.05
+        },
+        {
+          evidence_id: 'EVD-003',
+          evidence_type: 'ADMINISTRATIVE',
+          title: 'Surat Rujukan Berjenjang FKTP',
+          status: 'AVAILABLE',
+          note: 'Surat rujukan aktif dan terdaftar di sistem V-Claim',
+          confidence_score: 0.92
+        }
+      ];
+    }
+
+    // Default disputes: empty for OPEN cases! Only set if case was already in review
+    let initialDisputes = [];
+    if (c.case_status === 'IN_REVIEW' || c.case_status === 'RECONCILIATION') {
+      initialDisputes = [
+        {
+          id: `DSP-${caseId.replace(/[^0-9]/g, '') || '01'}`,
+          actor: `Komite Medik ${c.provider_name}`,
+          role: 'Fasilitas Kesehatan (Rumah Sakit)',
+          date: '2026-03-03T11:20:00Z',
+          status: 'MENUNGGU_VERIFIKASI',
+          title: `Klarifikasi Prosedur Medis di ${c.provider_name}`,
+          content: `Menanggapi audit klaim pada kasus ${c.case_id}, pelayanan medis telah diberikan sesuai standar profesi di ${c.provider_name}. Berkas rekam medis manual saat ini sedang dalam proses pemindahan dari instalasi terkait.`,
+          attachments: [
+            { name: `Surat_Pengantar_Klarifikasi_${c.provider_name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`, size: '2.1 MB', type: 'PDF' }
+          ]
+        }
+      ];
+    }
+
+    CASE_DYNAMIC_STORE[caseId] = {
+      handledBy: c.assigned_to ? (c.assigned_to.includes('budi') ? 'dr. Budi Santoso, Sp.A' : c.assigned_to.includes('ratna') ? 'dr. Ratna Dewi, Sp.PD' : 'dr. Anindya Kusuma, Sp.PK') : null,
+      staffHandler: null,
+      primaryDiagnosis: primaryDiag,
+      primaryProcedure: primaryProc,
+      claimItems,
+      evidenceLinks,
+      disputes: initialDisputes,
+      uploadedEvidences: [],
+      auditLogs: [
+        {
+          log_id: 'LOG-001',
+          action: 'SYSTEM_DETECTION',
+          actor: 'Sistem Deteksi Anomali medCare JKN',
+          timestamp: '2026-03-01T08:30:00Z',
+          detail: `Kasus diidentifikasi berisiko ${c.primary_risk_mode} dengan nilai eksposur Rp ${Number(c.exposure_amount || 0).toLocaleString('id-ID')}`
+        }
+      ]
+    };
+  }
+
+  const stored = CASE_DYNAMIC_STORE[caseId];
+  const mlRec = calculateCaseMlRecommendation(c, stored.uploadedEvidences, stored.disputes);
+
   return {
     case: {
       ...c,
@@ -288,142 +641,31 @@ export function getMockCaseDetails(caseId) {
       tariff_ina_cbg: c.total_amount * 0.7,
       disparity_amount: c.exposure_amount,
       hospital_class: 'KELAS_B',
-      primary_diagnosis: 'K35.8 (Apendisitis Akut Lainnya)',
+      primary_diagnosis: stored.primaryDiagnosis,
       secondary_diagnoses: ['E11.9 (Diabetes Melitus Tipe 2)', 'I10 (Hipertensi Esensial)'],
-      primary_procedure: '47.01 (Apendektomi Laparoskopi)',
-      secondary_procedures: ['89.52 (Elektrokardiogram)', '99.29 (Injeksi Antibiotik)']
+      primary_procedure: stored.primaryProcedure,
+      secondary_procedures: ['89.52 (Elektrokardiogram)', '99.29 (Injeksi Obat)'],
+      handled_by: stored.handledBy,
+      staff_handler: stored.staffHandler
     },
-    claimItems: [
-      {
-        item_id: 'ITM-001',
-        item_code: 'PROC-47.01',
-        item_description: 'Tindakan Laparoskopi Apendektomi',
-        item_type: 'PROCEDURE',
-        quantity: 1,
-        unit_price: 28000000,
-        total_price: 28000000,
-        evidence_status: 'MISSING',
-        disparity_note: 'Tidak ada laporan pembedahan / video laparoskopi terarsip'
-      },
-      {
-        item_id: 'ITM-002',
-        item_code: 'ANASTH-01',
-        item_description: 'Pelayanan Anestesi Umum Inhalasi',
-        item_type: 'ANESTHESIA',
-        quantity: 1,
-        unit_price: 7000000,
-        total_price: 7000000,
-        evidence_status: 'MISSING',
-        disparity_note: 'Lembar pemantauan tanda vital kamar operasi kosong'
-      },
-      {
-        item_id: 'ITM-003',
-        item_code: 'ROOM-VIP',
-        item_description: 'Rawat Inap Ruang Khusus Isolasi Bedah',
-        item_type: 'ACCOMMODATION',
-        quantity: 4,
-        unit_price: 2500000,
-        total_price: 10000000,
-        evidence_status: 'VERIFIED',
-        disparity_note: 'Tercatat di sistem administrasi ruang rawat'
-      }
-    ],
+    claimItems: stored.claimItems,
     evidenceLinks: [
-      {
-        evidence_id: 'EVD-001',
-        evidence_type: 'SURGICAL_REPORT',
-        title: 'Laporan Operasi Bedah',
-        status: 'UNAVAILABLE',
-        note: 'Dokumen tidak ditemukan dalam arsip rekam medis elektronik RS',
-        confidence_score: 0.12
-      },
-      {
-        evidence_id: 'EVD-002',
-        evidence_type: 'ANESTHESIA_LOG',
-        title: 'Catatan Rekam Anestesi',
-        status: 'UNAVAILABLE',
-        note: 'Tidak ada tanda tangan dokter spesialis anestesiologi',
-        confidence_score: 0.05
-      },
-      {
-        evidence_id: 'EVD-003',
-        evidence_type: 'NURSING_NOTE',
-        title: 'Catatan Keperawatan Rawat Inap',
-        status: 'AVAILABLE',
-        note: 'Catatan infus dan vital sign bangsal reguler lengkap',
-        confidence_score: 0.95
-      }
+      ...stored.uploadedEvidences,
+      ...stored.evidenceLinks
     ],
     riskSignals: [
       {
         signal_id: 'SIG-001',
         severity: 'CRITICAL',
-        code: 'PHANTOM_SURGERY',
-        title: 'Tindakan Bedah Mayor Tanpa Catatan Anestesi',
-        description: 'Tindakan invasif dilaporkan tapi tidak ada bukti pembiusan yang sah.'
-      },
-      {
-        signal_id: 'SIG-002',
-        severity: 'HIGH',
-        code: 'BILLING_GAP',
-        title: 'Disparitas Tarif Melebihi Standar INA-CBG',
-        description: 'Selisih tagihan faskes dengan bukti pendukung mencapai Rp 32.000.000.'
+        code: c.primary_risk_mode,
+        title: `Deteksi Anomali ${c.primary_risk_mode}`,
+        description: `Disparitas berkas pendukung pada ${c.provider_name} mencapai Rp ${Number(c.exposure_amount || 0).toLocaleString('id-ID')}.`
       }
     ],
-    reviewOutcomes: [
-      {
-        outcome_id: 'OUT-001',
-        reviewer_id: 'dr. Anindya Kusuma, Sp.PK',
-        outcome: 'NEEDS_MORE_EVIDENCE',
-        notes: 'Meminta konfirmasi rekam medis fisik dari komite medik RS terkait bukti anastesi.',
-        created_at: '2026-03-02T14:30:00Z'
-      }
-    ],
-    auditLogs: [
-      {
-        log_id: 'LOG-001',
-        action: 'CASE_ASSIGNED',
-        actor: 'Sistem Deteksi Otomatis',
-        timestamp: '2026-03-01T08:30:00Z',
-        detail: 'Kasus ditugaskan otomatis ke dr. Anindya Kusuma, Sp.PK'
-      },
-      {
-        log_id: 'LOG-002',
-        action: 'EVIDENCE_AUDITED',
-        actor: 'dr. Anindya Kusuma, Sp.PK',
-        timestamp: '2026-03-02T14:30:00Z',
-        detail: 'Hasil telaah awal: Perlu bukti tambahan rekam medis'
-      }
-    ],
-    mlRecommendation: {
-      suggestedOutcome: c.primary_risk_mode === 'PHANTOM_BILLING' ? 'NEEDS_MORE_EVIDENCE' : (c.evidence_gap > 0 ? 'NEEDS_MORE_EVIDENCE' : 'NOT_CONFIRMED'),
-      confidenceScore: 94.6,
-      modelName: 'Medcare-Reconcile-HybridRule-v4.2',
-      predictedRiskLevel: c.review_priority || 'HIGH',
-      suggestedNotes: c.primary_risk_mode === 'PHANTOM_BILLING'
-        ? `Berdasarkan inferensi model Machine Learning, teridentifikasi indikasi Phantom Billing dengan skor keyakinan 94.6%. Terdapat ${c.affected_items || 2} item tagihan tanpa berkas anestesi/bedah terarsip (Evidence Coverage: ${c.evidence_coverage_pct || 33}%). Direkomendasikan meminta klarifikasi fisik dari Komite Medik faskes.`
-        : `Hasil evaluasi algoritma menunjukkan pola ${c.primary_risk_mode} dengan nilai disparitas Rp ${Number(c.exposure_amount || 0).toLocaleString('id-ID')}. Disarankan klarifikasi resume medis penunjang.`,
-      drivers: [
-        `Tingkat Ketercakupan Dokumen: ${c.evidence_coverage_pct || 33}% (Batas Minimum Aman: 80%)`,
-        `Disparitas Biaya Tagihan: Rp ${Number(c.exposure_amount || 0).toLocaleString('id-ID')}`,
-        `Ketiadaan Arsip Rekam Anestesi Spesialis & Laporan Pembedahan Kamar Operasi`
-      ]
-    },
-    disputes: [
-      {
-        id: 'DSP-001',
-        actor: `Komite Medik ${c.provider_name}`,
-        role: 'Fasilitas Kesehatan (Rumah Sakit)',
-        date: '2026-03-03T11:20:00Z',
-        status: 'MENUNGGU_VERIFIKASI',
-        title: 'Klarifikasi & Sanggahan Faskes Terhadap Audit Klaim',
-        content: `Tindakan medis telah dilaksanakan sesuai standar operasional prosedur klinis di ${c.provider_name}. Berkas fisik lembar laporan tindakan pembedahan dan log monitoring anestesi tersimpan di bagian rekam medis manual sub-instalasi. Kami melampirkan salinan scan verifikasi pendukung.`,
-        attachments: [
-          { name: 'Scan_Surat_Kamar_Operasi_Signed.pdf', size: '2.4 MB', type: 'PDF' },
-          { name: 'Lembar_Tanda_Vital_Pemulihan.pdf', size: '1.1 MB', type: 'PDF' }
-        ]
-      }
-    ]
+    reviewOutcomes: [],
+    auditLogs: stored.auditLogs,
+    mlRecommendation: mlRec,
+    disputes: stored.disputes
   };
 }
 

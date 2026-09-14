@@ -1,15 +1,34 @@
 const USERS = [
   {
     id: 'usr-staff-001',
-    username: 'staff.jkn',
-    email: 'staff.jkn@bpjs-kesehatan.go.id',
+    username: 'staff.ahmad',
+    email: 'ahmad.fauzi@bpjs-kesehatan.go.id',
     password: 'jkn',
     name: 'Ahmad Fauzi, S.E.',
     role: 'staff_jkn',
     roleLabel: 'Staff JKN',
-    title: 'Staff Verifikator & Triage Klaim BPJS',
+    title: 'Senior Verifikator & Triage Klaim BPJS',
     unit: 'Kantor Cabang Utama / Bidang Penjaminan Manfaat',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    capabilities: [
+      'Melihat Dashboard Global & Metrik Finansial',
+      'Melihat Investigation Queue Seluruh Faskes',
+      'Melihat Risk Signal & Disparitas Awal',
+      'Membuka & Memverifikasi Berkas Klaim',
+      'Mengarahkan & Menugaskan Kasus ke Tenaga Kesehatan'
+    ]
+  },
+  {
+    id: 'usr-staff-002',
+    username: 'staff.adit',
+    email: 'aditya.pratama@bpjs-kesehatan.go.id',
+    password: 'jkn',
+    name: 'Aditya Pratama, S.Kep.',
+    role: 'staff_jkn',
+    roleLabel: 'Staff JKN',
+    title: 'Verifikator Klaim & Investigasi Faskes',
+    unit: 'Kantor Cabang Utama / Bidang Penjaminan Manfaat',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
     capabilities: [
       'Melihat Dashboard Global & Metrik Finansial',
       'Melihat Investigation Queue Seluruh Faskes',
@@ -106,6 +125,7 @@ export async function login(req, res, next) {
       const eClean = u.email.toLowerCase().replace(/\s+/g, '');
       const nameClean = u.name.toLowerCase().replace(/\s+/g, '');
       return uClean === trimmedInput || 
+             (trimmedInput === 'staff.jkn' && uClean === 'staff.ahmad') ||
              eClean === trimmedInput || 
              nameClean.includes(trimmedInput) ||
              trimmedInput.includes(uClean.replace('dr.', '')) ||

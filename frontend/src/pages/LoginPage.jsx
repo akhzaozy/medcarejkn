@@ -59,15 +59,26 @@ export default function LoginPage({ onLoginSuccess }) {
     }
   ];
 
-  const staffAccount = {
-    id: 'staff.jkn',
-    username: 'staff.jkn',
-    pass: 'jkn',
-    name: 'Ahmad Fauzi, S.E.',
-    role: 'Staff Verifikator JKN Pusat',
-    cases: '4.336 Kasus',
-    badge: 'Triage Nasional'
-  };
+  const staffAccounts = [
+    {
+      id: 'staff.ahmad',
+      username: 'staff.ahmad',
+      pass: 'jkn',
+      name: 'Ahmad Fauzi, S.E.',
+      role: 'Senior Verifikator JKN',
+      cases: '2.168 Kasus',
+      badge: 'Verifikator 1'
+    },
+    {
+      id: 'staff.adit',
+      username: 'staff.adit',
+      pass: 'jkn',
+      name: 'Aditya Pratama, S.Kep.',
+      role: 'Verifikator Klaim JKN',
+      cases: '2.168 Kasus',
+      badge: 'Verifikator 2'
+    }
+  ];
 
   const handleSelectAccount = (acc) => {
     setUsername(acc.username);
@@ -107,15 +118,26 @@ export default function LoginPage({ onLoginSuccess }) {
         name: 'dr. Ratna Dewi, Sp.PD',
         title: 'Dokter Spesialis Penyakit Dalam'
       };
-    } else if (trimmed.includes('staff') || trimmed.includes('fauzi') || activeAccountType === 'staff') {
+    } else if (trimmed.includes('adit')) {
+      user = {
+        id: 'usr-staff-002',
+        username: 'staff.adit',
+        email: 'aditya.pratama@bpjs-kesehatan.go.id',
+        name: 'Aditya Pratama, S.Kep.',
+        role: 'staff_jkn',
+        roleLabel: 'Verifikator JKN',
+        title: 'Verifikator Klaim & Investigasi Faskes',
+        unit: 'Kedeputian Jaminan Pelayanan Kesehatan'
+      };
+    } else if (trimmed.includes('staff') || trimmed.includes('ahmad') || trimmed.includes('fauzi') || activeAccountType === 'staff') {
       user = {
         id: 'usr-staff-001',
-        username: 'staff.jkn',
+        username: 'staff.ahmad',
         email: 'ahmad.fauzi@bpjs-kesehatan.go.id',
         name: 'Ahmad Fauzi, S.E.',
         role: 'staff_jkn',
-        roleLabel: 'Verifikator JKN Pusat',
-        title: 'Staff Verifikator Klaim BPJS Kesehatan',
+        roleLabel: 'Senior Verifikator JKN',
+        title: 'Senior Verifikator & Triage Klaim BPJS',
         unit: 'Kedeputian Jaminan Pelayanan Kesehatan'
       };
     }
@@ -323,7 +345,7 @@ export default function LoginPage({ onLoginSuccess }) {
                   type="button"
                   onClick={() => {
                     setActiveAccountType('staff');
-                    handleSelectAccount(staffAccount);
+                    handleSelectAccount(staffAccounts[0]);
                   }}
                   style={{
                     border: 'none',
@@ -419,59 +441,80 @@ export default function LoginPage({ onLoginSuccess }) {
                 })}
               </div>
             ) : (
-              /* Staff Account Single Card */
-              <motion.div
-                onClick={() => handleSelectAccount(staffAccount)}
-                whileHover={{ x: 3 }}
-                whileTap={{ scale: 0.99 }}
-                style={{
-                  background: username === 'staff.jkn' ? '#ffffff' : 'rgba(255, 255, 255, 0.12)',
-                  backdropFilter: 'blur(10px)',
-                  border: username === 'staff.jkn' ? '2px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.18)',
-                  borderRadius: '14px',
-                  padding: '1rem',
-                  color: username === 'staff.jkn' ? '#004d4b' : '#ffffff',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  boxShadow: username === 'staff.jkn' ? '0 6px 16px rgba(0, 0, 0, 0.25)' : 'none'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{
-                    width: '34px',
-                    height: '34px',
-                    borderRadius: '50%',
-                    background: username === 'staff.jkn' ? '#e6f6f5' : 'rgba(255, 255, 255, 0.2)',
-                    color: username === 'staff.jkn' ? '#007a78' : '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 800
-                  }}>
-                    <Building2 size={18} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.88rem', fontWeight: 800, color: username === 'staff.jkn' ? '#0f172a' : '#ffffff' }}>
-                      {staffAccount.name}
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: username === 'staff.jkn' ? '#007a78' : 'rgba(255, 255, 255, 0.8)' }}>
-                      {staffAccount.role}
-                    </div>
-                  </div>
-                </div>
-                <span style={{
-                  fontSize: '0.72rem',
-                  fontWeight: 800,
-                  background: username === 'staff.jkn' ? '#eff6ff' : 'rgba(255, 255, 255, 0.2)',
-                  color: username === 'staff.jkn' ? '#1d4ed8' : '#ffffff',
-                  padding: '3px 8px',
-                  borderRadius: '6px'
-                }}>
-                  {staffAccount.cases}
-                </span>
-              </motion.div>
+              /* Staff Accounts List (Ahmad & Adit) */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {staffAccounts.map((st) => {
+                  const isSelected = username === st.username;
+                  return (
+                    <motion.div
+                      key={st.id}
+                      onClick={() => handleSelectAccount(st)}
+                      whileHover={{ x: 3 }}
+                      whileTap={{ scale: 0.99 }}
+                      style={{
+                        background: isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.12)',
+                        backdropFilter: 'blur(10px)',
+                        border: isSelected ? '2px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.18)',
+                        borderRadius: '14px',
+                        padding: '0.85rem 1rem',
+                        color: isSelected ? '#004d4b' : '#ffffff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        boxShadow: isSelected ? '0 6px 16px rgba(0, 0, 0, 0.25)' : 'none',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '34px',
+                          height: '34px',
+                          borderRadius: '50%',
+                          background: isSelected ? '#e6f6f5' : 'rgba(255, 255, 255, 0.2)',
+                          color: isSelected ? '#007a78' : '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 800
+                        }}>
+                          <Building2 size={18} />
+                        </div>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: isSelected ? '#0f172a' : '#ffffff' }}>
+                              {st.name}
+                            </span>
+                            <span style={{
+                              fontSize: '0.62rem',
+                              fontWeight: 800,
+                              background: isSelected ? '#e6f6f5' : 'rgba(255, 255, 255, 0.25)',
+                              color: isSelected ? '#007a78' : '#ffffff',
+                              padding: '1px 5px',
+                              borderRadius: '4px'
+                            }}>
+                              {st.badge}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: isSelected ? '#007a78' : 'rgba(255, 255, 255, 0.8)' }}>
+                            {st.role}
+                          </div>
+                        </div>
+                      </div>
+                      <span style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 800,
+                        background: isSelected ? '#eff6ff' : 'rgba(255, 255, 255, 0.2)',
+                        color: isSelected ? '#1d4ed8' : '#ffffff',
+                        padding: '3px 8px',
+                        borderRadius: '6px'
+                      }}>
+                        {st.cases}
+                      </span>
+                    </motion.div>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>

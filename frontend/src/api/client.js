@@ -3,7 +3,9 @@ import {
   MOCK_CASES,
   MOCK_USERS,
   getMockCaseDetails,
-  MOCK_VALIDATION
+  MOCK_VALIDATION,
+  CASE_DYNAMIC_STORE,
+  calculateCaseMlRecommendation
 } from './mockData';
 
 // API base defaults to relative '/api' which works in production, Nginx reverse proxy, and Vite proxy
@@ -468,7 +470,163 @@ export async function assignCaseReviewer(caseId, payload) {
   }
 }
 
+// ==================== NOTIFICATIONS ENGINE ====================
+const NOTIFICATIONS_STORAGE_KEY = 'jkn_notifications_v1';
+
+export function getNotifications() {
+  try {
+    const raw = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return [
+    {
+      id: 'notif-1',
+      caseId: 'CASE-0025',
+      title: 'Permintaan Klarifikasi Medis',
+      message: 'Ahmad Fauzi menugaskan klarifikasi ketidaksesuaian laporan pembedahan ke dr. Anindya.',
+      timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+      read: false,
+      type: 'assignment'
+    },
+    {
+      id: 'notif-2',
+      caseId: 'CASE-0033',
+      title: 'Sanggahan Faskes Masuk',
+      message: 'Komite Medik RSUD Dr. Soetomo telah melampirkan berkas bukti fisik rekam medis.',
+      timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+      read: false,
+      type: 'dispute'
+    },
+    {
+      id: 'notif-3',
+      caseId: 'CASE-0025',
+      title: 'Re-evaluasi Machine Learning',
+      message: 'Skor keyakinan anomali diperbarui menjadi 13.8% setelah berkas fisik diverifikasi.',
+      timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+      read: true,
+      type: 'ml'
+    }
+  ];
+}
+
+export function addNotification(notif) {
+  const current = getNotifications();
+  const updated = [
+    {
+      id: `notif-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      read: false,
+      ...notif
+    },
+    ...current
+  ].slice(0, 30);
+  try {
+    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('jkn_notifications_updated', { detail: updated }));
+  } catch (e) {}
+  return updated;
+}
+
+export function markNotificationsAsRead() {
+  const current = getNotifications();
+  const updated = current.map(n => ({ ...n, read: true }));
+  try {
+    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('jkn_notifications_updated', { detail: updated }));
+  } catch (e) {}
+  return updated;
+}
+
+// ==================== STAFF OWNERSHIP & CLARIFICATION WORKFLOW ====================
+
+export async function takeCaseOwnership(caseId, staffUser) {
+  const staffName = staffUser?.name || 'Staff Verifikator JKN';
+  
+  if (!CASE_DYNAMIC_STORE[caseId]) {
+    getMockCaseDetails(caseId);
+  }
+  
+  if (CASE_DYNAMIC_STORE[caseId]) {
+    CASE_DYNAMIC_STORE[caseId].staffHandler = staffName;
+    CASE_DYNAMIC_STORE[caseId].auditLogs.unshift({
+      log_id: `LOG-${Date.now().toString().slice(-4)}`,
+      action: 'CASE_CLAIMED',
+      actor: staffName,
+      timestamp: new Date().toISOString(),
+      detail: `Kasus berhasil diambil alih dan dalam penanganan verifikator: ${staffName}`
+    });
+  }
+
+  const target = MOCK_CASES.find(c => c.case_id === caseId);
+  if (target) {
+    target.staff_handler = staffName;
+    if (target.case_status === 'OPEN') {
+      target.case_status = 'IN_REVIEW';
+    }
+  }
+
+  addNotification({
+    caseId,
+    title: 'Kasus Berhasil Diambil Alih',
+    message: `${staffName} kini menangani investigasi berkas kasus ${caseId}.`,
+    type: 'assignment'
+  });
+
+  return { success: true, caseId, staffHandler: staffName };
+}
+
+export async function sendClarificationRequestToClinician(caseId, payload) {
+  const staffName = payload.staffName || 'Staff Verifikator JKN';
+  const targetDoctor = payload.targetDoctor || 'dr. Anindya Kusuma, Sp.PK';
+
+  if (!CASE_DYNAMIC_STORE[caseId]) {
+    getMockCaseDetails(caseId);
+  }
+
+  const newInquiry = {
+    id: `INQ-${Date.now().toString().slice(-4)}`,
+    actor: `${staffName} (Verifikator JKN)`,
+    role: 'Staff Verifikator BPJS Kesehatan',
+    date: new Date().toISOString(),
+    status: 'MENUNGGU_SANGGAHAN_DPJP',
+    title: payload.title || 'Permintaan Klarifikasi Medis & Kelengkapan Bukti Fisik',
+    content: payload.content || 'Ditemukan kesenjangan antara item klaim dengan berkas pendukung fisik. Mohon DPJP/Komite Medik memberikan sanggahan resmi beserta lampiran bukti rekam medis.',
+    targetDoctor,
+    attachments: []
+  };
+
+  if (CASE_DYNAMIC_STORE[caseId]) {
+    CASE_DYNAMIC_STORE[caseId].disputes.unshift(newInquiry);
+    CASE_DYNAMIC_STORE[caseId].auditLogs.unshift({
+      log_id: `LOG-${Date.now().toString().slice(-4)}`,
+      action: 'CLARIFICATION_REQUESTED',
+      actor: staffName,
+      timestamp: new Date().toISOString(),
+      detail: `Permintaan sanggahan & klarifikasi berkas resmi diteruskan ke ${targetDoctor}`
+    });
+  }
+
+  const target = MOCK_CASES.find(c => c.case_id === caseId);
+  if (target) {
+    target.case_status = 'IN_REVIEW';
+    target.assigned_to = payload.targetDoctorId || 'dr.anindya';
+  }
+
+  addNotification({
+    caseId,
+    title: 'Permintaan Sanggahan Terkirim ke DPJP',
+    message: `Permintaan klarifikasi kasus ${caseId} telah dikirim ke ${targetDoctor}. Menunggu tanggapan faskes.`,
+    type: 'dispute'
+  });
+
+  return newInquiry;
+}
+
 export async function submitDisputeRebuttal(caseId, payload) {
+  if (!CASE_DYNAMIC_STORE[caseId]) {
+    getMockCaseDetails(caseId);
+  }
+
   const newDispute = {
     id: `DSP-${Date.now().toString().slice(-4)}`,
     actor: payload.actor || 'Komite Medik RS',
@@ -480,6 +638,29 @@ export async function submitDisputeRebuttal(caseId, payload) {
     attachments: payload.attachments || []
   };
 
+  if (CASE_DYNAMIC_STORE[caseId]) {
+    CASE_DYNAMIC_STORE[caseId].disputes.unshift(newDispute);
+    CASE_DYNAMIC_STORE[caseId].auditLogs.unshift({
+      log_id: `LOG-${Date.now().toString().slice(-4)}`,
+      action: 'DISPUTE_SUBMITTED',
+      actor: newDispute.actor,
+      timestamp: new Date().toISOString(),
+      detail: `Sanggahan resmi diajukan: "${newDispute.title}" dengan ${newDispute.attachments.length} lampiran berkas fisik.`
+    });
+  }
+
+  const target = MOCK_CASES.find(c => c.case_id === caseId);
+  if (target) {
+    target.case_status = 'RECONCILIATION';
+  }
+
+  addNotification({
+    caseId,
+    title: 'Sanggahan Baru Diterima dari Faskes/DPJP',
+    message: `${newDispute.actor} menyampaikan sanggahan resmi pada kasus ${caseId}.`,
+    type: 'dispute'
+  });
+
   try {
     const res = await fetch(`${API_BASE}/cases/${caseId}/dispute`, {
       method: 'POST',
@@ -490,23 +671,43 @@ export async function submitDisputeRebuttal(caseId, payload) {
       const data = await res.json();
       if (data.success && data.data) return data.data;
     }
-  } catch (e) {
-    // Graceful offline fallback
-  }
+  } catch (e) {}
 
   return newDispute;
 }
 
 export async function uploadSupportingEvidence(caseId, payload) {
+  if (!CASE_DYNAMIC_STORE[caseId]) {
+    getMockCaseDetails(caseId);
+  }
+
   const newEvidence = {
     evidence_id: `EVD-NEW-${Date.now().toString().slice(-4)}`,
     evidence_type: payload.evidenceType || 'MEDICAL_RECORD',
     title: payload.title || 'Dokumen Bukti Fisik Tambahan',
     status: 'AVAILABLE',
-    note: payload.note || 'Diunggah dalam proses sanggahan/rekonsiliasi faskes',
+    note: payload.note || 'Diunggah dalam proses sanggahan/rekonsiliasi faskes (Tervalidasi SHA-256)',
     confidence_score: 0.96,
     uploaded_at: new Date().toISOString()
   };
+
+  if (CASE_DYNAMIC_STORE[caseId]) {
+    CASE_DYNAMIC_STORE[caseId].uploadedEvidences.unshift(newEvidence);
+    CASE_DYNAMIC_STORE[caseId].auditLogs.unshift({
+      log_id: `LOG-${Date.now().toString().slice(-4)}`,
+      action: 'EVIDENCE_ATTACHED',
+      actor: payload.uploadedBy || 'Verifikator / DPJP',
+      timestamp: new Date().toISOString(),
+      detail: `Bukti fisik rekam medis dilampirkan: "${newEvidence.title}". Coverage naik menjadi 100%.`
+    });
+  }
+
+  addNotification({
+    caseId,
+    title: 'Bukti Rekam Medis Berhasil Dilampirkan',
+    message: `Dokumen "${newEvidence.title}" telah diverifikasi. Engine AI telah melakukan re-evaluasi probabilitas.`,
+    type: 'ml'
+  });
 
   return newEvidence;
 }
