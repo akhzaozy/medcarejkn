@@ -13,6 +13,7 @@ import MedcareFieldVerificationCard from '../components/medcare/MedcareFieldVeri
 
 import MedcareAuditScheduleModal from '../components/medcare/MedcareAuditScheduleModal';
 import MedcareVerificationDetailModal from '../components/medcare/MedcareVerificationDetailModal';
+import { ArrowRight, Sparkles, BookOpen } from 'lucide-react';
 
 export default function MedcareMinimalistDashboard({
   dashboardData,
@@ -20,6 +21,7 @@ export default function MedcareMinimalistDashboard({
   onOpenQueue,
   onOpenValidation,
   onOpenInput,
+  onOpenGuide,
   currentUser,
   onLogout,
   hideHeader = false
@@ -54,6 +56,64 @@ export default function MedcareMinimalistDashboard({
           priorityCases: data.caseCount || (currentUser?.role === 'clinical_reviewer' ? 1446 : 4336)
         }}
       />
+
+      {/* Quick Layman/Judge Orientation Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.25 }}
+        style={{
+          background: 'linear-gradient(90deg, rgba(0, 122, 120, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%)',
+          border: '1px solid rgba(0, 122, 120, 0.2)',
+          borderRadius: '16px',
+          padding: '0.85rem 1.4rem',
+          marginBottom: '1.25rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '0.75rem',
+          boxShadow: '0 2px 8px rgba(0, 122, 120, 0.04)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{
+            background: 'var(--mc-teal-primary, #007a78)',
+            color: '#ffffff',
+            borderRadius: '50%',
+            width: '26px',
+            height: '26px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '0.8rem',
+            fontWeight: 800,
+            flexShrink: 0
+          }}>
+            <BookOpen size={14} />
+          </span>
+          <div style={{ fontSize: '0.86rem', color: '#1e293b' }}>
+            <strong>Belum familiar dengan istilah Phantom Billing atau alur kerja sistem?</strong>
+            <span style={{ color: '#64748b', marginLeft: '6px' }}>
+              Buka panduan ramah awam, kamus istilah, dan skenario uji coba untuk dewan juri.
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={onOpenGuide}
+          className="btn-pill-primary"
+          style={{ 
+            padding: '0.42rem 1.15rem', 
+            fontSize: '0.8rem', 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '6px',
+            cursor: 'pointer' 
+          }}
+        >
+          Buka Panduan <ArrowRight size={14} />
+        </button>
+      </motion.div>
 
         {/* 3-Column Grid Dashboard Layout */}
         <motion.div

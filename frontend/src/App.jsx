@@ -9,6 +9,7 @@ import CasesPage from './pages/CasesPage';
 import CaseDetailPage from './pages/CaseDetailPage';
 import ValidationPage from './pages/ValidationPage';
 import ClaimAuditInputPage from './pages/ClaimAuditInputPage';
+import GuidePage from './pages/GuidePage';
 import LoginPage from './pages/LoginPage';
 import { fetchDashboard } from './api/client';
 
@@ -106,6 +107,12 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleOpenGuide = () => {
+    setSelectedCaseId(null);
+    setView('guide');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleNavigateSection = (sectionId) => {
     if (view !== 'landing') {
       setView('landing');
@@ -134,6 +141,7 @@ export default function App() {
           onNavigate={handleNavigateSection}
           onOpenQueue={handleOpenQueue}
           onOpenInput={handleOpenInput}
+          onOpenGuide={handleOpenGuide}
           currentUser={currentUser}
           onLogout={handleLogout}
         />
@@ -145,9 +153,19 @@ export default function App() {
               onSelectCase={handleSelectCase}
               onOpenQueue={handleOpenQueue}
               onOpenInput={handleOpenInput}
+              onOpenGuide={handleOpenGuide}
               currentUser={currentUser}
               onLogout={handleLogout}
               hideHeader={true}
+            />
+          )}
+
+          {view === 'guide' && (
+            <GuidePage
+              onSelectCase={handleSelectCase}
+              onOpenQueue={handleOpenQueue}
+              onOpenInput={handleOpenInput}
+              onBackToLanding={handleBackToLanding}
             />
           )}
 

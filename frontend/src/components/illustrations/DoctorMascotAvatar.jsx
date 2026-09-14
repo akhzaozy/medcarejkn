@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 /**
- * Animated Doctor Running & Hiding Behind Door
- * - Solid, cohesive chibi doctor anatomy (solid neck, collar, coat, legs - no floating head!).
- * - Normal: Stands proudly in doorway, blinks naturally, glances down on username focus.
- * - Typing Password: Dashes inside/behind the clinic door, and the door SLAMS SHUT!
- * - Show Password (Peek): Door creaks open, Doctor peeks his head & shoulder out holding the door!
+ * Super Cool Interactive Doctor Avatar:
+ * 1. IDLE: Natural gentle breathing, periodic blinking, friendly clinical smile.
+ * 2. USERNAME FOCUSED: Eyes look down attentively toward username input.
+ * 3. PASSWORD FOCUSED (Hidden): Doctor brings up hands in white sleeves to cover eyes completely (Privacy Mode)!
+ * 4. PASSWORD PEEK (Show Password): Doctor peeks through fingers with one eye winking and a cheeky smile!
  */
 export default function DoctorMascotAvatar({
   isPasswordFocused = false,
@@ -20,401 +20,311 @@ export default function DoctorMascotAvatar({
     if (isPasswordFocused) return;
     const interval = setInterval(() => {
       setIsBlinking(true);
-      setTimeout(() => setIsBlinking(false), 160);
-    }, 3600);
+      setTimeout(() => setIsBlinking(false), 180);
+    }, 3200);
     return () => clearInterval(interval);
   }, [isPasswordFocused]);
 
-  const isHiding = isPasswordFocused && !showPassword;
+  const isCoveringEyes = isPasswordFocused && !showPassword;
   const isPeeking = isPasswordFocused && showPassword;
 
   return (
     <div style={{
-      width: '145px',
-      height: '145px',
-      margin: '0 auto 0.6rem auto',
+      width: '120px',
+      height: '120px',
+      margin: '0 auto 0.75rem auto',
       position: 'relative',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       userSelect: 'none'
     }}>
+      {/* Outer Glowing Teal Ring */}
+      <div style={{
+        position: 'absolute',
+        inset: '-4px',
+        borderRadius: '50%',
+        background: 'linear-gradient(135deg, rgba(0, 122, 120, 0.35) 0%, rgba(14, 165, 233, 0.25) 100%)',
+        filter: 'blur(6px)',
+        zIndex: 0
+      }} />
+
       <svg
-        viewBox="0 0 220 200"
+        viewBox="0 0 200 200"
         width="100%"
         height="100%"
-        style={{ overflow: 'hidden', borderRadius: '50%' }}
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          overflow: 'hidden',
+          borderRadius: '50%',
+          border: '2px solid rgba(0, 122, 120, 0.35)',
+          boxShadow: '0 8px 24px -4px rgba(0, 122, 120, 0.22)'
+        }}
       >
         <defs>
-          {/* Circular Clip for Scene */}
-          <clipPath id="doorSceneClip">
-            <circle cx="110" cy="100" r="96" />
+          <clipPath id="avatarCircleClip">
+            <circle cx="100" cy="100" r="98" />
           </clipPath>
 
-          {/* Wall / Room Background */}
-          <radialGradient id="clinicWallGrad" cx="45%" cy="40%" r="65%">
-            <stop offset="0%" stopColor="#f0faf9" />
-            <stop offset="70%" stopColor="#d5f2ef" />
-            <stop offset="100%" stopColor="#b6e8e4" />
+          {/* Clinical Room Radial Gradient Background */}
+          <radialGradient id="portalBg" cx="50%" cy="40%" r="65%">
+            <stop offset="0%" stopColor="#f0fdfa" />
+            <stop offset="60%" stopColor="#ccfbf1" />
+            <stop offset="100%" stopColor="#99f6e4" />
           </radialGradient>
 
-          {/* Floor Gradient */}
-          <linearGradient id="clinicFloorGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#cbd5e1" />
-            <stop offset="100%" stopColor="#94a3b8" />
+          {/* Skin Tone Gradient */}
+          <linearGradient id="skinGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#ffdfba" />
+            <stop offset="100%" stopColor="#f7ba8a" />
           </linearGradient>
 
-          {/* Doctor Skin */}
-          <linearGradient id="docSkin" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#fed7aa" />
-            <stop offset="100%" stopColor="#fba979" />
-          </linearGradient>
-
-          {/* Lab Coat */}
-          <linearGradient id="docCoat" x1="0" y1="0" x2="0" y2="1">
+          {/* Coat Gradient */}
+          <linearGradient id="coatGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#ffffff" />
             <stop offset="100%" stopColor="#e2e8f0" />
           </linearGradient>
 
-          {/* Modern Teal Door Gradient */}
-          <linearGradient id="tealDoorGrad" x1="0" y1="0" x2="1" y2="0">
+          {/* Stethoscope Gradient */}
+          <linearGradient id="stethoGrad" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#005f5d" />
-            <stop offset="50%" stopColor="#007a78" />
             <stop offset="100%" stopColor="#0d9488" />
           </linearGradient>
-
-          {/* Drop Shadow */}
-          <filter id="sceneShadow" x="-15%" y="-15%" width="130%" height="130%">
-            <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#003533" floodOpacity="0.18" />
-          </filter>
         </defs>
 
-        <g clipPath="url(#doorSceneClip)">
-          {/* 1. ROOM BACKGROUND */}
-          <rect width="220" height="200" fill="url(#clinicWallGrad)" />
+        <g clipPath="url(#avatarCircleClip)">
+          {/* Background Portal */}
+          <rect width="200" height="200" fill="url(#portalBg)" />
 
-          {/* Clinic Room Flooring */}
-          <rect x="0" y="165" width="220" height="35" fill="url(#clinicFloorGrad)" />
-          {/* Baseboard trim */}
-          <line x1="0" y1="165" x2="220" y2="165" stroke="#007a78" strokeWidth="2.5" opacity="0.4" />
-
-          {/* Background Wall Certificate / Hospital Plaque */}
-          <g opacity="0.45">
-            <rect x="24" y="44" width="28" height="36" rx="3" fill="#ffffff" stroke="#94a3b8" strokeWidth="1.5" />
-            <rect x="30" y="50" width="16" height="4" rx="1" fill="#007a78" />
-            <line x1="30" y1="60" x2="46" y2="60" stroke="#cbd5e1" strokeWidth="1.5" />
-            <line x1="30" y1="66" x2="43" y2="66" stroke="#cbd5e1" strokeWidth="1.5" />
-            <circle cx="38" cy="72" r="2.5" fill="#f59e0b" />
-          </g>
-
-          {/* 2. DOORWAY OPENING */}
-          {/* Door Frame Architrave */}
-          <rect x="76" y="24" width="112" height="142" rx="4" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="2" />
-          {/* Inner Room Darkness */}
-          <rect x="83" y="31" width="98" height="134" rx="2" fill="#081e20" />
-
-          {/* ================= 3. DOCTOR CHARACTER (FULL COHESIVE BODY) ================= */}
+          {/* ================= DOCTOR BODY (BREATHING ANIMATION) ================= */}
           <motion.g
-            initial={false}
             animate={
-              isHiding
-                ? { x: -65, y: 0, opacity: 0 } // Runs inside behind the closed door!
+              isCoveringEyes
+                ? { y: 3, scale: 0.98 }
                 : isPeeking
-                ? { x: -26, y: 2, opacity: 1 }  // Peeks head & shoulder around door frame!
-                : {
-                    x: 0,
-                    y: isUsernameFocused ? 3 : 0,
-                    opacity: 1
-                  }
+                ? { y: 1, rotate: -2 }
+                : isUsernameFocused
+                ? { y: 2, scale: 1.01 }
+                : { y: [0, -1.5, 0] }
             }
-            transition={{
-              type: 'spring',
-              stiffness: isHiding ? 400 : 280,
-              damping: isHiding ? 20 : 24
-            }}
-            filter="url(#sceneShadow)"
-          >
-            {/* Run Dash Lines when running to hide */}
-            {isHiding && (
-              <g opacity="0.8">
-                <line x1="165" y1="130" x2="190" y2="130" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
-                <line x1="158" y1="145" x2="188" y2="145" stroke="#2dd4bf" strokeWidth="2.5" strokeLinecap="round" />
-                <line x1="166" y1="158" x2="182" y2="158" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
-              </g>
-            )}
-
-            {/* Doctor Trousers / Legs */}
-            <rect x="122" y="156" width="9" height="12" rx="2" fill="#004d4b" />
-            <rect x="133" y="156" width="9" height="12" rx="2" fill="#004d4b" />
-
-            {/* Doctor Shoes */}
-            <ellipse cx="126" cy="168" rx="7.5" ry="4" fill="#1e293b" />
-            <ellipse cx="138" cy="168" rx="7.5" ry="4" fill="#1e293b" />
-
-            {/* Lab Coat Body (Seamlessly connects from shoulders y:104 down to y:162) */}
-            <path
-              d="M 112 162 C 114 122 122 106 132 106 C 142 106 150 122 152 162 Z"
-              fill="url(#docCoat)"
-              stroke="#cbd5e1"
-              strokeWidth="1.5"
-            />
-
-            {/* Inner Teal Scrubs */}
-            <polygon points="126,106 138,106 132,122" fill="#007a78" />
-
-            {/* Coat Collar Lapels */}
-            <path
-              d="M 122 106 L 128 126 L 126 162"
-              fill="none"
-              stroke="#cbd5e1"
-              strokeWidth="1.5"
-            />
-            <path
-              d="M 142 106 L 136 126 L 138 162"
-              fill="none"
-              stroke="#cbd5e1"
-              strokeWidth="1.5"
-            />
-
-            {/* Teal Stethoscope */}
-            <path
-              d="M 122 110 C 120 134 126 142 132 142 C 138 142 144 134 142 110"
-              fill="none"
-              stroke="#0f766e"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-            <circle cx="132" cy="143" r="3.2" fill="#64748b" stroke="#007a78" strokeWidth="1.5" />
-            <circle cx="132" cy="143" r="1.5" fill="#f8fafc" />
-
-            {/* SOLID NECK (Overlaps head y:92-98 and torso y:104-108 -> ZERO GAP!) */}
-            <rect
-              x="126"
-              y="92"
-              width="12"
-              height="16"
-              rx="4"
-              fill="url(#docSkin)"
-            />
-
-            {/* Arms & Hands */}
-            {isPeeking ? (
-              /* Peeking Hands firmly holding door edge */
-              <g>
-                {/* Left hand gripping door frame */}
-                <ellipse cx="114" cy="116" rx="4.5" ry="5.5" fill="url(#docSkin)" stroke="#fba979" strokeWidth="1" />
-                <ellipse cx="114" cy="128" rx="4.5" ry="5.5" fill="url(#docSkin)" stroke="#fba979" strokeWidth="1" />
-              </g>
-            ) : (
-              /* Normal arms and hands */
-              <g>
-                {/* Left arm */}
-                <path
-                  d="M 114 112 Q 108 128 116 140"
-                  fill="none"
-                  stroke="url(#docCoat)"
-                  strokeWidth="6"
-                  strokeLinecap="round"
-                />
-                <circle cx="116" cy="140" r="4" fill="url(#docSkin)" />
-
-                {/* Right arm */}
-                <path
-                  d="M 150 112 Q 156 128 148 140"
-                  fill="none"
-                  stroke="url(#docCoat)"
-                  strokeWidth="6"
-                  strokeLinecap="round"
-                />
-                <circle cx="148" cy="140" r="4" fill="url(#docSkin)" />
-              </g>
-            )}
-
-            {/* ================= DOCTOR HEAD & FACE ================= */}
-            <g>
-              {/* Ears */}
-              <circle cx="112" cy="80" r="5" fill="url(#docSkin)" />
-              <circle cx="152" cy="80" r="5" fill="url(#docSkin)" />
-
-              {/* Head Contour (cy: 78, ry: 21 -> reaches y: 99, perfectly covering neck top) */}
-              <ellipse cx="132" cy="78" rx="22" ry="21" fill="url(#docSkin)" />
-
-              {/* Hair Style */}
-              <path
-                d="M 110 76 C 109 56 119 48 132 48 C 145 48 155 56 154 76 C 150 66 143 62 138 62 C 132 62 128 66 123 66 C 117 66 113 62 110 76 Z"
-                fill="#262f36"
-              />
-
-              {/* Doctor Cap with Teal Cross */}
-              <rect x="121" y="42" width="22" height="11" rx="4" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
-              <rect x="130" y="44" width="4" height="7" rx="0.5" fill="#007a78" />
-              <rect x="129" y="45" width="6" height="5" rx="0.5" fill="#007a78" />
-
-              {/* Rosy Cheeks */}
-              <ellipse cx="120" cy="86" rx="4" ry="2.5" fill="#f87171" opacity="0.4" />
-              <ellipse cx="144" cy="86" rx="4" ry="2.5" fill="#f87171" opacity="0.4" />
-
-              {/* Eyebrows */}
-              <path
-                d="M 119 69 Q 124 66 128 69"
-                stroke="#334155"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                fill="none"
-              />
-              <path
-                d="M 136 69 Q 140 66 145 69"
-                stroke="#334155"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                fill="none"
-              />
-
-              {/* EYES */}
-              {isPeeking ? (
-                /* Peeking: Left eye big & curious, Right eye shy */
-                <g>
-                  {/* Big Curious Eye */}
-                  <ellipse cx="124" cy="76" rx="5.5" ry="6" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.8" />
-                  <circle cx="124" cy="76" r="3.2" fill="#0f172a" />
-                  <circle cx="123" cy="74.5" r="1.3" fill="#ffffff" />
-
-                  {/* Right Eye */}
-                  <ellipse cx="140" cy="76" rx="4.5" ry="5" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.8" />
-                  <circle cx="140" cy="76" r="2.6" fill="#0f172a" />
-                  <circle cx="139" cy="75" r="1" fill="#ffffff" />
-                </g>
-              ) : isBlinking ? (
-                /* Blink */
-                <g>
-                  <line x1="119" y1="76" x2="129" y2="76" stroke="#0f172a" strokeWidth="2.2" strokeLinecap="round" />
-                  <line x1="135" y1="76" x2="145" y2="76" stroke="#0f172a" strokeWidth="2.2" strokeLinecap="round" />
-                </g>
-              ) : (
-                /* Normal Eyes (Glance down on username focus) */
-                <g>
-                  {/* Left Eye */}
-                  <ellipse cx="124" cy="76" rx="4.8" ry="5.8" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.8" />
-                  <motion.circle
-                    cx="124"
-                    cy="76"
-                    r="3"
-                    fill="#0f172a"
-                    animate={{
-                      cy: isUsernameFocused ? 78 : 76,
-                      cx: isUsernameFocused ? 125 : 124
-                    }}
-                    transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-                  />
-                  <circle cx="123" cy="74.5" r="1.2" fill="#ffffff" />
-
-                  {/* Right Eye */}
-                  <ellipse cx="140" cy="76" rx="4.8" ry="5.8" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.8" />
-                  <motion.circle
-                    cx="140"
-                    cy="76"
-                    r="3"
-                    fill="#0f172a"
-                    animate={{
-                      cy: isUsernameFocused ? 78 : 76,
-                      cx: isUsernameFocused ? 141 : 140
-                    }}
-                    transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-                  />
-                  <circle cx="139" cy="74.5" r="1.2" fill="#ffffff" />
-                </g>
-              )}
-
-              {/* Nose */}
-              <circle cx="132" cy="82" r="1.3" fill="#fba979" />
-
-              {/* Smiling Mouth */}
-              <path
-                d={isPeeking ? "M 129 88 Q 132 92 135 88" : "M 128 87 Q 132 91 136 87"}
-                fill="none"
-                stroke="#9a3412"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              />
-            </g>
-          </motion.g>
-
-          {/* ================= 4. THE CLINIC DOOR ================= */}
-          {/*
-            Hinged on the left (x: 83)
-            - Idle/Username: Door is wide open (scaleX: 0.12, x: 86)
-            - Hiding (!showPassword): Door SLAMS SHUT (x: 0, scaleX: 1) completely hiding the room & doctor!
-            - Peeking (showPassword): Door open a crack (x: 26, scaleX: 0.82)
-          */}
-          <motion.g
-            initial={false}
-            animate={
-              isHiding
-                ? { x: 0, scaleX: 1 }     // Fully Closed! Doctor is completely hidden!
-                : isPeeking
-                ? { x: 26, scaleX: 0.82 } // Door open a crack (Peeking)
-                : { x: 86, scaleX: 0.12 } // Wide open (Doctor standing proudly)
+            transition={
+              isCoveringEyes || isPeeking || isUsernameFocused
+                ? { type: 'spring', stiffness: 320, damping: 22 }
+                : { repeat: Infinity, duration: 3.5, ease: 'easeInOut' }
             }
-            transition={{
-              type: 'spring',
-              stiffness: isHiding ? 420 : 280,
-              damping: isHiding ? 22 : 24
-            }}
-            style={{ transformOrigin: '83px 100px' }}
-            filter="url(#sceneShadow)"
           >
-            {/* The Door Leaf */}
-            <rect
-              x="83"
-              y="31"
-              width="98"
-              height="134"
-              rx="2"
-              fill="url(#tealDoorGrad)"
-              stroke="#004d4b"
+            {/* Shoulders & White Lab Coat */}
+            <path
+              d="M 52 195 C 54 148 72 134 100 134 C 128 134 146 148 148 195 Z"
+              fill="url(#coatGrad)"
+              stroke="#cbd5e1"
               strokeWidth="2"
             />
 
-            {/* Inset Door Paneling */}
-            <rect x="91" y="39" width="82" height="52" rx="3" fill="#004d4b" opacity="0.35" />
-            <rect x="91" y="100" width="82" height="56" rx="3" fill="#004d4b" opacity="0.35" />
+            {/* Inner Teal Scrubs */}
+            <polygon points="86,134 114,134 100,154" fill="#007a78" />
 
-            {/* Circular Glass Porthole Window with Medical Cross */}
-            <circle cx="132" cy="65" r="16" fill="#a7f3d0" stroke="#ffffff" strokeWidth="2" opacity="0.85" />
-            <rect x="130" y="55" width="4" height="20" rx="1" fill="#007a78" />
-            <rect x="122" y="63" width="20" height="4" rx="1" fill="#007a78" />
+            {/* Coat Lapels */}
+            <path d="M 82 134 L 92 160 L 88 195" fill="none" stroke="#cbd5e1" strokeWidth="2" />
+            <path d="M 118 134 L 108 160 L 112 195" fill="none" stroke="#cbd5e1" strokeWidth="2" />
 
-            {/* Room Sign: "RUANG DOKTER DPJP" */}
-            <rect x="104" y="106" width="56" height="15" rx="3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
-            <text
-              x="132"
-              y="117"
-              textAnchor="middle"
-              fontSize="6"
-              fontWeight="800"
-              fill="#005f5d"
-              letterSpacing="0.5"
-            >
-              RUANG DOKTER
-            </text>
-
-            {/* Status Privacy Light on Door */}
-            <circle
-              cx="132"
-              cy="129"
-              r="4"
-              fill={isHiding ? "#ef4444" : "#10b981"}
-              stroke="#ffffff"
-              strokeWidth="1.2"
+            {/* Stethoscope around neck */}
+            <path
+              d="M 80 138 C 76 166 86 178 100 178 C 114 178 124 166 120 138"
+              fill="none"
+              stroke="url(#stethoGrad)"
+              strokeWidth="3.5"
+              strokeLinecap="round"
             />
+            {/* Stethoscope Chest Piece */}
+            <circle cx="100" cy="180" r="5" fill="#64748b" stroke="#007a78" strokeWidth="2" />
+            <circle cx="100" cy="180" r="2" fill="#ffffff" />
 
-            {/* Modern Brushed Metal Door Handle */}
-            <rect x="92" y="94" width="6" height="18" rx="2" fill="#e2e8f0" stroke="#64748b" strokeWidth="1" />
-            <circle cx="95" cy="98" r="2.2" fill="#0f172a" />
+            {/* Solid Neck */}
+            <rect x="91" y="112" width="18" height="24" rx="5" fill="url(#skinGrad)" />
+
+            {/* ================= HEAD & FACE ================= */}
+            <motion.g
+              animate={
+                isUsernameFocused
+                  ? { y: 2, rotate: -1.5 }
+                  : isCoveringEyes
+                  ? { y: 3, rotate: 1 }
+                  : { y: 0, rotate: 0 }
+              }
+              transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+            >
+              {/* Ears */}
+              <circle cx="68" cy="98" r="7" fill="url(#skinGrad)" />
+              <circle cx="132" cy="98" r="7" fill="url(#skinGrad)" />
+
+              {/* Head Contour */}
+              <ellipse cx="100" cy="95" rx="30" ry="29" fill="url(#skinGrad)" />
+
+              {/* Doctor Hair */}
+              <path
+                d="M 70 94 C 68 66 82 56 100 56 C 118 56 132 66 130 94 C 124 82 116 76 108 76 C 100 76 96 82 90 82 C 82 82 76 78 70 94 Z"
+                fill="#1e293b"
+              />
+
+              {/* Doctor Head Mirror / Medical Cap Badge */}
+              <rect x="88" y="50" width="24" height="12" rx="3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1.2" />
+              <circle cx="100" cy="56" r="4" fill="#007a78" />
+              <path d="M 98 56 L 102 56 M 100 54 L 100 58" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" />
+
+              {/* Eyebrows */}
+              <motion.path
+                d={isCoveringEyes ? "M 80 84 Q 88 88 94 86" : "M 80 85 Q 88 80 94 84"}
+                fill="none"
+                stroke="#1e293b"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+              />
+              <motion.path
+                d={
+                  isPeeking
+                    ? "M 106 82 Q 112 76 120 81" // Raised curious eyebrow when peeking!
+                    : isCoveringEyes
+                    ? "M 106 86 Q 112 88 120 84"
+                    : "M 106 84 Q 112 80 120 85"
+                }
+                fill="none"
+                stroke="#1e293b"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+              />
+
+              {/* Glasses Frame (Modern Circular Doctor Glasses) */}
+              <circle cx="86" cy="96" r="10" fill="none" stroke="#005f5d" strokeWidth="2" opacity="0.85" />
+              <circle cx="114" cy="96" r="10" fill="none" stroke="#005f5d" strokeWidth="2" opacity="0.85" />
+              <line x1="96" y1="96" x2="104" y2="96" stroke="#005f5d" strokeWidth="2" opacity="0.85" />
+
+              {/* EYES (ANIMATED PUPILS & BLINKING) */}
+              <g>
+                {/* Left Eye */}
+                <ellipse
+                  cx="86"
+                  cy={isUsernameFocused ? 97.5 : 96}
+                  rx="3.5"
+                  ry={isBlinking || isCoveringEyes ? 0.3 : 3.5}
+                  fill="#0f172a"
+                />
+                {!isBlinking && !isCoveringEyes && (
+                  <circle cx="85" cy={isUsernameFocused ? 96.5 : 95} r="1.2" fill="#ffffff" />
+                )}
+
+                {/* Right Eye */}
+                <ellipse
+                  cx="114"
+                  cy={isUsernameFocused ? 97.5 : 96}
+                  rx="3.5"
+                  ry={
+                    isPeeking
+                      ? 3.8 // Peeking eye is wide awake & bright!
+                      : isBlinking || isCoveringEyes
+                      ? 0.3
+                      : 3.5
+                  }
+                  fill="#0f172a"
+                />
+                {(!isBlinking || isPeeking) && !isCoveringEyes && (
+                  <circle cx="113" cy={isUsernameFocused ? 96.5 : 95} r="1.2" fill="#ffffff" />
+                )}
+              </g>
+
+              {/* Cute Nose */}
+              <ellipse cx="100" cy="103" rx="2" ry="1.5" fill="#e89e70" />
+
+              {/* Rosy Cheeks when Covering Eyes / Peeking */}
+              {(isCoveringEyes || isPeeking) && (
+                <g opacity="0.65">
+                  <ellipse cx="76" cy="105" rx="5" ry="3.5" fill="#f43f5e" />
+                  <ellipse cx="124" cy="105" rx="5" ry="3.5" fill="#f43f5e" />
+                </g>
+              )}
+
+              {/* Mouth Expressions */}
+              <motion.path
+                d={
+                  isPeeking
+                    ? "M 93 112 Q 100 119 107 113" // Cheeky happy grin
+                    : isCoveringEyes
+                    ? "M 95 113 Q 100 111 105 113" // Shy privacy line
+                    : "M 93 112 Q 100 117 107 112"  // Pleasant doctor smile
+                }
+                fill="none"
+                stroke="#b91c1c"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+              />
+            </motion.g>
+
+            {/* ================= HANDS COVERING EYES (PEEK-A-BOO ANIMATION) ================= */}
+            {/* Left Hand: Covers Left Eye when Password Focused */}
+            <motion.g
+              initial={false}
+              animate={
+                isCoveringEyes || isPeeking
+                  ? { y: 0, opacity: 1, scale: 1 }
+                  : { y: 45, opacity: 0, scale: 0.8 }
+              }
+              transition={{
+                type: 'spring',
+                stiffness: 380,
+                damping: 24
+              }}
+            >
+              {/* White Sleeve Cuff */}
+              <path d="M 60 148 L 74 120 L 88 126 L 76 156 Z" fill="url(#coatGrad)" stroke="#cbd5e1" strokeWidth="1.5" />
+              {/* Left Hand / Palm over left eye */}
+              <ellipse cx="84" cy="98" rx="9" ry="11" fill="url(#skinGrad)" stroke="#e89e70" strokeWidth="1.5" />
+              {/* Fingers */}
+              <line x1="79" y1="92" x2="81" y2="103" stroke="#e89e70" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="84" y1="90" x2="85" y2="104" stroke="#e89e70" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="89" y1="92" x2="89" y2="103" stroke="#e89e70" strokeWidth="1.2" strokeLinecap="round" />
+            </motion.g>
+
+            {/* Right Hand: Covers Right Eye or Peeks Down when Eye Toggle clicked */}
+            <motion.g
+              initial={false}
+              animate={
+                isPeeking
+                  ? { y: 16, x: 6, rotate: 12, opacity: 1 } // Peeks down smoothly to reveal right eye!
+                  : isCoveringEyes
+                  ? { y: 0, x: 0, rotate: 0, opacity: 1 }   // Fully covers right eye!
+                  : { y: 45, x: 0, opacity: 0 }             // Resting below
+              }
+              transition={{
+                type: 'spring',
+                stiffness: 380,
+                damping: 24
+              }}
+            >
+              {/* White Sleeve Cuff */}
+              <path d="M 140 148 L 126 120 L 112 126 L 124 156 Z" fill="url(#coatGrad)" stroke="#cbd5e1" strokeWidth="1.5" />
+              {/* Right Hand / Palm */}
+              <ellipse cx="116" cy="98" rx="9" ry="11" fill="url(#skinGrad)" stroke="#e89e70" strokeWidth="1.5" />
+              {/* Fingers */}
+              <line x1="111" y1="92" x2="111" y2="103" stroke="#e89e70" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="116" y1="90" x2="115" y2="104" stroke="#e89e70" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="121" y1="92" x2="119" y2="103" stroke="#e89e70" strokeWidth="1.2" strokeLinecap="round" />
+            </motion.g>
+
+            {/* Sparkle effect when peeking */}
+            {isPeeking && (
+              <motion.g
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: [0, 1.2, 1], opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <path
+                  d="M 124 80 L 126 84 L 130 86 L 126 88 L 124 92 L 122 88 L 118 86 L 122 84 Z"
+                  fill="#f59e0b"
+                />
+              </motion.g>
+            )}
           </motion.g>
-
-          {/* Outer Ring Border */}
-          <circle cx="110" cy="100" r="95" fill="none" stroke="#007a78" strokeWidth="2.5" opacity="0.4" />
         </g>
       </svg>
     </div>

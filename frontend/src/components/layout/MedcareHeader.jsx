@@ -9,6 +9,7 @@ export default function MedcareHeader({
   onNavigate, 
   onOpenQueue, 
   onOpenInput,
+  onOpenGuide,
   currentUser,
   onLogout
 }) {
@@ -20,7 +21,8 @@ export default function MedcareHeader({
   const navItems = [
     { key: 'landing', label: 'Dashboard', onClick: () => onNavigate && onNavigate('landing') },
     { key: 'cases', label: 'Antrean Audit', onClick: onOpenQueue },
-    { key: 'input', label: 'Simulasi Klaim', onClick: onOpenInput }
+    { key: 'input', label: 'Simulasi Klaim', onClick: onOpenInput },
+    { key: 'guide', label: 'Panduan', onClick: onOpenGuide }
   ];
 
   return (
@@ -48,7 +50,8 @@ export default function MedcareHeader({
           const isActive = 
             (item.key === 'landing' && (activeSection === 'landing' || activeSection === 'home')) ||
             (item.key === 'cases' && (activeSection === 'cases' || activeSection === 'case-detail')) ||
-            (item.key === 'input' && activeSection === 'input');
+            (item.key === 'input' && activeSection === 'input') ||
+            (item.key === 'guide' && activeSection === 'guide');
 
           return (
             <button

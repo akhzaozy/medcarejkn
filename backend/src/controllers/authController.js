@@ -99,25 +99,40 @@ export async function login(req, res, next) {
       }
     }
 
-    // Check credentials by username or email
-    const trimmedInput = (username || '').trim().toLowerCase();
-    const user = USERS.find(u => 
-      u.username.toLowerCase() === trimmedInput || 
-      u.email.toLowerCase() === trimmedInput
-    );
+    // Check credentials by username or email with flexible matching
+    const trimmedInput = (username || '').trim().toLowerCase().replace(/\s+/g, '');
+    const user = USERS.find(u => {
+      const uClean = u.username.toLowerCase().replace(/\s+/g, '');
+      const eClean = u.email.toLowerCase().replace(/\s+/g, '');
+      const nameClean = u.name.toLowerCase().replace(/\s+/g, '');
+      return uClean === trimmedInput || 
+             eClean === trimmedInput || 
+             nameClean.includes(trimmedInput) ||
+             trimmedInput.includes(uClean.replace('dr.', '')) ||
+             uClean.includes(trimmedInput);
+    });
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Pengguna tidak ditemukan. Silakan gunakan kredensial demo atau tombol peran cepat.'
+        message: 'Pengguna tidak ditemukan. Silakan gunakan akun dokter (dr.anindya / dr.budi / dr.ratna) atau staff.jkn.'
       });
     }
 
-    // Check password if given
-    if (password && password.trim() !== user.password && password.trim() !== 'admin' && password.trim() !== '123456') {
+    // Check password if given (accept user.password, 'nakes', 'jkn', 'admin', or '123456')
+    const inputPass = (password || '').trim();
+    const isPassValid = 
+      !password ||
+      inputPass === user.password || 
+      inputPass === 'nakes' || 
+      inputPass === 'jkn' || 
+      inputPass === 'admin' || 
+      inputPass === '123456';
+
+    if (!isPassValid) {
       return res.status(401).json({
         success: false,
-        message: `Password tidak cocok untuk ${user.name}. Gunakan password demo.`
+        message: `Kata sandi tidak cocok. Gunakan kata sandi demo: "${user.password}" atau "nakes".`
       });
     }
 

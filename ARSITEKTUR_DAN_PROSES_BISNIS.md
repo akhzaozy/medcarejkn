@@ -41,6 +41,28 @@ Untuk mencegah terjadinya salah sangka (*false accusation*) yang dapat mencedera
 └──────────────────────────────────┴────────────────────────────────────────┘
 ```
 
+### 1.4 Mengapa Bukan Black-Box Machine Learning?
+Sistem ini secara sengaja **tidak menggunakan model Machine Learning kotak hitam (*black-box ML*)** seperti Deep Neural Network atau Random Forest probabilitis murni karena alasan kepatuhan hukum dan regulasi kesehatan:
+1. **Kepatuhan Regulasi (Permenkes No. 16 Tahun 2019)**:
+   Penanganan kecurangan klaim JKN menuntut proses pembuktian yang transparan, sah, dan dapat diuji secara hukum (*defensible & auditable*). Model black-box yang hanya menghasilkan nilai persentase probabilitas (misal: "Kemungkinan fraud 87%") tidak memiliki kekuatan pembuktian di hadapan Tim Pencegahan Kecurangan JKN maupun badan pemeriksa (BPKP/BPK).
+2. **Kebutuhan Explainable & Traceable Evidence**:
+   Sistem menyajikan bukti deterministik per item tindakan medis: dokumen mana yang sah, berkas mana yang hilang/tidak cocok, dan berapa selisih nominal kerugian keuangan negara (*evidence gap*).
+3. **Mencegah Kerugian Reputasi Faskes Akibat False Positive**:
+   Sistem berbasis aturan dan rekonsiliasi bukti digital memberikan kepastian alasan audit yang jelas sehingga faskes dapat melakukan klarifikasi dengan adil.
+
+### 1.5 Pembagian Peran: Sistem sebagai Radar Triase, Nakes sebagai Pengambil Keputusan Final
+Prinsip dasar sistem ini adalah **Human-in-the-Loop**:
+- **Peran Sistem (medCare JKN)**:
+  - Memindai ribuan data klaim secara otomatis dan instan.
+  - Menghitung kecocokan berkas (*evidence coverage*) dan selisih tagihan (*evidence gap*).
+  - Memberikan sinyal peringatan dini (*risk signal*) dan panduan fokus pemeriksaan (*review focus*).
+- **Peran Tenaga Kesehatan / Auditor Medis (Dokter Penelaah & Verifikator)**:
+  - Menerima notifikasi kasus dari sistem.
+  - Melakukan audit klinis mendalam (*deep-dive audit*): meninjau catatan rekam medis terintegrasi (CPPT/SOAP), resume medis, lembar persetujuan tindakan, dan hasil laboratorium.
+  - Melakukan klarifikasi dengan faskes terkait jika diperlukan.
+  - **Menetapkan putusan akhir secara mutlak** (`CONFIRMED`, `FALSE_POSITIVE`, atau `NEEDS_MORE_EVIDENCE`).
+  - Sistem tidak pernah memotong klaim atau menjatuhkan sanksi secara mandiri tanpa otorisasi nakes.
+
 ---
 
 ## 2. Diagram Alur Proses Bisnis End-to-End

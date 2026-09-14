@@ -8,6 +8,15 @@ indikasi fraud pada klaim JKN, dengan fokus MVP pada **Phantom
 Billing**. Sistem tidak menetapkan fraud sebagai keputusan final dan
 tidak menggantikan proses purifikasi maupun verifikasi klaim.
 
+### 1.1 Filosofi Decision-Support System: Mengapa Bukan Black-Box Machine Learning?
+Sistem ini menggunakan **Deterministic Evidence Reconciliation Engine** dan bukan *black-box machine learning* (seperti probabilitas neural network murni):
+1. **Transparansi & Pembuktian Hukum (Defensible & Explainable)**: Berdasarkan regulasi penanganan kecurangan JKN (Permenkes No. 16/2019), klaim sengketa memerlukan rincian bukti fisik dan perbandingan item demi item, bukan sekadar skor kemungkinan acak.
+2. **Rekonsiliasi Granular**: Sistem mengidentifikasi dokumen mana yang ada, dokumen mana yang hilang, dan berapa selisih uang riilnya (*evidence gap*).
+
+### 1.2 Pembagian Peran: Sistem (Radar Triase) & Nakes (Keputusan Akhir)
+1. **Sistem**: Menjadi radar pendeteksi dini, menghitung gap berkas, dan memetakan prioritas audit.
+2. **Nakes / Dokter Auditor**: Melakukan audit klinis mendalam terhadap berkas rekam medis asli dan **menetapkan keputusan final** (`CONFIRMED`, `FALSE_POSITIVE`, atau `NEEDS_MORE_EVIDENCE`). Sistem tidak pernah menetapkan vonis hukum secara otomatis.
+
 ``` text
 ┌──────────────────────────────────────────────────────────────────────┐
 │                         SUMBER DATA                                  │
