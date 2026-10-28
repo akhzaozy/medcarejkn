@@ -37,14 +37,14 @@ services:
       DB_NAME: ${DB_NAME:-jkn_integrity}
       DB_USER: ${DB_USER:-jkn_user}
       DB_PASSWORD: ${DB_PASSWORD:-jkn_password}
-      CORS_ORIGIN: "http://localhost http://localhost:80 http://localhost:5173"
+      CORS_ORIGIN: "http://localhost http://localhost:80 http://localhost:5173 http://localhost:3765"
       BPJS_DATA_DIR: /app/bpjs-data
       BPJS_AUDIT_DIR: /app/bpjs-audit
     volumes:
       - ./outputs/bpjs-2025:/app/bpjs-data:ro
       - ./outputs/bpjs-simulation:/app/bpjs-audit
     ports:
-      - "3000:3000"
+      - "${BACKEND_PORT:-3765}:3000"
     depends_on:
       postgres:
         condition: service_healthy
