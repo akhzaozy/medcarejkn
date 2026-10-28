@@ -78,7 +78,7 @@
   .login-form-panel { padding: 30px 26px; }
   .login-footer { padding: 18px 28px; }
 }
-@media (max-width: 600px) {
+@media (max-width: 700px) {
   .login-page { padding: 16px 12px; align-items: flex-start; }
   .login-shell { border-radius: 20px; }
   .login-brandbar { min-height: 76px; padding: 20px; }
@@ -97,3 +97,31 @@
   .login-footer { padding: 18px 22px; flex-direction: column; gap: 6px; }
 }
 @media (prefers-reduced-motion: reduce) { .login-page * { transition: none !important; } }
+
+@media (max-width: 700px) {
+  .login-page { padding: 12px; }
+  .login-brandbar { min-height: 64px; padding: 16px 22px; }
+  .login-intro { display: none; }
+  .login-account-picker { margin-top: 0; }
+  .login-profiles { padding: 18px 22px; }
+  .login-account-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .login-account { flex-direction: column; padding: 10px 6px; gap: 6px; text-align: center; min-height: 100px; }
+  .login-account-copy strong { font-size: 10px; }
+  .login-account-copy > span, .login-account-choice, .login-account-help, .login-section-heading > span { display: none; }
+  .login-initials { flex-basis: auto; width: 28px; height: 28px; }
+  .login-form-panel { padding: 22px; }
+  .login-form-heading .login-eyebrow { display: none; }
+  .login-form-heading h2 { font-size: 23px; }
+  .login-form-heading > p:last-child { font-size: 12px; max-width: none; }
+  .login-form { margin-top: 20px; gap: 14px; }
+  .login-demo-note { margin-top: 16px; padding-top: 12px; }
+  .login-footer { padding: 12px 22px; }
+}
+@media (min-width: 701px) and (max-height: 800px) {
+  .login-page { padding-block: 16px; }
+  .login-brandbar { min-height: 70px; padding-block: 16px; }
+  .login-profiles, .login-form-panel { padding-top: 26px; padding-bottom: 22px; }
+  .login-intro h1 { font-size: 30px; }
+  .login-account-picker { margin-top: 20px; }
+  .login-footer { padding-block: 12px; }
+}

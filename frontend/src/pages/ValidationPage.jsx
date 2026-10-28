@@ -118,7 +118,7 @@ export default function ValidationPage({ onSelectCase, onBack }) {
       {/* Top 4 KPI Metrics in Minimalist Cards */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))',
         gap: '1.25rem',
         marginBottom: '2rem'
       }}>
@@ -235,7 +235,7 @@ export default function ValidationPage({ onSelectCase, onBack }) {
       {/* Section 1: Confusion Matrix & Per-Class Performance */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 480px), 1fr))',
         gap: '1.5rem',
         marginBottom: '2.5rem'
       }}>
@@ -379,7 +379,7 @@ export default function ValidationPage({ onSelectCase, onBack }) {
           Logika audit berbasis bukti yang diterapkan pada dataset NHIS untuk verifikasi integritas penagihan:
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1.25rem' }}>
           {/* Rule Card 1 */}
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '1.25rem', borderRadius: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontWeight: 800, fontSize: '0.92rem', marginBottom: '0.5rem' }}>

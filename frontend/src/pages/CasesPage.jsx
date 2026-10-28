@@ -205,7 +205,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
           gap: '1rem'
         }}>
           {/* Stage ALL */}
@@ -317,7 +317,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
       {/* Filter Toolbar (Clean White Pill Style) */}
       {/* Filter Toolbar (Clean White Pill Style) */}
       <div className="med-subpage-card" style={{ padding: '1.25rem 1.75rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1.25rem' }}>
           {/* Search Box */}
           <div>
             <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--mc-text-heading)', marginBottom: '0.45rem' }}>
@@ -532,7 +532,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
 
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))',
                   gap: '1.5rem'
                 }}>
                   {cases.map((c, index) => {

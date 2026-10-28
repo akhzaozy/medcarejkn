@@ -13,6 +13,7 @@ import GuidePage from './pages/GuidePage';
 import LoginPage from './pages/LoginPage';
 import BpjsDataPage from './pages/BpjsDataPage';
 import { fetchDashboard } from './api/client';
+import './styles/responsive.css';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
@@ -165,7 +166,7 @@ export default function App() {
           onLogout={handleLogout}
         />
 
-        <main style={{ minHeight: '70vh' }}>
+        <main style={{ minHeight: view === 'input' ? 0 : '70vh' }}>
           {view === 'bpjs' && <BpjsDataPage onOpenPatients={handleOpenBpjsAudit} />}
           {view === 'landing' && (
             <MedcareLanding
@@ -237,7 +238,7 @@ export default function App() {
         </main>
 
         {/* Minimalist medCare Footer — matches landing page */}
-        <footer style={{
+        {view !== 'input' && <footer style={{
           background: 'var(--mc-card-bg)',
           borderTop: '1px solid var(--mc-card-border)',
           padding: '2.5rem 2rem',
@@ -257,7 +258,7 @@ export default function App() {
           <p style={{ fontSize: '0.8rem', color: 'var(--mc-text-muted)', maxWidth: '550px', margin: '0 auto' }}>
             Prototipe audit berbasis bukti dan eksplorasi data sampel BPJS. Data simulasi audit dan data BPJS ditampilkan dengan cakupan masing-masing.
           </p>
-        </footer>
+        </footer>}
       </div>
     </div>
   );

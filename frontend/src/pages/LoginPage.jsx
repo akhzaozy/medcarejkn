@@ -173,7 +173,6 @@ export default function LoginPage({ onLoginSuccess }) {
             <span className="login-brand-mark" aria-hidden="true">+</span>
             <span>medCare <span className="login-brand-jkn">JKN</span></span>
           </a>
-          <span className="login-environment">Simulasi lomba</span>
         </header>
 
         <div className="login-columns">
@@ -238,7 +237,7 @@ export default function LoginPage({ onLoginSuccess }) {
               <div className="login-divider"><span>atau</span></div>
               <button type="button" className="login-demo" onClick={handleDirectDemoLogin} disabled={loading}>Coba mode demo</button>
             </form>
-            <div className="login-demo-note"><strong>Ruang simulasi untuk lomba</strong><p>Eksplorasi data sampel BPJS dan skenario audit. Hasil telaah digunakan untuk demonstrasi.</p></div>
+            <div className="login-demo-note"><strong>Data sampel BPJS</strong><p>Eksplorasi data sampel BPJS dan skenario audit. Hasil telaah digunakan untuk demonstrasi.</p></div>
           </section>
         </div>
         <footer className="login-footer"><span>medCare JKN · Audit klaim berbasis bukti</span><span>Data sampel BPJS edisi 2025</span></footer>

@@ -206,7 +206,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
           <Activity size={17} color="var(--mc-teal-primary)" />
           <span>Skenario Simulasi Uji Integritas Klaim (Pilih Contoh Kasus):</span>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1rem' }}>
           {PRESETS.map((preset) => {
             const isSelected = formData.diagnosis === preset.data.diagnosis && formData.amountBilled === preset.data.amountBilled;
             const IconComponent = preset.icon;
@@ -268,7 +268,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
       </div>
 
       {/* Main Grid: Form (Left) & Real-time Audit Result (Right) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))', gap: '2rem', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 460px), 1fr))', gap: '2rem', alignItems: 'start' }}>
         {/* Form Card */}
         <div className="med-subpage-card" style={{ marginBottom: 0 }}>
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--mc-text-heading)', marginBottom: '0.35rem' }}>
@@ -279,7 +279,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
           </p>
 
           <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem', marginBottom: '1rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--mc-text-heading)', marginBottom: '0.35rem' }}>
                   ID Pasien / Peserta
@@ -309,7 +309,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem', marginBottom: '1rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--mc-text-heading)', marginBottom: '0.35rem' }}>
                   Usia Peserta (Tahun)
@@ -342,7 +342,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem', marginBottom: '1rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--mc-text-heading)', marginBottom: '0.35rem' }}>
                   Tanggal Kunjungan (Encounter)
@@ -521,7 +521,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
               </div>
 
               {/* Metric Highlights */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid var(--mc-card-border)' }}>
                   <div style={{ fontSize: '0.72rem', color: 'var(--mc-text-muted)', fontWeight: 700 }}>EVIDENCE DISPARITY (GAP)</div>
                   <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--mc-text-heading)', marginTop: '2px' }}>

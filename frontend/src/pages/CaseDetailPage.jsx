@@ -356,7 +356,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
         {/* 5-Step Process Timeline */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))',
           gap: '0.75rem'
         }}>
           {/* Step 1: Claim In */}
@@ -598,7 +598,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
         {/* 4 Metric Facts Box */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))',
           gap: '0.75rem'
         }}>
           <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
@@ -636,7 +636,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1.25rem' }}>
           {/* Column 1: Yang Ditagihkan Faskes (Klaim) */}
           <div style={{ background: '#fff9f9', border: '1.5px solid #fecdd3', borderRadius: '18px', padding: '1.35rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.85rem' }}>
@@ -833,7 +833,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                   border: '1.5px solid #e2e8f0',
                   borderRadius: '16px',
                   padding: '1rem 1.25rem',
-                  minWidth: '300px',
+                  minWidth: 'min(100%, 300px)',
                   boxShadow: '0 4px 15px rgba(0,0,0,0.02)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
@@ -852,7 +852,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                   </div>
                 </div>
 
-                <div style={{ flex: 1, minWidth: '280px' }}>
+                <div style={{ flex: 1, minWidth: 'min(100%, 280px)' }}>
                   {item.evidenceRecords && item.evidenceRecords.length > 0 ? (
                     item.evidenceRecords.map(rec => (
                       <div key={rec.id} style={{
@@ -1073,7 +1073,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
       </div>
 
       {/* ==================== 8. REVIEW OUTCOME & AUDIT TRAIL PANELS ==================== */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: '1.5rem' }}>
         
         {/* PANEL 1: Role-Specific Action */}
         {currentUser?.role === 'staff_jkn' ? (
@@ -1272,7 +1272,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                 <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#334155', marginBottom: '0.6rem' }}>
                   Pilih Hasil Telaah Klinis
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '0.65rem' }}>
                   {[
                     { id: 'NEEDS_MORE_EVIDENCE', label: 'Perlu Konfirmasi Berkas', desc: 'Membutuhkan berkas fisik tambahan dari faskes' },
                     { id: 'CONFIRMED', label: 'Terverifikasi Fraud / Phantom', desc: 'Disparitas terbukti nyata tanpa bukti pelayanan' },

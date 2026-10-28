@@ -189,6 +189,7 @@ export default function MedcareHeader({
             <AnimatePresence>
               {showNotifDropdown && (
                 <motion.div
+                  className="med-notifications-popover"
                   initial={{ opacity: 0, y: 10, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8, scale: 0.96 }}
