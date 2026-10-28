@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { loginUser, setDemoMode } from '../api/client';
-import DoctorMascotAvatar from '../components/illustrations/DoctorMascotAvatar';
 import AnimatedAlertModal from '../components/common/AnimatedAlertModal';
 import { 
   User, Lock, Eye, EyeOff, ArrowRight, AlertCircle, 
-  CheckCircle2, ShieldCheck, Sparkles, Stethoscope, 
+  CheckCircle2, ShieldCheck, Stethoscope, 
   FileText, Activity, KeyRound, Building2
 } from 'lucide-react';
 
@@ -528,13 +527,6 @@ export default function LoginPage({ onLoginSuccess }) {
           background: '#ffffff'
         }}>
           <div>
-            {/* Super Cool Interactive Doctor Mascot Avatar (Eyes follow input, hands cover eyes, peeks) */}
-            <DoctorMascotAvatar
-              isPasswordFocused={isPasswordFocused}
-              showPassword={showPassword}
-              isUsernameFocused={isUsernameFocused}
-            />
-
             <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
               <h2 style={{
                 fontSize: '1.55rem',
@@ -770,7 +762,6 @@ export default function LoginPage({ onLoginSuccess }) {
                   e.currentTarget.style.borderColor = '#cbd5e1';
                 }}
               >
-                <Sparkles size={14} color="#007a78" />
                 <span>Masuk Cepat Mode Demo (Data Sintetis V4)</span>
               </button>
             </form>

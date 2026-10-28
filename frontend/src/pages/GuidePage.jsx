@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BookOpen, HelpCircle, ShieldAlert, CheckCircle2, AlertTriangle, 
   ArrowRight, FileSearch, Stethoscope, UserCheck, Scale, 
-  Sparkles, Layers, Search, Database, ChevronRight, Eye,
+  Layers, Search, Database, ChevronRight, Eye,
   Info, Zap, PlayCircle, ExternalLink, BookmarkCheck
 } from 'lucide-react';
 
@@ -55,7 +55,6 @@ export default function GuidePage({
             alignItems: 'center',
             gap: '6px'
           }}>
-            <Sparkles size={12} />
             Panduan Resmi untuk Dewan Juri &amp; Pengguna Awam
           </span>
         </div>
@@ -831,7 +830,7 @@ export default function GuidePage({
                     boxShadow: '0 4px 10px rgba(217, 119, 6, 0.25)'
                   }}
                 >
-                  <Sparkles size={14} /> Coba Simulasi Klaim
+                  Coba Simulasi Klaim
                 </button>
               </div>
 

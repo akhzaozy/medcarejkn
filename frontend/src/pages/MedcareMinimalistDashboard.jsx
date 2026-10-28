@@ -13,7 +13,7 @@ import MedcareFieldVerificationCard from '../components/medcare/MedcareFieldVeri
 
 import MedcareAuditScheduleModal from '../components/medcare/MedcareAuditScheduleModal';
 import MedcareVerificationDetailModal from '../components/medcare/MedcareVerificationDetailModal';
-import { ArrowRight, Sparkles, BookOpen } from 'lucide-react';
+import { ArrowRight, BookOpen } from 'lucide-react';
 
 export default function MedcareMinimalistDashboard({
   dashboardData,

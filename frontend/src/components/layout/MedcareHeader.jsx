@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  LogOut, Sparkles, Bell, MessageSquare, 
+  LogOut, Bell, MessageSquare, 
   FileText, CheckCheck, Clock, ChevronRight, Check
 } from 'lucide-react';
 import { isDemoMode, getNotifications, markNotificationsAsRead } from '../../api/client';
@@ -133,7 +133,6 @@ export default function MedcareHeader({
             alignItems: 'center',
             gap: '4px'
           }}>
-            <Sparkles size={11} />
             Mode Demo
           </span>
         )}
@@ -285,7 +284,7 @@ export default function MedcareHeader({
                             justifyContent: 'center',
                             flexShrink: 0
                           }}>
-                            {n.type === 'dispute' ? <MessageSquare size={16} /> : (n.type === 'ml' ? <Sparkles size={16} /> : <FileText size={16} />)}
+                            {n.type === 'dispute' ? <MessageSquare size={16} /> : <FileText size={16} />}
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>

@@ -14,7 +14,7 @@ import {
   ArrowLeft, FileText, CheckCircle2, AlertTriangle, Clock, 
   Send, ShieldAlert, FileSearch, UserCheck, HelpCircle, 
   UserPlus, Stethoscope, CheckCheck, Receipt, ClipboardCheck,
-  ChevronRight, AlertCircle, Sparkles, Building2, User, Activity,
+  ChevronRight, AlertCircle, Building2, User, Activity,
   Upload, MessageSquare, Plus, Paperclip, X, Check, RefreshCw
 } from 'lucide-react';
 
@@ -1200,7 +1200,6 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                       fontWeight: 800,
                       letterSpacing: '0.04em'
                     }}>
-                      <Sparkles size={13} />
                       REKOMENDASI MACHINE LEARNING
                     </div>
                     <span style={{ fontSize: '0.72rem', color: '#0d9488', fontWeight: 700 }}>
@@ -1262,7 +1261,6 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                       transition: 'all 0.15s ease'
                     }}
                   >
-                    <Sparkles size={13} />
                     {appliedMl ? 'Saran AI Berhasil Diterapkan!' : 'Terapkan Saran AI ke Formulir'}
                   </button>
                 </div>
