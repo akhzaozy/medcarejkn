@@ -25,8 +25,8 @@ services:
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: jkn_backend
     restart: unless-stopped
     environment:
@@ -41,7 +41,6 @@ services:
       BPJS_DATA_DIR: /app/bpjs-data
       BPJS_AUDIT_DIR: /app/bpjs-audit
     volumes:
-      - ./outputs/bpjs-2025:/app/bpjs-data:ro
       - ./outputs/bpjs-simulation:/app/bpjs-audit
     ports:
       - "${BACKEND_PORT:-3765}:3000"

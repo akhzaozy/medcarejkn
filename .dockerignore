@@ -1,0 +1,15 @@
+.git
+**/node_modules
+**/.env
+**/.DS_Store
+frontend
+dataset
+outputs/01a17fb5*
+outputs/bpjs-simulation
+outputs/**/*.zip
+outputs/**/*.ndjson
+outputs/**/previews
+outputs/**/*.png
+outputs/**/profile.json
+**/*.sqlite-wal
+**/*.sqlite-shm

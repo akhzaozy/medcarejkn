@@ -12,11 +12,14 @@ const text=(v,max=100)=> typeof v==='string' && v.length<=max ? v : fail('Parame
 const digits=v=>/^\d{1,20}$/.test(text(v)) ? v : fail('ID peserta harus berupa angka.');
 function source() {
   const filename=path.join(bpjsDirectory(),'bpjs-patients.sqlite');
-  if(!fs.existsSync(filename)) fail('Indeks pasien BPJS sedang disiapkan. Coba lagi setelah impor selesai.',503);
+  if(!fs.existsSync(filename)) {
+    console.error(`[BPJS] Indeks pasien tidak ditemukan: ${filename}`);
+    fail('Indeks pasien BPJS belum tersedia di server. Administrator perlu memasang data BPJS atau membangun ulang image backend.',503);
+  }
   const mtime=fs.statSync(filename).mtimeMs;
   if(!sourceCache || sourceCache.filename!==filename || sourceCache.mtime!==mtime) {
     sourceCache?.db.close();
-    sourceCache={filename,mtime,db:new DatabaseSync(filename,{readOnly:true})};
+    sourceCache={filename,mtime,participantCounts:{},db:new DatabaseSync(filename,{readOnly:true})};
   }
   return sourceCache.db;
 }
@@ -72,7 +75,9 @@ export function listBpjsPatients({cohort='Reguler',search='',after='',fkrtlOnly=
     ${fkrtlOnly ? "AND EXISTS(SELECT 1 FROM encounters e WHERE e.cohort=p.cohort AND e.patient_id=p.patient_id AND e.kind='fkrtl')" : ''}
     ORDER BY p.patient_id LIMIT 21`).all(cohort,after,search,search+'\uffff');
   const items=rows.slice(0,20).map(participant);
-  return {items,nextCursor:rows.length>20 ? items.at(-1).patient_id : null,cohortParticipants:patientCatalog().cohorts[cohort].participants};
+  const cohortParticipants=sourceCache.participantCounts[cohort] ??= db.prepare('SELECT COUNT(*) AS n FROM participants WHERE cohort=?').get(cohort).n;
+  const sourceParticipants=patientCatalog().cohorts[cohort].participants;
+  return {items,nextCursor:rows.length>20 ? items.at(-1).patient_id : null,cohortParticipants,sourceParticipants,isSubset:cohortParticipants<sourceParticipants};
 }
 export function getBpjsPatient(cohort,id,page=1) {
   validCohort(cohort); digits(id);

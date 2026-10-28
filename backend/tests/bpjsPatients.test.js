@@ -6,7 +6,7 @@ import path from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 import express from 'express';
 import bpjsPatientRoutes from '../src/routes/bpjsPatientRoutes.js';
-import {closeBpjsConnections,evaluateBpjsEvidence} from '../src/services/bpjsPatientService.js';
+import {closeBpjsConnections,evaluateBpjsEvidence,patientCatalog} from '../src/services/bpjsPatientService.js';
 
 test('BPJS evidence scenarios preserve unavailable, zero amounts and explicit simulated support',()=>{
   assert.equal(evaluateBpjsEvidence('SOURCE_ONLY').reviewPriority,'NO_CONCLUSION');
@@ -14,6 +14,24 @@ test('BPJS evidence scenarios preserve unavailable, zero amounts and explicit si
   assert.equal(evaluateBpjsEvidence('PARTIAL').coveragePct,50);
   assert.equal(evaluateBpjsEvidence('UNSUPPORTED').primarySignal,'PHANTOM_BILLING');
   assert.throws(()=>evaluateBpjsEvidence('__proto__'),e=>e.statusCode===400);
+});
+
+test('BPJS missing index reports a server setup problem and recovers when data is installed',()=>{
+  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'bpjs-missing-index-'));
+  const previous=process.env.BPJS_DATA_DIR;
+  try {
+    process.env.BPJS_DATA_DIR=directory;
+    assert.throws(()=>patientCatalog(),error=>error.statusCode===503 && /belum tersedia di server/.test(error.message) && !/sedang disiapkan/.test(error.message));
+    const db=new DatabaseSync(path.join(directory,'bpjs-patients.sqlite'));
+    db.exec('CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT)');
+    db.prepare('INSERT INTO metadata VALUES (?,?)').run('manifest',JSON.stringify({cohorts:{Reguler:{participants:1}}}));
+    db.close();
+    assert.equal(patientCatalog().cohorts.Reguler.participants,1);
+  } finally {
+    closeBpjsConnections();
+    if(previous===undefined)delete process.env.BPJS_DATA_DIR;else process.env.BPJS_DATA_DIR=previous;
+    fs.rmSync(directory,{recursive:true,force:true});
+  }
 });
 
 test('BPJS patient to encounter to persistent case and reviewer trace, with cohort isolation',async()=>{
@@ -28,7 +46,7 @@ test('BPJS patient to encounter to persistent case and reviewer trace, with coho
       CREATE TABLE participants(cohort TEXT,patient_id TEXT,dob TEXT,sex INTEGER,status INTEGER,segment INTEGER,province INTEGER,county INTEGER,sample_year INTEGER,mother_id TEXT,source_table TEXT,PRIMARY KEY(cohort,patient_id));
       CREATE TABLE encounters(id INTEGER PRIMARY KEY,cohort TEXT,patient_id TEXT,kind TEXT,visit_id TEXT,started TEXT,ended TEXT,diagnosis_code TEXT,diagnosis_name TEXT,billed REAL,verified REAL,province INTEGER,county INTEGER,provider_type INTEGER,source_table TEXT,source_row INTEGER);
       CREATE TABLE secondary_diagnoses(cohort TEXT,visit_id TEXT,diagnosis_code TEXT,description TEXT);`);
-    db.prepare('INSERT INTO metadata VALUES (?,?)').run('manifest',JSON.stringify({cohorts:{Reguler:{participants:23},COVID:{participants:1}}}));
+    db.prepare('INSERT INTO metadata VALUES (?,?)').run('manifest',JSON.stringify({cohorts:{Reguler:{participants:1000},COVID:{participants:1}}}));
     for(let i=100;i<123;i++)db.prepare('INSERT INTO participants VALUES (?,?,?,?,?,?,?,?,?,?,?)').run('Reguler',String(i),'2000-01-01',1,1,5,64,6471,2024,null,'T1');
     db.prepare('INSERT INTO participants VALUES (?,?,?,?,?,?,?,?,?,?,?)').run('COVID','100','1990-01-01',2,1,2,11,1173,2024,null,'T1');
     db.prepare('INSERT INTO encounters VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(1,'Reguler','100','fkrtl','VISIT1','2024-01-01','2024-01-02','Z09','Follow-up',1000000,900000,64,6471,1,'T1',1);
@@ -46,6 +64,7 @@ test('BPJS patient to encounter to persistent case and reviewer trace, with coho
     }
     const first=await call('/patients?cohort=Reguler&fkrtlOnly=false');
     assert.equal(first.data.items.length,20);assert.equal(first.data.nextCursor,'119');
+    assert.equal(first.data.cohortParticipants,23);assert.equal(first.data.sourceParticipants,1000);assert.equal(first.data.isSubset,true);
     assert.equal((await call('/patients?cohort=Reguler&fkrtlOnly=false&after=119')).data.items.length,3);
     assert.equal((await call('/patients?cohort=Reguler&search=10')).data.items.length,1);
     const patient=(await call('/patients/Reguler/100')).data;
