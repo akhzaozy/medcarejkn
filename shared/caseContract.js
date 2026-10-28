@@ -1,0 +1,11 @@
+import {users} from './users.js';
+export function eventContract(row) {const timestamp=row.timestamp||row.created_at||new Date().toISOString();return {eventId:String(row.eventId||row.audit_id||row.log_id||''),caseId:row.caseId||row.case_id,type:row.type||row.action,timestamp,actor:typeof row.actor==='object'?row.actor:{username:row.actor_id||row.actor||'system',name:users.find(u=>u.username===(row.actor_id||row.actor))?.name||row.actor_id||row.actor||'Sistem'},details:row.details||{message:row.detail||''}};}
+export function evidenceContract(row) {return {evidenceId:row.evidenceId||row.evidence_link_id||row.evidence_id,claimItemId:row.claimItemId||row.claim_item_id,type:row.type||row.evidence_type,reference:row.reference||row.source_id||row.title||'Referensi belum diberikan',note:row.note||row.reason||'',availability:row.availability|| (row.status==='AVAILABLE'?'YES':'UNAVAILABLE'),matchStatus:row.matchStatus||row.match_status||'PENDING',quantity:Number(row.quantity??row.match_quantity??0),createdAt:row.createdAt||row.created_at||null,createdBy:row.createdBy||row.created_by||'system.seed'};}
+export function itemContract(row,links=[]) {
+  const claimItemId=row.claimItemId||row.claim_item_id||row.item_id;
+  const evidenceLinks=links.map(evidenceContract).filter(e=>e.claimItemId===claimItemId);
+  const claimedQuantity=Number(row.claimedQuantity??row.quantity??0);
+  const available=evidenceLinks.length>0&&evidenceLinks.every(e=>e.availability==='YES'&&e.matchStatus!=='PENDING');
+  const supportedQuantity=evidenceLinks.filter(e=>e.availability==='YES'&&e.matchStatus==='MATCHED').reduce((n,e)=>n+e.quantity,0);
+  return {claimItemId,serviceCode:row.serviceCode||row.service_code||row.item_code,serviceType:row.serviceType||row.service_type||row.item_type,description:row.description||row.item_description||'',claimedQuantity,supportedQuantity,unitPrice:Number(row.unitPrice??row.unit_price??0),netAmount:Number(row.netAmount??row.net_amount??row.total_price??0),evidenceLinks,calculatedStatus:!available?'UNAVAILABLE':supportedQuantity>=claimedQuantity?'SUPPORTED':supportedQuantity>0?'PARTIAL':'UNSUPPORTED',coveragePct:available?Math.min(100,Math.round(supportedQuantity/Math.max(1,claimedQuantity)*100)):null,evidenceGap:available?Math.max(0,claimedQuantity-supportedQuantity):null};
+}

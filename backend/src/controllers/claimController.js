@@ -1,5 +1,6 @@
 import pool from '../config/db.js';
-import { detectNhisFraud } from '../decision-engine/nhisFraudDetector.js';
+import {analyzeClaim} from '../../../shared/riskEngine.js';
+import {randomUUID} from 'node:crypto';
 
 export async function getClaims(req, res, next) {
   try {
@@ -85,156 +86,27 @@ export async function getClaimById(req, res, next) {
   }
 }
 
-export async function auditCheckClaim(req, res, next) {
-  try {
-    const {
-      patientId = `PAT-SIM-${Date.now().toString().slice(-4)}`,
-      gender = 'F',
-      age = 35,
-      dateEncounter = new Date().toISOString().split('T')[0],
-      dateDischarge = new Date().toISOString().split('T')[0],
-      diagnosis = 'GENERAL ENCOUNTER',
-      amountBilled = 0,
-      providerId = 'PROV-001',
-      saveCase = false
-    } = req.body;
-
-    const claimData = {
-      patientId,
-      gender,
-      age: parseFloat(age || 0),
-      dateEncounter,
-      dateDischarge,
-      diagnosis,
-      amountBilled: parseFloat(amountBilled || 0)
-    };
-
-    const detection = detectNhisFraud(claimData);
-    const isPhantom = detection.fraudType === 'Phantom Billing';
-
-    let savedRecord = null;
-
-    if (saveCase) {
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
-        
-        // Ensure patient
-        const formattedPid = patientId.startsWith('PAT-') ? patientId : `PAT-${patientId}`;
-        const ageVal = parseFloat(age || 35);
-        let ageGroup = 'DEWASA (18-59)';
-        if (ageVal < 18) ageGroup = 'ANAK (<18)';
-        else if (ageVal >= 60) ageGroup = 'LANSIA (60+)';
-
-        await client.query(
-          'INSERT INTO patients (patient_id, age_group, sex, data_status) VALUES ($1, $2, $3, $4) ON CONFLICT (patient_id) DO UPDATE SET age_group = $2, sex = $3',
-          [formattedPid, ageGroup, gender.toUpperCase().startsWith('M') ? 'M' : 'F', 'VERIFIED']
-        );
-
-        // Sequence IDs
-        const timestampSuffix = Date.now().toString().slice(-6);
-        const encounterId = `ENC-SIM-${timestampSuffix}`;
-        const claimId = `CLM-SIM-${timestampSuffix}`;
-        const claimItemId = `CITM-SIM-${timestampSuffix}-01`;
-        const caseId = `CASE-SIM-${timestampSuffix}`;
-
-        // Insert Encounter
-        await client.query(
-          'INSERT INTO encounters (encounter_id, patient_id, provider_id, service_date, encounter_type, data_status) VALUES ($1, $2, $3, $4, $5, $6)',
-          [encounterId, formattedPid, providerId, dateEncounter, parseFloat(amountBilled) > 15000 ? 'RAWAT_INAP' : 'RAWAT_JALAN', 'SIMULASI_MOBILE_JKN']
-        );
-
-        // Insert Diagnosis
-        await client.query(
-          'INSERT INTO diagnoses (diagnosis_id, encounter_id, diagnosis_code, diagnosis_role, data_status) VALUES ($1, $2, $3, $4, $5)',
-          [`DIAG-SIM-${timestampSuffix}`, encounterId, diagnosis.slice(0, 30), 'PRIMARY', 'SIMULASI_MOBILE_JKN']
-        );
-
-        // Insert Claim
-        await client.query(
-          'INSERT INTO claims (claim_id, encounter_id, provider_id, claim_date, claim_status, total_amount, data_status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-          [claimId, encounterId, providerId, dateEncounter, 'SUBMITTED', parseFloat(amountBilled || 0), 'SIMULASI_MOBILE_JKN']
-        );
-
-        // Insert Claim Item
-        await client.query(
-          'INSERT INTO claim_items (claim_item_id, claim_id, sequence_no, service_code, service_type, quantity, unit_price, net_amount, encounter_id, ground_truth_item_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
-          [claimItemId, claimId, 1, diagnosis.slice(0, 20), 'PAKET_INA_CBG', 1, parseFloat(amountBilled || 0), parseFloat(amountBilled || 0), encounterId, isPhantom ? 'UNSUPPORTED' : 'SUPPORTED']
-        );
-
-        // Insert Case
-        await client.query(
-          'INSERT INTO cases (case_id, claim_id, primary_risk_mode, review_priority, case_status, affected_items, evidence_gap, evidence_coverage_pct, review_focus, data_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
-          [
-            caseId,
-            claimId,
-            detection.primaryRiskMode,
-            detection.reviewPriority,
-            'OPEN',
-            `Item #1: ${diagnosis.slice(0, 40)}`,
-            detection.evidenceGap,
-            detection.evidenceCoveragePct,
-            detection.reviewFocus,
-            'SIMULASI_MOBILE_JKN'
-          ]
-        );
-
-        // Insert Risk Signals
-        for (let idx = 0; idx < detection.reasons.length; idx++) {
-          await client.query(
-            'INSERT INTO risk_signals (signal_id, claim_id, claim_item_id, signal_type, severity, reason_code, reason_detail, data_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-            [
-              `SIG-SIM-${timestampSuffix}-${idx + 1}`,
-              claimId,
-              claimItemId,
-              detection.primaryRiskMode,
-              detection.reviewPriority,
-              detection.primaryRiskMode,
-              detection.reasons[idx],
-              'SIMULASI_MOBILE_JKN'
-            ]
-          );
-        }
-
-        // Insert Audit Log
-        await client.query(
-          'INSERT INTO audit_logs (case_id, actor_id, action, detail) VALUES ($1, $2, $3, $4)',
-          [caseId, 'MOBILE_JKN_PROXY', 'CLAIM_INPUT_AUDIT', `Klaim diinput via simulasi pelaporan Mobile JKN. Terdeteksi: ${detection.fraudType} (${detection.primaryRiskMode})`]
-        );
-
-        await client.query('COMMIT');
-
-        savedRecord = {
-          caseId,
-          claimId,
-          encounterId,
-          patientId: formattedPid
-        };
-      } catch (dbErr) {
-        await client.query('ROLLBACK');
-        throw dbErr;
-      } finally {
-        client.release();
-      }
-    }
-
-    res.status(200).json({
-      success: true,
-      data: {
-        isPhantom,
-        fraudType: detection.fraudType,
-        primaryRiskMode: detection.primaryRiskMode,
-        riskScore: detection.riskScore,
-        reviewPriority: detection.reviewPriority,
-        reasons: detection.reasons,
-        evidenceGap: detection.evidenceGap,
-        evidenceCoveragePct: detection.evidenceCoveragePct,
-        reviewFocus: detection.reviewFocus,
-        inputData: claimData,
-        savedRecord
-      }
-    });
-  } catch (err) {
-    next(err);
+export async function auditCheckClaim(req,res,next) {
+  const input=req.body||{};
+  if(!Number.isFinite(Number(input.amountBilled??0))||Number(input.amountBilled??0)<0)return res.status(400).json({message:'Nilai tagihan tidak valid.'});
+  const analysis=analyzeClaim(input);
+  let save={status:'not_requested',caseId:null,message:'Tidak disimpan (opsi simpan dimatikan).'};
+  if(input.saveCase){
+    let client;
+    try {
+      client=await pool.connect();await client.query('BEGIN');
+      const id=randomUUID().replaceAll('-','').slice(0,20),patientId=`PAT-${id}`,encounterId=`ENC-${id}`,claimId=`CLM-${id}`,caseId=`CASE-${id}`,providerId='PROV-MANUAL';
+      await client.query("INSERT INTO providers(provider_id,provider_name,provider_type) VALUES($1,'Faskes input manual','MANUAL') ON CONFLICT DO NOTHING",[providerId]);
+      await client.query('INSERT INTO patients(patient_id,age_group,sex) VALUES($1,$2,$3)',[patientId,String(input.age??'Tidak tersedia').slice(0,30),String(input.gender||'U').slice(0,1)]);
+      await client.query("INSERT INTO encounters(encounter_id,patient_id,provider_id,service_date,encounter_type) VALUES($1,$2,$3,$4,'MANUAL')",[encounterId,patientId,providerId,input.dateEncounter||new Date().toISOString().slice(0,10)]);
+      await client.query("INSERT INTO claims(claim_id,encounter_id,provider_id,claim_date,claim_status,total_amount) VALUES($1,$2,$3,$4,'SUBMITTED',$5)",[claimId,encounterId,providerId,input.dateEncounter||new Date().toISOString().slice(0,10),Number(input.amountBilled||0)]);
+      await client.query("INSERT INTO claim_items(claim_item_id,claim_id,sequence_no,service_code,service_type,quantity,unit_price,net_amount,encounter_id,description) VALUES($1,$2,1,'MANUAL','DEFAULT',$3,$4,$4,$5,$6)",[`ITEM-${id}`,claimId,Number(input.claimedQty||1),Number(input.amountBilled||0),encounterId,String(input.diagnosis||'Layanan manual').slice(0,300)]);
+      if(typeof input.evidenceAvailable==='boolean')await client.query("INSERT INTO evidence_links(evidence_link_id,claim_item_id,evidence_type,source_id,match_status,match_quantity,availability,reason,created_by) VALUES($1,$2,'INPUT_SCENARIO','Skenario input manual',$3,$4,$5,'Nilai terstruktur dari formulir; bukan pembacaan dokumen',$6)",[`EVD-${id}`,`ITEM-${id}`,input.evidenceAvailable?(Number(input.supportedQty)>0?'MATCHED':'UNSUPPORTED'):'UNAVAILABLE',input.evidenceAvailable?Number(input.supportedQty||0):0,input.evidenceAvailable?'YES':'UNAVAILABLE',req.user?.username||'unknown']);
+      await client.query("INSERT INTO cases(case_id,claim_id,primary_risk_mode,review_priority,case_status,evidence_gap,evidence_coverage_pct,review_focus,source,risk_score,engine_type,engine_version,initial_analysis,analysis,metadata,assigned_to,assigned_name) VALUES($1,$2,$3,$4,'OPEN',$5,$6,$7,'phantom_checker',$8,$9,$10,$11,$11,$12,$13,$14)",[caseId,claimId,analysis.primaryRiskMode,analysis.reviewPriority,analysis.evidenceGap,analysis.evidenceCoveragePct,analysis.reviewFocus,analysis.riskScore,analysis.engine.type,analysis.engine.version,JSON.stringify(analysis),JSON.stringify({features:input,primary_diagnosis:input.diagnosis}),req.user?.role==='clinical_reviewer'?req.user.username:null,req.user?.role==='clinical_reviewer'?req.user.name:null]);
+      await client.query("INSERT INTO audit_logs(case_id,actor_id,action,detail) VALUES($1,$2,'CASE_CREATED',$3)",[caseId,req.user?.username||'unknown',JSON.stringify({source:'phantom_checker',engine:analysis.engine})]);
+      await client.query('COMMIT');save={status:'saved',caseId,claimId,message:`Tersimpan sebagai kasus ${caseId}`};
+    }catch(e){if(client)await client.query('ROLLBACK');save={status:'failed',caseId:null,message:'Analisis berhasil, tetapi kasus gagal disimpan. Periksa layanan database dan coba simpan kembali.'};}
+    finally{client?.release();}
   }
+  res.json({success:true,analysis,save});
 }

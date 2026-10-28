@@ -4,6 +4,7 @@ import {
   LogOut, Bell, MessageSquare, 
   FileText, CheckCheck, Clock, ChevronRight, Check
 } from 'lucide-react';
+import {initials} from '../../../../shared/userIdentity.js';
 import { isDemoMode, getNotifications, markNotificationsAsRead } from '../../api/client';
 
 export default function MedcareHeader({ 
@@ -13,6 +14,7 @@ export default function MedcareHeader({
   onOpenInput, 
   onOpenGuide,
   onOpenBpjs,
+  onOpenValidation,
   onSelectCase,
   currentUser, 
   onLogout 
@@ -24,6 +26,8 @@ export default function MedcareHeader({
   const [notifications, setNotifications] = useState(() => getNotifications());
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const notifRef = useRef(null);
+
+  useEffect(()=>{const header=document.querySelector('.med-header');if(!header)return;const observer=new ResizeObserver(()=>{document.documentElement.style.setProperty('--med-header-offset',`${header.getBoundingClientRect().height+20}px`);});observer.observe(header);return()=>observer.disconnect();},[]);
 
   useEffect(() => {
     const handleUpdate = (e) => {
@@ -63,9 +67,10 @@ export default function MedcareHeader({
   // 100% UNIFIED NAV ITEMS (SERUMPUN) ACROSS ALL PAGES
   const navItems = [
     { key: 'landing', label: 'Dashboard', onClick: () => onNavigate && onNavigate('landing') },
-    { key: 'cases', label: 'Antrean Audit', onClick: onOpenQueue },
-    { key: 'input', label: 'Audit Pasien', onClick: onOpenInput },
+    { key: 'cases', label: 'Antrean Kasus Klaim', onClick: onOpenQueue },
+    { key: 'input', label: 'Audit Pasien BPJS', onClick: onOpenInput },
     ...(onOpenBpjs ? [{ key: 'bpjs', label: 'Data BPJS', onClick: onOpenBpjs }] : []),
+    {key:'validation',label:'AI & Validasi',onClick:onOpenValidation},
     { key: 'guide', label: 'Panduan', onClick: onOpenGuide }
   ];
 
@@ -96,7 +101,7 @@ export default function MedcareHeader({
             (item.key === 'cases' && (activeSection === 'cases' || activeSection === 'case-detail')) ||
             (item.key === 'input' && activeSection === 'input') ||
             (item.key === 'bpjs' && activeSection === 'bpjs') ||
-            (item.key === 'guide' && activeSection === 'guide');
+            (item.key === 'guide' && activeSection === 'guide') || (item.key==='validation' && activeSection==='validation');
 
           return (
             <button
@@ -104,6 +109,7 @@ export default function MedcareHeader({
               id={`nav-item-${item.key}`}
               className={`med-nav-item ${isActive ? 'active' : ''}`}
               onClick={item.onClick}
+              aria-current={isActive?'page':undefined}
             >
               {item.label}
               {isActive && (
@@ -367,14 +373,7 @@ export default function MedcareHeader({
         {/* User Profile Badge */}
         {currentUser ? (
           <div className="med-profile-badge" title="Info akun">
-            <img
-              src="/assets/user_fedrik.jpg"
-              alt={displayName}
-              className="med-profile-avatar"
-              onError={(e) => {
-                e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80';
-              }}
-            />
+            <span className="med-profile-initials" aria-hidden="true">{initials(displayName)}</span>
             <div>
               <div className="med-profile-name">{displayName}</div>
               <div className="med-profile-sub">{displayRole}</div>

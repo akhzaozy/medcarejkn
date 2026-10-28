@@ -1,9 +1,5 @@
-export function errorHandler(err, req, res, next) {
-  console.error('[API Error]:', err);
-  const statusCode = err.statusCode || 500;
-  res.status(statusCode).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  });
+export function errorHandler(err,req,res,next) {
+  const code=err.statusCode||500;
+  if(code>=500)console.error('[API]',req.method,req.path,err.code||'SERVER_ERROR');
+  res.status(code).json({success:false,message:code>=500?'Layanan belum tersedia. Perubahan belum disimpan.':err.message||'Permintaan tidak valid.'});
 }

@@ -17,3 +17,6 @@ outputs/**/*.zip
 outputs/**/*.ndjson
 *.sqlite-shm
 *.sqlite-wal
+
+outputs/backups/
+outputs/runtime-auth/

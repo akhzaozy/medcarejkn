@@ -10,6 +10,7 @@ import {
   formatGender, formatAgeGroup, formatCurrency, 
   formatDateIndo, formatDateTimeIndo, formatServiceType 
 } from '../utils/formatters';
+import {initials} from '../../../shared/userIdentity.js';
 import { 
   ArrowLeft, FileText, CheckCircle2, AlertTriangle, Clock, 
   Send, ShieldAlert, FileSearch, UserCheck, HelpCircle, 
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 
 export default function CaseDetailPage({ caseId, onBack, currentUser }) {
+  const [loadError,setLoadError]=useState('');
   const [details, setDetails] = useState(null);
   const [evidenceChain, setEvidenceChain] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -51,6 +53,9 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
   const [evidenceDocType, setEvidenceDocType] = useState('SURGICAL_REPORT');
   const [evidenceDocTitle, setEvidenceDocTitle] = useState('');
+  const [evidenceItem,setEvidenceItem]=useState('');
+  const [evidenceVerified,setEvidenceVerified]=useState(false);
+  const [supportedQuantity,setSupportedQuantity]=useState(0);
   const [evidenceDocNote, setEvidenceDocNote] = useState('');
   const [evidenceUploading, setEvidenceUploading] = useState(false);
   const [evidenceSuccess, setEvidenceSuccess] = useState(false);
@@ -72,7 +77,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
 
   const loadCaseData = async () => {
     try {
-      setLoading(true);
+      setLoading(true);setLoadError('');
       const [det, evid] = await Promise.all([
         fetchCaseDetails(caseId),
         fetchCaseEvidence(caseId)
@@ -80,7 +85,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
       setDetails(det);
       setEvidenceChain(evid);
     } catch (err) {
-      console.error(err);
+      setLoadError(err.status===404?'Kasus tidak ditemukan':err.message);
     } finally {
       setLoading(false);
     }
@@ -190,6 +195,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
     try {
       setEvidenceUploading(true);
       await uploadSupportingEvidence(caseId, {
+        claimItemId:evidenceItem||undefined,verified:evidenceVerified,supportedQuantity,
         evidenceType: evidenceDocType,
         title: evidenceDocTitle,
         note: evidenceDocNote || 'Dokumen fisik verifikasi disusulkan faskes',
@@ -228,7 +234,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
       if (disputeDocTitle.trim()) {
         attachments.push({
           name: `${disputeDocTitle.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-          size: '2.4 MB',
+          scope: 'reference_only',
           type: 'PDF'
         });
 
@@ -238,12 +244,6 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
           title: disputeDocTitle,
           note: disputeDocNote || 'Dokumen fisik verifikasi resmi dalam berkas sanggahan',
           uploadedBy: disputeActor || currentUser?.name || 'Komite Medik Faskes'
-        });
-      } else {
-        attachments.push({
-          name: `${disputeTitle.replace(/[^a-zA-Z0-9]/g, '_')}_Lampiran.pdf`,
-          size: '1.9 MB',
-          type: 'PDF'
         });
       }
 
@@ -275,6 +275,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
     }
   };
 
+  if(loadError)return <section className="med-subpage-card" role="alert"><h2>{loadError}</h2><button className="btn-pill-primary" onClick={onBack}>Kembali ke antrean</button></section>;
   if (loading) {
     return (
       <div style={{ padding: '5rem 2rem', textAlign: 'center', color: '#64748b' }}>
@@ -592,7 +593,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
         <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.65, margin: '0 0 1.25rem 0' }}>
           Klaim berkas <strong>{c.case_id}</strong> diajukan oleh <strong>{c.provider_name}</strong> atas pelayanan pasien <strong>{c.patient_id || 'PAT-SYN-001'}</strong> ({genderLabel}, {ageLabel}) dengan nilai tagihan <strong>{totalClaim}</strong>. 
           Pemeriksaan audit klinis mengidentifikasi indikasi <strong>{riskLabel}</strong> karena {c.review_focus || 'ditemukan ketidaksesuaian lembar tagihan rumah sakit dengan catatan rekam jejak medis fisik'}. 
-          Tingkat pembuktian rekam medis terverifikasi adalah <strong>{c.evidence_coverage_pct || 0}%</strong>, sehingga terdapat selisih pembuktian (evidence gap) sebesar <strong>{totalGapCount}</strong> yang tidak memiliki dukungan dokumen medis.
+          Tingkat pembuktian rekam medis terverifikasi adalah <strong>{c.evidence_coverage_pct==null?'Belum tersedia':`${c.evidence_coverage_pct}%`}</strong>, sehingga terdapat selisih pembuktian (evidence gap) sebesar <strong>{totalGapCount}</strong> yang tidak memiliki dukungan dokumen medis.
         </p>
 
         {/* 4 Metric Facts Box */}
@@ -618,7 +619,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
           <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
             <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Tingkat Pembuktian</div>
             <div style={{ fontSize: '1.05rem', fontWeight: 800, color: Number(c.evidence_coverage_pct) < 50 ? '#e11d48' : '#16a34a', marginTop: '2px' }}>
-              {c.evidence_coverage_pct || 0}% Terverifikasi
+              {c.evidence_coverage_pct==null?'Belum tersedia':`${c.evidence_coverage_pct}%`} Terverifikasi
             </div>
           </div>
         </div>
@@ -689,7 +690,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #a7f3d0', paddingBottom: '0.4rem' }}>
                 <span style={{ color: '#64748b' }}>Ketercakupan Bukti:</span>
                 <strong style={{ color: Number(c.evidence_coverage_pct) < 50 ? '#e11d48' : '#059669' }}>
-                  {c.evidence_coverage_pct || 0}% Terverifikasi
+                  {c.evidence_coverage_pct==null?'Belum tersedia':`${c.evidence_coverage_pct}%`} Terverifikasi
                 </strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #a7f3d0', paddingBottom: '0.4rem' }}>
@@ -819,14 +820,14 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
             fontSize: '0.82rem',
             fontWeight: 800
           }}>
-            Selisih Pembuktian: {totalGapCount} (Ketercakupan: {c.evidence_coverage_pct || 0}%)
+            Selisih Pembuktian: {totalGapCount} (Ketercakupan: {c.evidence_coverage_pct==null?'Belum tersedia':`${c.evidence_coverage_pct}%`})
           </div>
         </div>
 
         {/* Child Claim Items Tree */}
         <div style={{ paddingLeft: '1rem', borderLeft: '3px solid #e2e8f0' }}>
-          {(evidenceChain?.items || []).map((item, idx) => (
-            <div key={item.claimItemId} style={{ marginBottom: idx === (evidenceChain.items.length - 1) ? '0' : '1.25rem' }}>
+          {(evidenceChain?.claimItems || []).map((item, idx) => (
+            <div key={item.claimItemId} style={{ marginBottom: idx === (evidenceChain.claimItems.length - 1) ? '0' : '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
                 <div style={{
                   background: '#ffffff',
@@ -848,14 +849,14 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                   <div style={{ display: 'flex', gap: '1rem', fontSize: '0.78rem', color: '#64748b' }}>
                     <span>Klaim: <strong style={{ color: '#0f172a' }}>{item.claimedQuantity} Prosedur</strong></span>
                     <span>Bukti: <strong style={{ color: item.supportedQuantity === 0 ? '#e11d48' : '#059669' }}>{item.supportedQuantity} Berkas</strong></span>
-                    <span>Gap: <strong style={{ color: item.evidenceGap > 0 ? '#e11d48' : '#059669' }}>{item.evidenceGap} Tindakan</strong></span>
+                    <span>Gap: <strong style={{ color: item.evidenceGap > 0 ? '#e11d48' : '#059669' }}>{item.evidenceGap==null?'Belum tersedia':`${item.evidenceGap} Tindakan`}</strong></span>
                   </div>
                 </div>
 
                 <div style={{ flex: 1, minWidth: 'min(100%, 280px)' }}>
-                  {item.evidenceRecords && item.evidenceRecords.length > 0 ? (
-                    item.evidenceRecords.map(rec => (
-                      <div key={rec.id} style={{
+                  {item.evidenceLinks && item.evidenceLinks.length > 0 ? (
+                    item.evidenceLinks.map(rec => (
+                      <div key={rec.evidenceId} style={{
                         background: '#ffffff',
                         border: '1px solid #e2e8f0',
                         borderRadius: '12px',
@@ -870,10 +871,10 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                           <FileText size={16} color="#007a78" />
                           <div>
                             <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a' }}>
-                              {rec.evidenceType} — <span style={{ fontWeight: 600, color: '#334155' }}>{rec.sourceSystem}</span>
+                              {rec.type} — <span style={{ fontWeight: 600, color: '#334155' }}>{rec.matchStatus}</span>
                             </div>
                             <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                              Ref: {rec.documentRef || 'REC-VERIFIED'} • Tanggal: {rec.recordedAt ? formatDateIndo(rec.recordedAt) : '-'}
+                              Ref: {rec.reference || 'Referensi belum tersedia'} • Tanggal: {rec.createdAt ? formatDateIndo(rec.createdAt) : '-'}
                             </div>
                           </div>
                         </div>
@@ -936,7 +937,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
               </tr>
             </thead>
             <tbody>
-              {(evidenceChain?.items || []).map((item) => (
+              {(evidenceChain?.claimItems || []).map((item) => (
                 <tr key={item.claimItemId}>
                   <td style={{ fontWeight: 800, color: '#007a78' }}>{item.claimItemId}</td>
                   <td style={{ fontWeight: 700, color: '#0f172a' }}>{formatServiceType(item.serviceType)}</td>
@@ -946,9 +947,9 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                     {item.supportedQuantity} Berkas
                   </td>
                   <td style={{ fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: item.evidenceGap > 0 ? '#e11d48' : '#059669' }}>
-                    {item.evidenceGap} Tindakan
+                    {item.evidenceGap==null?'Belum tersedia':`${item.evidenceGap} Tindakan`}
                   </td>
-                  <td style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{item.coveragePct}%</td>
+                  <td style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{item.coveragePct==null?'Belum tersedia':`${item.coveragePct}%`}</td>
                   <td><StatusBadge status={item.calculatedStatus} /></td>
                   <td style={{ fontWeight: 800, color: '#0f172a', fontVariantNumeric: 'tabular-nums' }}>
                     {formatCurrency(item.netAmount)}
@@ -1200,7 +1201,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                       fontWeight: 800,
                       letterSpacing: '0.04em'
                     }}>
-                      REKOMENDASI MACHINE LEARNING
+                      SARAN SISTEM BERBASIS ATURAN
                     </div>
                     <span style={{ fontSize: '0.72rem', color: '#0d9488', fontWeight: 700 }}>
                       Engine: {details.mlRecommendation.modelName}
@@ -1219,12 +1220,12 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                     color: '#0f766e'
                   }}>
                     <Activity size={13} />
-                    <span>Tingkat Keyakinan: {details.mlRecommendation.confidenceScore}%</span>
+                    <span>Skor aturan: {details.mlRecommendation.confidenceScore}/100 — bukan probabilitas</span>
                   </div>
                 </div>
 
                 <div style={{ fontSize: '0.84rem', color: '#134e4a', fontWeight: 700, marginBottom: '0.3rem' }}>
-                  Saran Putusan AI: <span style={{ color: details.mlRecommendation.suggestedOutcome === 'CONFIRMED' ? '#e11d48' : '#0f766e', fontWeight: 800 }}>
+                  Draf tindak lanjut: <span style={{ color: details.mlRecommendation.suggestedOutcome === 'CONFIRMED' ? '#e11d48' : '#0f766e', fontWeight: 800 }}>
                     {details.mlRecommendation.suggestedOutcome === 'NEEDS_MORE_EVIDENCE' ? 'MINTA KONFIRMASI BERKAS FISIK (Evidence Gap Terdeteksi)' : details.mlRecommendation.suggestedOutcome === 'CONFIRMED' ? 'TERBUKTI FRAUD / PHANTOM' : 'KLAIM WAJAR'}
                   </span>
                 </div>
@@ -1261,7 +1262,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                       transition: 'all 0.15s ease'
                     }}
                   >
-                    {appliedMl ? 'Saran AI Berhasil Diterapkan!' : 'Terapkan Saran AI ke Formulir'}
+                    {appliedMl ? 'Draf saran diterapkan — tinjau kembali' : 'Terapkan Draf Saran ke Formulir'}
                   </button>
                 </div>
               </div>
@@ -1275,7 +1276,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '0.65rem' }}>
                   {[
                     { id: 'NEEDS_MORE_EVIDENCE', label: 'Perlu Konfirmasi Berkas', desc: 'Membutuhkan berkas fisik tambahan dari faskes' },
-                    { id: 'CONFIRMED', label: 'Terverifikasi Fraud / Phantom', desc: 'Disparitas terbukti nyata tanpa bukti pelayanan' },
+                    { id: 'CONFIRMED', label: 'Temuan terkonfirmasi oleh reviewer', desc: 'Disparitas terbukti nyata tanpa bukti pelayanan' },
                     { id: 'NOT_CONFIRMED', label: 'Klaim Wajar (Valid)', desc: 'Klaim dapat dipertanggungjawabkan medis' },
                     { id: 'FALSE_POSITIVE', label: 'False Positive', desc: 'Anomali akibat kesalahan teknis/rule sistem' }
                   ].map(opt => {
@@ -1361,7 +1362,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
             {auditLogs && auditLogs.length > 0 ? (
               auditLogs.map(log => (
                 <div
-                  key={log.audit_id}
+                  key={log.eventId}
                   style={{
                     padding: '0.85rem 1rem',
                     borderRadius: '14px',
@@ -1379,17 +1380,17 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                       padding: '2px 8px',
                       borderRadius: '6px'
                     }}>
-                      {log.action}
+                      {log.type}
                     </span>
                     <span style={{ color: '#94a3b8', fontSize: '0.72rem' }}>
-                      {formatDateTimeIndo(log.created_at)}
+                      {formatDateTimeIndo(log.timestamp)}
                     </span>
                   </div>
                   <div style={{ color: '#334155', fontSize: '0.8rem', lineHeight: 1.5 }}>
-                    {log.detail}
+                    {log.details?.message || JSON.stringify(log.details)}
                   </div>
                   <div style={{ marginTop: '0.35rem', fontSize: '0.7rem', color: '#64748b' }}>
-                    Penanggung Jawab: <strong style={{ color: '#0f172a' }}>{log.actor_id}</strong>
+                    Penanggung Jawab: <strong style={{ color: '#0f172a' }}>{log.actor?.name || log.actor?.username}</strong>
                   </div>
                 </div>
               ))
@@ -1482,11 +1483,12 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                   Dokumen Bukti Berhasil Dilampirkan!
                 </h4>
                 <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b' }}>
-                  Coverage verifikasi audit otomatis diperbarui menjadi 100% dan dicatat pada audit trail kasus.
+                  Referensi bukti dicatat. Skor hanya diperbarui berdasarkan item dan kuantitas yang Anda verifikasi.
                 </p>
               </div>
             ) : (
               <form onSubmit={handleUploadEvidence} style={{ padding: '1.5rem' }}>
+                <div className="evidence-link-form"><label>Item klaim terkait<select value={evidenceItem} onChange={e=>setEvidenceItem(e.target.value)}><option value="">Referensi umum (belum dikaitkan)</option>{claimItems.map(item=><option key={item.claimItemId} value={item.claimItemId}>{item.serviceCode} · {item.description}</option>)}</select></label><label><input type="checkbox" disabled={!evidenceItem} checked={evidenceVerified} onChange={e=>setEvidenceVerified(e.target.checked)}/> Saya sudah mencocokkan bukti terhadap item ini</label>{evidenceVerified&&<label>Kuantitas yang didukung<input type="number" min="0" max={claimItems.find(i=>i.claimItemId===evidenceItem)?.claimedQuantity||0} value={supportedQuantity} onChange={e=>setSupportedQuantity(Number(e.target.value))}/></label>}</div>
                 <div style={{ marginBottom: '1.1rem' }}>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
                     Tipe Dokumen Rekam Medis
@@ -1558,7 +1560,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                     Klik untuk memilih berkas scan (PDF / JPG / DICOM)
                   </div>
                   <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>
-                    Maksimum ukuran berkas 25 MB per dokumen. Otomatis tervalidasi SHA-256 integrity hash.
+                    Tahap ini menyimpan referensi dan catatan dokumen, bukan isi file. Tidak ada OCR atau verifikasi integritas file otomatis.
                   </div>
                 </div>
 

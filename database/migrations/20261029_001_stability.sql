@@ -1,0 +1,34 @@
+
+CREATE TABLE IF NOT EXISTS patients (patient_id VARCHAR(30) PRIMARY KEY, age_group VARCHAR(30), sex CHAR(1), data_status VARCHAR(20) NOT NULL DEFAULT 'SYNTHETIC');
+CREATE TABLE IF NOT EXISTS providers (provider_id VARCHAR(30) PRIMARY KEY, provider_name VARCHAR(120) NOT NULL, provider_type VARCHAR(30) NOT NULL, data_status VARCHAR(20) NOT NULL DEFAULT 'SYNTHETIC');
+CREATE TABLE IF NOT EXISTS encounters (encounter_id VARCHAR(30) PRIMARY KEY, patient_id VARCHAR(30) NOT NULL REFERENCES patients(patient_id), provider_id VARCHAR(30) NOT NULL REFERENCES providers(provider_id), service_date DATE NOT NULL, encounter_type VARCHAR(30) NOT NULL, data_status VARCHAR(20) NOT NULL DEFAULT 'SYNTHETIC');
+CREATE TABLE IF NOT EXISTS diagnoses (diagnosis_id VARCHAR(40) PRIMARY KEY, encounter_id VARCHAR(30) NOT NULL REFERENCES encounters(encounter_id), diagnosis_code VARCHAR(30) NOT NULL, diagnosis_role VARCHAR(20), data_status VARCHAR(20) NOT NULL DEFAULT 'SYNTHETIC');
+CREATE TABLE IF NOT EXISTS procedures (procedure_id VARCHAR(40) PRIMARY KEY, encounter_id VARCHAR(30) NOT NULL REFERENCES encounters(encounter_id), procedure_code VARCHAR(50) NOT NULL, procedure_date DATE, quantity_supported NUMERIC(12,2) NOT NULL DEFAULT 0, record_status VARCHAR(30) NOT NULL, claim_item_id VARCHAR(40), data_status VARCHAR(20) NOT NULL DEFAULT 'SYNTHETIC');
+CREATE TABLE IF NOT EXISTS claims (claim_id VARCHAR(30) PRIMARY KEY, encounter_id VARCHAR(30) NOT NULL REFERENCES encounters(encounter_id), provider_id VARCHAR(30) NOT NULL REFERENCES providers(provider_id), claim_date DATE NOT NULL, claim_status VARCHAR(30) NOT NULL, total_amount NUMERIC(18,2) NOT NULL DEFAULT 0, data_status VARCHAR(20) NOT NULL DEFAULT 'SYNTHETIC');
+CREATE TABLE IF NOT EXISTS claim_items (claim_item_id VARCHAR(40) PRIMARY KEY, claim_id VARCHAR(30) NOT NULL REFERENCES claims(claim_id), sequence_no INT NOT NULL, service_code VARCHAR(50) NOT NULL, service_type VARCHAR(50) NOT NULL, quantity NUMERIC(12,2) NOT NULL, unit_price NUMERIC(18,2) NOT NULL, net_amount NUMERIC(18,2) NOT NULL, encounter_id VARCHAR(30) NOT NULL REFERENCES encounters(encounter_id), ground_truth_item_status VARCHAR(30), UNIQUE (claim_id, sequence_no));
+CREATE TABLE IF NOT EXISTS billing_items (billing_id VARCHAR(40) PRIMARY KEY, claim_id VARCHAR(30) NOT NULL REFERENCES claims(claim_id), claim_item_id VARCHAR(40) NOT NULL REFERENCES claim_items(claim_item_id), item_code VARCHAR(50) NOT NULL, quantity NUMERIC(12,2) NOT NULL, amount NUMERIC(18,2) NOT NULL, data_status VARCHAR(20) NOT NULL DEFAULT 'SYNTHETIC');
+CREATE TABLE IF NOT EXISTS evidence_links (evidence_link_id VARCHAR(40) PRIMARY KEY, claim_item_id VARCHAR(40) NOT NULL REFERENCES claim_items(claim_item_id), evidence_type VARCHAR(50) NOT NULL, source_id VARCHAR(50), match_status VARCHAR(30) NOT NULL, match_quantity NUMERIC(12,2) NOT NULL DEFAULT 0, availability VARCHAR(20) NOT NULL, reason TEXT, data_status VARCHAR(20) NOT NULL DEFAULT 'SYNTHETIC');
+CREATE TABLE IF NOT EXISTS risk_signals (signal_id VARCHAR(40) PRIMARY KEY, claim_id VARCHAR(30) NOT NULL REFERENCES claims(claim_id), claim_item_id VARCHAR(40) REFERENCES claim_items(claim_item_id), signal_type VARCHAR(50) NOT NULL, severity VARCHAR(20) NOT NULL, reason_code VARCHAR(50), reason_detail TEXT, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, data_status VARCHAR(20) NOT NULL DEFAULT 'SYNTHETIC');
+CREATE TABLE IF NOT EXISTS cases (case_id VARCHAR(40) PRIMARY KEY, claim_id VARCHAR(30) NOT NULL REFERENCES claims(claim_id), primary_risk_mode VARCHAR(50) NOT NULL, review_priority VARCHAR(20) NOT NULL, case_status VARCHAR(30) NOT NULL DEFAULT 'OPEN', affected_items TEXT, evidence_gap NUMERIC(12,2), evidence_coverage_pct NUMERIC(6,2), review_focus TEXT, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, data_status VARCHAR(20) NOT NULL DEFAULT 'SYNTHETIC');
+CREATE TABLE IF NOT EXISTS review_outcomes (review_id VARCHAR(40) PRIMARY KEY, case_id VARCHAR(40) NOT NULL REFERENCES cases(case_id), reviewer_id VARCHAR(50) NOT NULL, outcome VARCHAR(40) NOT NULL, notes TEXT, reviewed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, data_status VARCHAR(20) NOT NULL DEFAULT 'SYNTHETIC');
+CREATE TABLE IF NOT EXISTS audit_logs (audit_id BIGSERIAL PRIMARY KEY, case_id VARCHAR(40) REFERENCES cases(case_id), actor_id VARCHAR(50) NOT NULL, action VARCHAR(50) NOT NULL, detail TEXT, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE INDEX IF NOT EXISTS idx_claim_items_claim_id ON claim_items(claim_id); CREATE INDEX IF NOT EXISTS idx_evidence_links_claim_item ON evidence_links(claim_item_id); CREATE INDEX IF NOT EXISTS idx_risk_signals_claim ON risk_signals(claim_id); CREATE INDEX IF NOT EXISTS idx_cases_priority_status ON cases(review_priority, case_status);
+
+ALTER TABLE cases ADD COLUMN IF NOT EXISTS assigned_to VARCHAR(100);
+ALTER TABLE cases ADD COLUMN IF NOT EXISTS assigned_name VARCHAR(160);
+ALTER TABLE cases ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'seed';
+ALTER TABLE cases ADD COLUMN IF NOT EXISTS risk_score NUMERIC NOT NULL DEFAULT 0;
+ALTER TABLE cases ADD COLUMN IF NOT EXISTS engine_type TEXT NOT NULL DEFAULT 'rule';
+ALTER TABLE cases ADD COLUMN IF NOT EXISTS engine_version TEXT NOT NULL DEFAULT 'rules-1.0.0';
+ALTER TABLE cases ADD COLUMN IF NOT EXISTS initial_analysis JSONB;
+ALTER TABLE cases ADD COLUMN IF NOT EXISTS analysis JSONB;
+ALTER TABLE cases ADD COLUMN IF NOT EXISTS staff_handler TEXT;
+ALTER TABLE cases ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE claim_items ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE evidence_links ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE evidence_links ADD COLUMN IF NOT EXISTS created_by TEXT;
+CREATE TABLE IF NOT EXISTS case_documents (id TEXT PRIMARY KEY,case_id VARCHAR(40) REFERENCES cases(case_id),kind TEXT NOT NULL,payload JSONB NOT NULL,actor TEXT NOT NULL,created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS ai_feedback (id TEXT PRIMARY KEY,case_id VARCHAR(40) REFERENCES cases(case_id),engine_version TEXT NOT NULL,risk_score NUMERIC NOT NULL,reason TEXT NOT NULL,note TEXT NOT NULL,actor TEXT NOT NULL,created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS rule_config_log (id BIGSERIAL PRIMARY KEY,version TEXT,config_hash TEXT NOT NULL,actor TEXT NOT NULL,previous_config JSONB,current_config JSONB NOT NULL,created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS app_users (username TEXT PRIMARY KEY,profile JSONB NOT NULL,password_hash TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS auth_sessions (token_hash TEXT PRIMARY KEY,username TEXT REFERENCES app_users(username),expires_at TIMESTAMPTZ NOT NULL,created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);

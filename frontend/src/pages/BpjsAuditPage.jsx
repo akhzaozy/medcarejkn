@@ -121,6 +121,6 @@ export default function BpjsAuditPage({currentUser,onSelectCase,onOpenQueue,onBa
       </main></div>
     </>}
     {tab==='queue' && <section className="ba-queue"><div className="ba-section-head"><div><h2>Antrean audit dari pasien BPJS</h2><p>{queue ? `${num(queue.total)} kasus simulasi tersimpan`:'Memuat antrean…'} · 100 kasus terbaru</p></div></div><div className="ba-table-scroll"><table><thead><tr><th>Peserta</th><th>Kelompok</th><th>Skenario</th><th>Prioritas</th><th>Status</th><th>Waktu</th><th/></tr></thead><tbody>{queue?.items.map(c=><tr key={c.id}><td>{c.patient_id}</td><td>{c.cohort}</td><td>{scenarios[c.scenario]}</td><td>{priorities[c.priority]}</td><td>{statuses[c.status]}</td><td>{stamp(c.created_at)}</td><td><button className="btn-pill-outline" onClick={()=>openAudit(c.id)}>Buka telaah</button></td></tr>)}</tbody></table></div>{queue?.items.length===0 && <p className="ba-empty">Belum ada kasus. Pilih pasien dan jalankan skenario untuk membuat antrean pertama.</p>}</section>}
-    {audit && <div ref={resultAnchor} style={{scrollMarginTop:100}}><AuditResult key={audit.id} audit={audit} currentUser={currentUser} onReview={a=>{setAudit(a);setVersion(v=>v+1);}}/></div>}
+    {audit && <div ref={resultAnchor} style={{scrollMarginTop:'var(--med-header-offset,160px)'}}><AuditResult key={audit.id} audit={audit} currentUser={currentUser} onReview={a=>{setAudit(a);setVersion(v=>v+1);}}/></div>}
   </div>;
 }

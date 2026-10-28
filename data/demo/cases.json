@@ -1,0 +1,802 @@
+[
+  {
+    "case": {
+      "case_id": "CASE-PB-001",
+      "claim_id": "CLM-2026-00142",
+      "patient_id": "PAT-SYN-001",
+      "primary_risk_mode": "PHANTOM_BILLING",
+      "review_priority": "HIGH",
+      "case_status": "OPEN",
+      "affected_items": 3,
+      "evidence_gap": 2,
+      "evidence_coverage_pct": 33.3,
+      "total_amount": 45000000,
+      "exposure_amount": 32000000,
+      "assigned_to": "dr.anindya",
+      "assigned_name": "dr. Anindya Kusuma, Sp.PK",
+      "created_at": "2026-03-01T08:30:00Z",
+      "provider_name": "RS Citra Medika",
+      "encounter_type": "RAWAT_INAP",
+      "sex": "L",
+      "age_group": "45-59",
+      "summary": "Operasi Laparoskopi Ditagihkan Tanpa Bukti Anastesi & Catatan Bedah",
+      "service_date": "2026-02-24",
+      "admission_date": "2026-02-24",
+      "discharge_date": "2026-02-28",
+      "los": 4,
+      "tariff_ina_cbg": 31499999.999999996,
+      "disparity_amount": 32000000,
+      "hospital_class": "KELAS_B",
+      "primary_diagnosis": "K35.8 (Apendisitis Akut Lainnya)",
+      "secondary_diagnoses": [
+        "E11.9 (Diabetes Melitus Tipe 2)",
+        "I10 (Hipertensi Esensial)"
+      ],
+      "primary_procedure": "47.01 (Apendektomi Laparoskopi)",
+      "secondary_procedures": [
+        "89.52 (Elektrokardiogram)",
+        "99.29 (Injeksi Obat)"
+      ],
+      "handled_by": "dr. Anindya Kusuma, Sp.PK",
+      "staff_handler": null
+    },
+    "claimItems": [
+      {
+        "item_id": "ITM-001",
+        "item_code": "PROC-47.01",
+        "item_description": "Tindakan Laparoskopi Apendektomi",
+        "item_type": "PROCEDURE",
+        "quantity": 1,
+        "unit_price": 24500000,
+        "total_price": 24500000,
+        "evidence_status": "MISSING",
+        "disparity_note": "Tidak ada laporan pembedahan / video intraoperatif bertanda tangan DPJP bedah"
+      },
+      {
+        "item_id": "ITM-002",
+        "item_code": "ANASTH-01",
+        "item_description": "Pelayanan Anestesi Umum Inhalasi",
+        "item_type": "ANESTHESIA",
+        "quantity": 1,
+        "unit_price": 6800000,
+        "total_price": 6800000,
+        "evidence_status": "MISSING",
+        "disparity_note": "Lembar catatan hemodinamik pemulihan anestesi kosong"
+      },
+      {
+        "item_id": "ITM-003",
+        "item_code": "ROOM-BEDAH",
+        "item_description": "Rawat Inap Ruang Perawatan Bedah",
+        "item_type": "ACCOMMODATION",
+        "quantity": 3,
+        "unit_price": 1400000,
+        "total_price": 4200000,
+        "evidence_status": "VERIFIED",
+        "disparity_note": "Catatan perawat bangsal reguler terverifikasi"
+      }
+    ],
+    "evidenceLinks": [
+      {
+        "evidence_id": "EVD-001",
+        "evidence_type": "SURGICAL_REPORT",
+        "title": "Laporan Operasi Bedah (RS Citra Medika)",
+        "status": "UNAVAILABLE",
+        "note": "Dokumen fisik tidak ditemukan dalam arsip digital faskes"
+      },
+      {
+        "evidence_id": "EVD-002",
+        "evidence_type": "ANESTHESIA_LOG",
+        "title": "Catatan Rekam Anestesi",
+        "status": "UNAVAILABLE",
+        "note": "Tidak ada tanda tangan dokter spesialis anestesiologi"
+      },
+      {
+        "evidence_id": "EVD-003",
+        "evidence_type": "NURSING_NOTE",
+        "title": "Catatan Keperawatan Rawat Inap (CPPT)",
+        "status": "AVAILABLE",
+        "note": "Catatan infus dan vital sign bangsal reguler lengkap"
+      }
+    ]
+  },
+  {
+    "case": {
+      "case_id": "CASE-PB-002",
+      "claim_id": "CLM-2026-00189",
+      "patient_id": "PAT-SYN-002",
+      "primary_risk_mode": "PHANTOM_BILLING",
+      "review_priority": "HIGH",
+      "case_status": "IN_REVIEW",
+      "affected_items": 2,
+      "evidence_gap": 2,
+      "evidence_coverage_pct": 0,
+      "total_amount": 18500000,
+      "exposure_amount": 18500000,
+      "assigned_to": "dr.anindya",
+      "assigned_name": "dr. Anindya Kusuma, Sp.PK",
+      "created_at": "2026-03-02T10:15:00Z",
+      "provider_name": "RSUD Sehat Sentosa",
+      "encounter_type": "RAWAT_JALAN",
+      "sex": "P",
+      "age_group": "60+",
+      "summary": "Tindakan Hemodialisa Fiktif — Log Fingerprint Pasien Tidak Ditemukan",
+      "service_date": "2026-02-24",
+      "admission_date": "2026-02-24",
+      "discharge_date": "2026-02-28",
+      "los": 4,
+      "tariff_ina_cbg": 12950000,
+      "disparity_amount": 18500000,
+      "hospital_class": "KELAS_B",
+      "primary_diagnosis": "K35.8 (Apendisitis Akut Lainnya)",
+      "secondary_diagnoses": [
+        "E11.9 (Diabetes Melitus Tipe 2)",
+        "I10 (Hipertensi Esensial)"
+      ],
+      "primary_procedure": "47.01 (Apendektomi Laparoskopi)",
+      "secondary_procedures": [
+        "89.52 (Elektrokardiogram)",
+        "99.29 (Injeksi Obat)"
+      ],
+      "handled_by": "dr. Anindya Kusuma, Sp.PK",
+      "staff_handler": null
+    },
+    "claimItems": [
+      {
+        "item_id": "ITM-001",
+        "item_code": "PROC-47.01",
+        "item_description": "Tindakan Laparoskopi Apendektomi",
+        "item_type": "PROCEDURE",
+        "quantity": 1,
+        "unit_price": 24500000,
+        "total_price": 24500000,
+        "evidence_status": "MISSING",
+        "disparity_note": "Tidak ada laporan pembedahan / video intraoperatif bertanda tangan DPJP bedah"
+      },
+      {
+        "item_id": "ITM-002",
+        "item_code": "ANASTH-01",
+        "item_description": "Pelayanan Anestesi Umum Inhalasi",
+        "item_type": "ANESTHESIA",
+        "quantity": 1,
+        "unit_price": 6800000,
+        "total_price": 6800000,
+        "evidence_status": "MISSING",
+        "disparity_note": "Lembar catatan hemodinamik pemulihan anestesi kosong"
+      },
+      {
+        "item_id": "ITM-003",
+        "item_code": "ROOM-BEDAH",
+        "item_description": "Rawat Inap Ruang Perawatan Bedah",
+        "item_type": "ACCOMMODATION",
+        "quantity": 3,
+        "unit_price": 1400000,
+        "total_price": 4200000,
+        "evidence_status": "VERIFIED",
+        "disparity_note": "Catatan perawat bangsal reguler terverifikasi"
+      }
+    ],
+    "evidenceLinks": [
+      {
+        "evidence_id": "EVD-001",
+        "evidence_type": "SURGICAL_REPORT",
+        "title": "Laporan Operasi Bedah (RSUD Sehat Sentosa)",
+        "status": "UNAVAILABLE",
+        "note": "Dokumen fisik tidak ditemukan dalam arsip digital faskes"
+      },
+      {
+        "evidence_id": "EVD-002",
+        "evidence_type": "ANESTHESIA_LOG",
+        "title": "Catatan Rekam Anestesi",
+        "status": "UNAVAILABLE",
+        "note": "Tidak ada tanda tangan dokter spesialis anestesiologi"
+      },
+      {
+        "evidence_id": "EVD-003",
+        "evidence_type": "NURSING_NOTE",
+        "title": "Catatan Keperawatan Rawat Inap (CPPT)",
+        "status": "AVAILABLE",
+        "note": "Catatan infus dan vital sign bangsal reguler lengkap"
+      }
+    ]
+  },
+  {
+    "case": {
+      "case_id": "CASE-PB-003",
+      "claim_id": "CLM-2026-00204",
+      "patient_id": "PAT-SYN-003",
+      "primary_risk_mode": "UPCODING",
+      "review_priority": "MEDIUM",
+      "case_status": "OPEN",
+      "affected_items": 1,
+      "evidence_gap": 1,
+      "evidence_coverage_pct": 50,
+      "total_amount": 32000000,
+      "exposure_amount": 14000000,
+      "assigned_to": "dr.budi",
+      "assigned_name": "dr. Budi Santoso, Sp.A",
+      "created_at": "2026-03-03T11:45:00Z",
+      "provider_name": "RS Hermina Utama",
+      "encounter_type": "RAWAT_INAP",
+      "sex": "L",
+      "age_group": "30-44",
+      "summary": "Upcoding Severity Level 3 Tanpa Komplikasi Medis yang Memadai",
+      "service_date": "2026-02-24",
+      "admission_date": "2026-02-24",
+      "discharge_date": "2026-02-28",
+      "los": 4,
+      "tariff_ina_cbg": 22400000,
+      "disparity_amount": 14000000,
+      "hospital_class": "KELAS_B",
+      "primary_diagnosis": "N18.5 (Gagal Ginjal Kronik Stadium 5)",
+      "secondary_diagnoses": [
+        "E11.9 (Diabetes Melitus Tipe 2)",
+        "I10 (Hipertensi Esensial)"
+      ],
+      "primary_procedure": "39.95 (Hemodialisis Berkala)",
+      "secondary_procedures": [
+        "89.52 (Elektrokardiogram)",
+        "99.29 (Injeksi Obat)"
+      ],
+      "handled_by": "dr. Budi Santoso, Sp.A",
+      "staff_handler": null
+    },
+    "claimItems": [
+      {
+        "item_id": "ITM-001",
+        "item_code": "HD-REG-01",
+        "item_description": "Paket Tindakan Hemodialisis Rutin",
+        "item_type": "PROCEDURE",
+        "quantity": 1,
+        "unit_price": 4950000,
+        "total_price": 4950000,
+        "evidence_status": "MISSING",
+        "disparity_note": "Log mesin dialisis faskes tidak mencatat identitas dialyzer pasien"
+      },
+      {
+        "item_id": "ITM-002",
+        "item_code": "PRESENSI-FINGER",
+        "item_description": "Validasi Biometrik Presensi Sidik Jari Pasien",
+        "item_type": "ADMINISTRATIVE",
+        "quantity": 1,
+        "unit_price": 0,
+        "total_price": 0,
+        "evidence_status": "MISSING",
+        "disparity_note": "Tidak ada rekaman sidik jari pasien pada mesin presensi elektronik faskes"
+      },
+      {
+        "item_id": "ITM-003",
+        "item_code": "MED-EPO-3000",
+        "item_description": "Paket Obat Eritropoietin (EPO) 3000 IU",
+        "item_type": "DRUG",
+        "quantity": 2,
+        "unit_price": 850000,
+        "total_price": 1700000,
+        "evidence_status": "MISSING",
+        "disparity_note": "Formulir serah terima farmasi tanpa tanda tangan penerima"
+      }
+    ],
+    "evidenceLinks": [
+      {
+        "evidence_id": "EVD-001",
+        "evidence_type": "PATIENT_SIGNATURE",
+        "title": "Presensi Biometrik Sidik Jari Pasien (Fingerprint BPJS)",
+        "status": "UNAVAILABLE",
+        "note": "Tidak ada log presensi sidik jari pada tanggal pelayanan klaim"
+      },
+      {
+        "evidence_id": "EVD-002",
+        "evidence_type": "MEDICAL_RECORD",
+        "title": "Log Operasional Mesin Hemodialisis",
+        "status": "UNAVAILABLE",
+        "note": "Nomor seri mesin tidak tercatat di rekam medis digital"
+      },
+      {
+        "evidence_id": "EVD-003",
+        "evidence_type": "ADMINISTRATIVE",
+        "title": "Surat Rujukan Berjenjang FKTP",
+        "status": "AVAILABLE",
+        "note": "Surat rujukan aktif dan terdaftar di sistem V-Claim"
+      }
+    ]
+  },
+  {
+    "case": {
+      "case_id": "CASE-PB-004",
+      "claim_id": "CLM-2026-00255",
+      "patient_id": "PAT-SYN-004",
+      "primary_risk_mode": "DUPLICATE_CLAIM",
+      "review_priority": "LOW",
+      "case_status": "CONFIRMED",
+      "affected_items": 2,
+      "evidence_gap": 0,
+      "evidence_coverage_pct": 100,
+      "total_amount": 14000000,
+      "exposure_amount": 14000000,
+      "assigned_to": "dr.ratna",
+      "assigned_name": "dr. Ratna Dewi, Sp.PD",
+      "created_at": "2026-03-04T14:20:00Z",
+      "provider_name": "RS Permata Bunda",
+      "encounter_type": "RAWAT_JALAN",
+      "sex": "P",
+      "age_group": "18-29",
+      "summary": "Duplikasi Tagihan Obat Kemoterapi Rawat Jalan dalam Siklus Sama",
+      "service_date": "2026-02-24",
+      "admission_date": "2026-02-24",
+      "discharge_date": "2026-02-28",
+      "los": 4,
+      "tariff_ina_cbg": 9800000,
+      "disparity_amount": 14000000,
+      "hospital_class": "KELAS_B",
+      "primary_diagnosis": "N18.5 (Gagal Ginjal Kronik Stadium 5)",
+      "secondary_diagnoses": [
+        "E11.9 (Diabetes Melitus Tipe 2)",
+        "I10 (Hipertensi Esensial)"
+      ],
+      "primary_procedure": "39.95 (Hemodialisis Berkala)",
+      "secondary_procedures": [
+        "89.52 (Elektrokardiogram)",
+        "99.29 (Injeksi Obat)"
+      ],
+      "handled_by": "dr. Ratna Dewi, Sp.PD",
+      "staff_handler": null
+    },
+    "claimItems": [
+      {
+        "item_id": "ITM-001",
+        "item_code": "HD-REG-01",
+        "item_description": "Paket Tindakan Hemodialisis Rutin",
+        "item_type": "PROCEDURE",
+        "quantity": 1,
+        "unit_price": 4950000,
+        "total_price": 4950000,
+        "evidence_status": "MISSING",
+        "disparity_note": "Log mesin dialisis faskes tidak mencatat identitas dialyzer pasien"
+      },
+      {
+        "item_id": "ITM-002",
+        "item_code": "PRESENSI-FINGER",
+        "item_description": "Validasi Biometrik Presensi Sidik Jari Pasien",
+        "item_type": "ADMINISTRATIVE",
+        "quantity": 1,
+        "unit_price": 0,
+        "total_price": 0,
+        "evidence_status": "MISSING",
+        "disparity_note": "Tidak ada rekaman sidik jari pasien pada mesin presensi elektronik faskes"
+      },
+      {
+        "item_id": "ITM-003",
+        "item_code": "MED-EPO-3000",
+        "item_description": "Paket Obat Eritropoietin (EPO) 3000 IU",
+        "item_type": "DRUG",
+        "quantity": 2,
+        "unit_price": 850000,
+        "total_price": 1700000,
+        "evidence_status": "MISSING",
+        "disparity_note": "Formulir serah terima farmasi tanpa tanda tangan penerima"
+      }
+    ],
+    "evidenceLinks": [
+      {
+        "evidence_id": "EVD-001",
+        "evidence_type": "PATIENT_SIGNATURE",
+        "title": "Presensi Biometrik Sidik Jari Pasien (Fingerprint BPJS)",
+        "status": "UNAVAILABLE",
+        "note": "Tidak ada log presensi sidik jari pada tanggal pelayanan klaim"
+      },
+      {
+        "evidence_id": "EVD-002",
+        "evidence_type": "MEDICAL_RECORD",
+        "title": "Log Operasional Mesin Hemodialisis",
+        "status": "UNAVAILABLE",
+        "note": "Nomor seri mesin tidak tercatat di rekam medis digital"
+      },
+      {
+        "evidence_id": "EVD-003",
+        "evidence_type": "ADMINISTRATIVE",
+        "title": "Surat Rujukan Berjenjang FKTP",
+        "status": "AVAILABLE",
+        "note": "Surat rujukan aktif dan terdaftar di sistem V-Claim"
+      }
+    ]
+  },
+  {
+    "case": {
+      "case_id": "CASE-PB-005",
+      "claim_id": "CLM-2026-00312",
+      "patient_id": "PAT-SYN-005",
+      "primary_risk_mode": "PHANTOM_BILLING",
+      "review_priority": "HIGH",
+      "case_status": "OPEN",
+      "affected_items": 4,
+      "evidence_gap": 3,
+      "evidence_coverage_pct": 25,
+      "total_amount": 56000000,
+      "exposure_amount": 42000000,
+      "assigned_to": "dr.anindya",
+      "assigned_name": "dr. Anindya Kusuma, Sp.PK",
+      "created_at": "2026-03-05T09:10:00Z",
+      "provider_name": "RS Siloam Graha",
+      "encounter_type": "RAWAT_INAP",
+      "sex": "L",
+      "age_group": "60+",
+      "summary": "Pemasangan Ring Jantung (Stent) Fiktif Tanpa Arsip Rekaman Angiografi",
+      "service_date": "2026-02-24",
+      "admission_date": "2026-02-24",
+      "discharge_date": "2026-02-28",
+      "los": 4,
+      "tariff_ina_cbg": 39200000,
+      "disparity_amount": 42000000,
+      "hospital_class": "KELAS_B",
+      "primary_diagnosis": "K35.8 (Apendisitis Akut Lainnya)",
+      "secondary_diagnoses": [
+        "E11.9 (Diabetes Melitus Tipe 2)",
+        "I10 (Hipertensi Esensial)"
+      ],
+      "primary_procedure": "47.01 (Apendektomi Laparoskopi)",
+      "secondary_procedures": [
+        "89.52 (Elektrokardiogram)",
+        "99.29 (Injeksi Obat)"
+      ],
+      "handled_by": "dr. Anindya Kusuma, Sp.PK",
+      "staff_handler": null
+    },
+    "claimItems": [
+      {
+        "item_id": "ITM-001",
+        "item_code": "PROC-47.01",
+        "item_description": "Tindakan Laparoskopi Apendektomi",
+        "item_type": "PROCEDURE",
+        "quantity": 1,
+        "unit_price": 24500000,
+        "total_price": 24500000,
+        "evidence_status": "MISSING",
+        "disparity_note": "Tidak ada laporan pembedahan / video intraoperatif bertanda tangan DPJP bedah"
+      },
+      {
+        "item_id": "ITM-002",
+        "item_code": "ANASTH-01",
+        "item_description": "Pelayanan Anestesi Umum Inhalasi",
+        "item_type": "ANESTHESIA",
+        "quantity": 1,
+        "unit_price": 6800000,
+        "total_price": 6800000,
+        "evidence_status": "MISSING",
+        "disparity_note": "Lembar catatan hemodinamik pemulihan anestesi kosong"
+      },
+      {
+        "item_id": "ITM-003",
+        "item_code": "ROOM-BEDAH",
+        "item_description": "Rawat Inap Ruang Perawatan Bedah",
+        "item_type": "ACCOMMODATION",
+        "quantity": 3,
+        "unit_price": 1400000,
+        "total_price": 4200000,
+        "evidence_status": "VERIFIED",
+        "disparity_note": "Catatan perawat bangsal reguler terverifikasi"
+      }
+    ],
+    "evidenceLinks": [
+      {
+        "evidence_id": "EVD-001",
+        "evidence_type": "SURGICAL_REPORT",
+        "title": "Laporan Operasi Bedah (RS Siloam Graha)",
+        "status": "UNAVAILABLE",
+        "note": "Dokumen fisik tidak ditemukan dalam arsip digital faskes"
+      },
+      {
+        "evidence_id": "EVD-002",
+        "evidence_type": "ANESTHESIA_LOG",
+        "title": "Catatan Rekam Anestesi",
+        "status": "UNAVAILABLE",
+        "note": "Tidak ada tanda tangan dokter spesialis anestesiologi"
+      },
+      {
+        "evidence_id": "EVD-003",
+        "evidence_type": "NURSING_NOTE",
+        "title": "Catatan Keperawatan Rawat Inap (CPPT)",
+        "status": "AVAILABLE",
+        "note": "Catatan infus dan vital sign bangsal reguler lengkap"
+      }
+    ]
+  },
+  {
+    "case": {
+      "case_id": "CASE-PB-006",
+      "claim_id": "CLM-2026-00388",
+      "patient_id": "PAT-SYN-006",
+      "primary_risk_mode": "UNNECESSARY_PROCEDURES",
+      "review_priority": "MEDIUM",
+      "case_status": "OPEN",
+      "affected_items": 2,
+      "evidence_gap": 1,
+      "evidence_coverage_pct": 60,
+      "total_amount": 21500000,
+      "exposure_amount": 9800000,
+      "assigned_to": "dr.budi",
+      "assigned_name": "dr. Budi Santoso, Sp.A",
+      "created_at": "2026-03-06T13:00:00Z",
+      "provider_name": "RS Harapan Kita Mandiri",
+      "encounter_type": "RAWAT_INAP",
+      "sex": "P",
+      "age_group": "45-59",
+      "summary": "Endoskopi Saluran Cerna Berulang Tanpa Indikasi Diagnosis Tambahan",
+      "service_date": "2026-02-24",
+      "admission_date": "2026-02-24",
+      "discharge_date": "2026-02-28",
+      "los": 4,
+      "tariff_ina_cbg": 15049999.999999998,
+      "disparity_amount": 9800000,
+      "hospital_class": "KELAS_B",
+      "primary_diagnosis": "N18.5 (Gagal Ginjal Kronik Stadium 5)",
+      "secondary_diagnoses": [
+        "E11.9 (Diabetes Melitus Tipe 2)",
+        "I10 (Hipertensi Esensial)"
+      ],
+      "primary_procedure": "39.95 (Hemodialisis Berkala)",
+      "secondary_procedures": [
+        "89.52 (Elektrokardiogram)",
+        "99.29 (Injeksi Obat)"
+      ],
+      "handled_by": "dr. Budi Santoso, Sp.A",
+      "staff_handler": null
+    },
+    "claimItems": [
+      {
+        "item_id": "ITM-001",
+        "item_code": "HD-REG-01",
+        "item_description": "Paket Tindakan Hemodialisis Rutin",
+        "item_type": "PROCEDURE",
+        "quantity": 1,
+        "unit_price": 4950000,
+        "total_price": 4950000,
+        "evidence_status": "MISSING",
+        "disparity_note": "Log mesin dialisis faskes tidak mencatat identitas dialyzer pasien"
+      },
+      {
+        "item_id": "ITM-002",
+        "item_code": "PRESENSI-FINGER",
+        "item_description": "Validasi Biometrik Presensi Sidik Jari Pasien",
+        "item_type": "ADMINISTRATIVE",
+        "quantity": 1,
+        "unit_price": 0,
+        "total_price": 0,
+        "evidence_status": "MISSING",
+        "disparity_note": "Tidak ada rekaman sidik jari pasien pada mesin presensi elektronik faskes"
+      },
+      {
+        "item_id": "ITM-003",
+        "item_code": "MED-EPO-3000",
+        "item_description": "Paket Obat Eritropoietin (EPO) 3000 IU",
+        "item_type": "DRUG",
+        "quantity": 2,
+        "unit_price": 850000,
+        "total_price": 1700000,
+        "evidence_status": "MISSING",
+        "disparity_note": "Formulir serah terima farmasi tanpa tanda tangan penerima"
+      }
+    ],
+    "evidenceLinks": [
+      {
+        "evidence_id": "EVD-001",
+        "evidence_type": "PATIENT_SIGNATURE",
+        "title": "Presensi Biometrik Sidik Jari Pasien (Fingerprint BPJS)",
+        "status": "UNAVAILABLE",
+        "note": "Tidak ada log presensi sidik jari pada tanggal pelayanan klaim"
+      },
+      {
+        "evidence_id": "EVD-002",
+        "evidence_type": "MEDICAL_RECORD",
+        "title": "Log Operasional Mesin Hemodialisis",
+        "status": "UNAVAILABLE",
+        "note": "Nomor seri mesin tidak tercatat di rekam medis digital"
+      },
+      {
+        "evidence_id": "EVD-003",
+        "evidence_type": "ADMINISTRATIVE",
+        "title": "Surat Rujukan Berjenjang FKTP",
+        "status": "AVAILABLE",
+        "note": "Surat rujukan aktif dan terdaftar di sistem V-Claim"
+      }
+    ]
+  },
+  {
+    "case": {
+      "case_id": "CASE-PB-007",
+      "claim_id": "CLM-2026-00421",
+      "patient_id": "PAT-SYN-007",
+      "primary_risk_mode": "PHANTOM_BILLING",
+      "review_priority": "HIGH",
+      "case_status": "IN_REVIEW",
+      "affected_items": 3,
+      "evidence_gap": 2,
+      "evidence_coverage_pct": 33,
+      "total_amount": 38000000,
+      "exposure_amount": 28000000,
+      "assigned_to": "dr.anindya",
+      "assigned_name": "dr. Anindya Kusuma, Sp.PK",
+      "created_at": "2026-03-07T15:30:00Z",
+      "provider_name": "RS Santo Borromeus",
+      "encounter_type": "RAWAT_INAP",
+      "sex": "L",
+      "age_group": "30-44",
+      "summary": "Klaim Rawat ICU 5 Hari Padahal Pasien Berada di Bangsal Kelas 2",
+      "service_date": "2026-02-24",
+      "admission_date": "2026-02-24",
+      "discharge_date": "2026-02-28",
+      "los": 4,
+      "tariff_ina_cbg": 26600000,
+      "disparity_amount": 28000000,
+      "hospital_class": "KELAS_B",
+      "primary_diagnosis": "K35.8 (Apendisitis Akut Lainnya)",
+      "secondary_diagnoses": [
+        "E11.9 (Diabetes Melitus Tipe 2)",
+        "I10 (Hipertensi Esensial)"
+      ],
+      "primary_procedure": "47.01 (Apendektomi Laparoskopi)",
+      "secondary_procedures": [
+        "89.52 (Elektrokardiogram)",
+        "99.29 (Injeksi Obat)"
+      ],
+      "handled_by": "dr. Anindya Kusuma, Sp.PK",
+      "staff_handler": null
+    },
+    "claimItems": [
+      {
+        "item_id": "ITM-001",
+        "item_code": "PROC-47.01",
+        "item_description": "Tindakan Laparoskopi Apendektomi",
+        "item_type": "PROCEDURE",
+        "quantity": 1,
+        "unit_price": 24500000,
+        "total_price": 24500000,
+        "evidence_status": "MISSING",
+        "disparity_note": "Tidak ada laporan pembedahan / video intraoperatif bertanda tangan DPJP bedah"
+      },
+      {
+        "item_id": "ITM-002",
+        "item_code": "ANASTH-01",
+        "item_description": "Pelayanan Anestesi Umum Inhalasi",
+        "item_type": "ANESTHESIA",
+        "quantity": 1,
+        "unit_price": 6800000,
+        "total_price": 6800000,
+        "evidence_status": "MISSING",
+        "disparity_note": "Lembar catatan hemodinamik pemulihan anestesi kosong"
+      },
+      {
+        "item_id": "ITM-003",
+        "item_code": "ROOM-BEDAH",
+        "item_description": "Rawat Inap Ruang Perawatan Bedah",
+        "item_type": "ACCOMMODATION",
+        "quantity": 3,
+        "unit_price": 1400000,
+        "total_price": 4200000,
+        "evidence_status": "VERIFIED",
+        "disparity_note": "Catatan perawat bangsal reguler terverifikasi"
+      }
+    ],
+    "evidenceLinks": [
+      {
+        "evidence_id": "EVD-001",
+        "evidence_type": "SURGICAL_REPORT",
+        "title": "Laporan Operasi Bedah (RS Santo Borromeus)",
+        "status": "UNAVAILABLE",
+        "note": "Dokumen fisik tidak ditemukan dalam arsip digital faskes"
+      },
+      {
+        "evidence_id": "EVD-002",
+        "evidence_type": "ANESTHESIA_LOG",
+        "title": "Catatan Rekam Anestesi",
+        "status": "UNAVAILABLE",
+        "note": "Tidak ada tanda tangan dokter spesialis anestesiologi"
+      },
+      {
+        "evidence_id": "EVD-003",
+        "evidence_type": "NURSING_NOTE",
+        "title": "Catatan Keperawatan Rawat Inap (CPPT)",
+        "status": "AVAILABLE",
+        "note": "Catatan infus dan vital sign bangsal reguler lengkap"
+      }
+    ]
+  },
+  {
+    "case": {
+      "case_id": "CASE-PB-008",
+      "claim_id": "CLM-2026-00490",
+      "patient_id": "PAT-SYN-008",
+      "primary_risk_mode": "PHANTOM_BILLING",
+      "review_priority": "HIGH",
+      "case_status": "OPEN",
+      "affected_items": 2,
+      "evidence_gap": 2,
+      "evidence_coverage_pct": 0,
+      "total_amount": 26500000,
+      "exposure_amount": 26500000,
+      "assigned_to": "dr.ratna",
+      "assigned_name": "dr. Ratna Dewi, Sp.PD",
+      "created_at": "2026-03-08T10:00:00Z",
+      "provider_name": "RS Medika Utama",
+      "encounter_type": "RAWAT_JALAN",
+      "sex": "P",
+      "age_group": "60+",
+      "summary": "Terapi Radioterapi Ditagihkan Tanpa Log Mesin Linear Accelerator",
+      "service_date": "2026-02-24",
+      "admission_date": "2026-02-24",
+      "discharge_date": "2026-02-28",
+      "los": 4,
+      "tariff_ina_cbg": 18550000,
+      "disparity_amount": 26500000,
+      "hospital_class": "KELAS_B",
+      "primary_diagnosis": "K35.8 (Apendisitis Akut Lainnya)",
+      "secondary_diagnoses": [
+        "E11.9 (Diabetes Melitus Tipe 2)",
+        "I10 (Hipertensi Esensial)"
+      ],
+      "primary_procedure": "47.01 (Apendektomi Laparoskopi)",
+      "secondary_procedures": [
+        "89.52 (Elektrokardiogram)",
+        "99.29 (Injeksi Obat)"
+      ],
+      "handled_by": "dr. Ratna Dewi, Sp.PD",
+      "staff_handler": null
+    },
+    "claimItems": [
+      {
+        "item_id": "ITM-001",
+        "item_code": "PROC-47.01",
+        "item_description": "Tindakan Laparoskopi Apendektomi",
+        "item_type": "PROCEDURE",
+        "quantity": 1,
+        "unit_price": 24500000,
+        "total_price": 24500000,
+        "evidence_status": "MISSING",
+        "disparity_note": "Tidak ada laporan pembedahan / video intraoperatif bertanda tangan DPJP bedah"
+      },
+      {
+        "item_id": "ITM-002",
+        "item_code": "ANASTH-01",
+        "item_description": "Pelayanan Anestesi Umum Inhalasi",
+        "item_type": "ANESTHESIA",
+        "quantity": 1,
+        "unit_price": 6800000,
+        "total_price": 6800000,
+        "evidence_status": "MISSING",
+        "disparity_note": "Lembar catatan hemodinamik pemulihan anestesi kosong"
+      },
+      {
+        "item_id": "ITM-003",
+        "item_code": "ROOM-BEDAH",
+        "item_description": "Rawat Inap Ruang Perawatan Bedah",
+        "item_type": "ACCOMMODATION",
+        "quantity": 3,
+        "unit_price": 1400000,
+        "total_price": 4200000,
+        "evidence_status": "VERIFIED",
+        "disparity_note": "Catatan perawat bangsal reguler terverifikasi"
+      }
+    ],
+    "evidenceLinks": [
+      {
+        "evidence_id": "EVD-001",
+        "evidence_type": "SURGICAL_REPORT",
+        "title": "Laporan Operasi Bedah (RS Medika Utama)",
+        "status": "UNAVAILABLE",
+        "note": "Dokumen fisik tidak ditemukan dalam arsip digital faskes"
+      },
+      {
+        "evidence_id": "EVD-002",
+        "evidence_type": "ANESTHESIA_LOG",
+        "title": "Catatan Rekam Anestesi",
+        "status": "UNAVAILABLE",
+        "note": "Tidak ada tanda tangan dokter spesialis anestesiologi"
+      },
+      {
+        "evidence_id": "EVD-003",
+        "evidence_type": "NURSING_NOTE",
+        "title": "Catatan Keperawatan Rawat Inap (CPPT)",
+        "status": "AVAILABLE",
+        "note": "Catatan infus dan vital sign bangsal reguler lengkap"
+      }
+    ]
+  }
+]

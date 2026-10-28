@@ -1,4 +1,8 @@
 import pool from '../config/db.js';
+import {randomUUID} from 'node:crypto';
+import {analyzeClaim} from '../../../shared/riskEngine.js';
+import {itemContract,evidenceContract,eventContract} from '../../../shared/caseContract.js';
+import {users} from '../../../shared/users.js';
 
 export async function getAllCases({ status, priority, riskMode, search, assignedTo, page = 1, limit = 12 } = {}) {
   const client = await pool.connect();
@@ -26,7 +30,8 @@ export async function getAllCases({ status, priority, riskMode, search, assigned
       baseWhere += ` AND c.primary_risk_mode = $${params.length}`;
     }
 
-    if (assignedTo && assignedTo !== 'ALL') {
+    if(assignedTo==='UNASSIGNED'){baseWhere+=' AND c.assigned_to IS NULL';}
+    else if (assignedTo && assignedTo !== 'ALL') {
       params.push(assignedTo);
       baseWhere += ` AND c.assigned_to = $${params.length}`;
     }
@@ -50,6 +55,7 @@ export async function getAllCases({ status, priority, riskMode, search, assigned
     // 2. Paginated data query
     let query = `
       SELECT 
+        c.source,c.risk_score,c.engine_version,c.analysis,c.metadata,
         c.case_id,
         c.claim_id,
         c.primary_risk_mode,
@@ -190,85 +196,26 @@ export async function getCaseById(caseId) {
       ORDER BY created_at DESC
     `, [caseId]);
 
-    return {
-      case: caseData,
-      diagnoses: dxRes.rows,
-      claimItems: itemsRes.rows,
-      evidenceLinks: evidenceRes.rows,
-      riskSignals: signalsRes.rows,
-      reviewOutcomes: outcomesRes.rows,
-      auditLogs: auditRes.rows
-    };
+    const evidenceLinks=evidenceRes.rows.map(evidenceContract);
+    const claimItems=itemsRes.rows.map(item=>itemContract(item,evidenceLinks));
+    const docs=(await client.query('SELECT * FROM case_documents WHERE case_id=$1 ORDER BY created_at DESC',[caseId])).rows;
+    const features={...(caseData.metadata?.features||{}),evidenceAvailable:claimItems.length>0&&claimItems.every(i=>i.calculatedStatus!=='UNAVAILABLE'),claimedQty:claimItems.reduce((n,i)=>n+i.claimedQuantity,0),supportedQty:claimItems.reduce((n,i)=>n+i.supportedQuantity,0)};
+    const riskAnalysis=caseData.analysis||analyzeClaim(features);
+    return {case:{...caseData,...(caseData.metadata||{})},diagnoses:dxRes.rows,claimItems,evidenceLinks,
+      riskSignals:riskAnalysis.signals,reviewOutcomes:outcomesRes.rows,auditLogs:auditRes.rows.map(eventContract),
+      disputes:docs.filter(d=>['dispute','clarification'].includes(d.kind)).map(d=>({...d.payload,id:d.id,actor:d.actor,date:d.created_at,status:'MENUNGGU_VERIFIKASI',attachments:d.payload.attachments||[]})),
+      uploadedEvidences:docs.filter(d=>d.kind==='evidence').map(d=>d.payload),riskAnalysis,initialAnalysis:caseData.initial_analysis||null,
+      scoreHistory:docs.filter(d=>d.kind==='score_history').map(d=>({...d.payload,timestamp:d.created_at})),
+      mlRecommendation:{modelName:riskAnalysis.engine.version,confidenceScore:riskAnalysis.riskScore,predictedRiskLevel:riskAnalysis.reviewPriority,suggestedOutcome:'NEEDS_MORE_EVIDENCE',suggestedNotes:'Draf — wajib ditinjau dokter. '+riskAnalysis.reasons.join('; '),drivers:riskAnalysis.reasons}};
+
   } finally {
     client.release();
   }
 }
 
-export async function getCaseEvidence(caseId) {
-  const caseDetails = await getCaseById(caseId);
-  if (!caseDetails) return null;
+export async function getCaseEvidence(caseId) {const d=await getCaseById(caseId);return d?{caseId,claimItems:d.claimItems,evidenceLinks:d.evidenceLinks}:null;}
 
-  // Build structured Evidence Chain:
-  // Case -> Claim -> Items -> Evidence Links & Match Status
-  const itemsChain = caseDetails.claimItems.map(item => {
-    const matchedEvidence = caseDetails.evidenceLinks.filter(
-      el => el.claim_item_id === item.claim_item_id
-    );
-    const relatedSignals = caseDetails.riskSignals.filter(
-      rs => rs.claim_item_id === item.claim_item_id
-    );
-
-    const claimedQty = parseFloat(item.quantity);
-    const supportedQty = matchedEvidence.reduce((acc, el) => acc + parseFloat(el.match_quantity || 0), 0);
-    const gap = Math.max(0, claimedQty - supportedQty);
-    const coverage = claimedQty > 0 ? (supportedQty / claimedQty) * 100 : 100;
-
-    let itemStatus = 'SUPPORTED';
-    if (matchedEvidence.some(el => el.availability === 'NO' || el.availability === 'UNAVAILABLE')) {
-      itemStatus = 'UNAVAILABLE';
-    } else if (supportedQty === 0) {
-      itemStatus = 'UNSUPPORTED';
-    } else if (supportedQty < claimedQty) {
-      itemStatus = 'PARTIAL';
-    }
-
-    return {
-      claimItemId: item.claim_item_id,
-      sequenceNo: item.sequence_no,
-      serviceCode: item.service_code,
-      serviceType: item.service_type,
-      claimedQuantity: claimedQty,
-      unitPrice: parseFloat(item.unit_price),
-      netAmount: parseFloat(item.net_amount),
-      groundTruthStatus: item.ground_truth_item_status,
-      calculatedStatus: itemStatus,
-      supportedQuantity: supportedQty,
-      evidenceGap: gap,
-      coveragePct: Math.round(coverage * 100) / 100,
-      evidenceLinks: matchedEvidence,
-      riskSignals: relatedSignals
-    };
-  });
-
-  return {
-    caseId: caseDetails.case.case_id,
-    claimId: caseDetails.case.claim_id,
-    provider: {
-      id: caseDetails.case.provider_id,
-      name: caseDetails.case.provider_name
-    },
-    primaryRiskMode: caseDetails.case.primary_risk_mode,
-    reviewPriority: caseDetails.case.review_priority,
-    caseStatus: caseDetails.case.case_status,
-    totalEvidenceGap: caseDetails.case.evidence_gap,
-    evidenceCoveragePct: caseDetails.case.evidence_coverage_pct,
-    reviewFocus: caseDetails.case.review_focus,
-    claimLevelSignals: caseDetails.riskSignals.filter(rs => !rs.claim_item_id),
-    items: itemsChain
-  };
-}
-
-export async function submitCaseOutcome(caseId, { outcome, notes, reviewerId = 'reviewer-001' }) {
+export async function submitCaseOutcome(caseId, { outcome, notes, reviewerId, reviewerName }) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -279,6 +226,8 @@ export async function submitCaseOutcome(caseId, { outcome, notes, reviewerId = '
       throw new Error(`Case not found: ${caseId}`);
     }
     const currentCase = caseRes.rows[0];
+    if(currentCase.assigned_to && currentCase.assigned_to!==reviewerId){const error=new Error('Kasus belum ditugaskan kepada Anda.');error.statusCode=403;throw error;}
+    if(!['CONFIRMED','NOT_CONFIRMED','NEEDS_MORE_EVIDENCE','FALSE_POSITIVE','ESCALATED'].includes(outcome)||!notes?.trim()){const error=new Error('Keputusan dan catatan telaah wajib diisi.');error.statusCode=400;throw error;}
     const prevStatus = currentCase.case_status;
 
     // 2. Generate review_id
@@ -297,7 +246,7 @@ export async function submitCaseOutcome(caseId, { outcome, notes, reviewerId = '
     } else if (outcome === 'CONFIRMED') {
       newStatus = 'CONFIRMED';
     } else if (outcome === 'FALSE_POSITIVE' || outcome === 'NOT_CONFIRMED') {
-      newStatus = 'CLOSED';
+      newStatus = 'NOT_CONFIRMED';
     }
 
     await client.query(`
@@ -306,12 +255,15 @@ export async function submitCaseOutcome(caseId, { outcome, notes, reviewerId = '
       WHERE case_id = $2
     `, [newStatus, caseId]);
 
+    if(outcome==='ESCALATED')newStatus='ESCALATED';
+    await client.query('UPDATE cases SET case_status=$1 WHERE case_id=$2',[newStatus,caseId]);
+    await client.query("INSERT INTO case_documents(id,case_id,kind,payload,actor) VALUES($1,$2,'decision_snapshot',$3,$4)",[randomUUID(),caseId,JSON.stringify({initialAnalysis:currentCase.initial_analysis,engineVersion:currentCase.engine_version,riskScore:currentCase.risk_score,outcome}),reviewerId]);
     // 5. Insert audit log
     const auditDetail = `Reviewer ${reviewerId} submitted outcome [${outcome}] with note: "${notes || '-'}" (Status transitioned from ${prevStatus} to ${newStatus})`;
     await client.query(`
       INSERT INTO audit_logs (case_id, actor_id, action, detail, created_at)
       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-    `, [caseId, reviewerId, 'SUBMIT_OUTCOME', auditDetail]);
+    `, [caseId, reviewerId, 'OUTCOME_SAVED', auditDetail]);
 
     await client.query('COMMIT');
 
@@ -338,6 +290,11 @@ export async function assignCaseReviewer(caseId, { assignedTo, assignedName, not
   try {
     await client.query('BEGIN');
     
+    const doctor=users.find(u=>u.username===assignedTo&&u.role==='clinical_reviewer');
+    if(!doctor){const e=new Error('Dokter penelaah tidak valid.');e.statusCode=400;throw e;}
+    assignedName=doctor.name;
+    const existing=await client.query('SELECT case_id FROM cases WHERE case_id=$1 FOR UPDATE',[caseId]);
+    if(!existing.rows.length){const e=new Error('Kasus tidak ditemukan.');e.statusCode=404;throw e;}
     await client.query(`
       UPDATE cases
       SET assigned_to = $1, assigned_name = $2, case_status = 'IN_REVIEW'
@@ -348,7 +305,7 @@ export async function assignCaseReviewer(caseId, { assignedTo, assignedName, not
     await client.query(`
       INSERT INTO audit_logs (case_id, actor_id, action, detail, created_at)
       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-    `, [caseId, assignedBy, 'ASSIGN_REVIEWER', auditDetail]);
+    `, [caseId, assignedBy, 'ASSIGNED_TO_CLINICIAN', auditDetail]);
 
     await client.query('COMMIT');
     return {
@@ -364,4 +321,42 @@ export async function assignCaseReviewer(caseId, { assignedTo, assignedName, not
   } finally {
     client.release();
   }
+}
+
+export async function recordCaseAction(caseId,kind,payload,actor) {
+  const client=await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const row=(await client.query('SELECT * FROM cases WHERE case_id=$1 FOR UPDATE',[caseId])).rows[0];
+    if(!row){const e=new Error('Kasus tidak ditemukan');e.statusCode=404;throw e;}
+    if(['CONFIRMED','NOT_CONFIRMED','CLOSED'].includes(row.case_status)){const e=new Error('Kasus sudah diputuskan; bukti baru memerlukan peninjauan ulang terpisah.');e.statusCode=409;throw e;}
+    const id=randomUUID();
+    if(kind==='ownership')await client.query("UPDATE cases SET staff_handler=$1,case_status=CASE WHEN case_status IN ('OPEN','NEW') THEN 'TRIAGED' ELSE case_status END WHERE case_id=$2",[actor.username,caseId]);
+    if(['dispute','clarification','evidence','copilot','schedule','feedback'].includes(kind)){
+      if(typeof payload!=='object'||!payload||(kind!=='copilot'&&!String(payload.title||payload.reason||'').trim())){const e=new Error('Judul atau alasan wajib diisi.');e.statusCode=400;throw e;}
+      if(JSON.stringify(payload).length>16000){const e=new Error('Catatan terlalu panjang.');e.statusCode=400;throw e;}
+      if(kind==='evidence'){
+        const itemId=payload.claimItemId;
+        if(itemId){const item=(await client.query('SELECT * FROM claim_items WHERE claim_item_id=$1 AND claim_id=$2',[itemId,row.claim_id])).rows[0];if(!item){const e=new Error('Item bukti tidak sesuai kasus.');e.statusCode=400;throw e;}
+          const verified=payload.verified===true,supported=verified?Number(payload.supportedQuantity||0):0;
+          if(!Number.isFinite(supported)||supported<0||supported>Number(item.quantity)){const e=new Error('Kuantitas bukti tidak valid.');e.statusCode=400;throw e;}
+          await client.query('INSERT INTO evidence_links(evidence_link_id,claim_item_id,evidence_type,source_id,match_status,match_quantity,availability,reason,created_by) VALUES($1,$2,$3,$4,$5,$6,\'YES\',$7,$8)',[id,itemId,String(payload.evidenceType||'MEDICAL_RECORD').slice(0,50),String(payload.title).slice(0,50),verified?'MATCHED':'PENDING',supported,String(payload.note||''),actor.username]);
+        }
+        payload={...payload,status:'METADATA_RECORDED',availability:'YES',matchStatus:payload.verified?'MATCHED':'PENDING',evidenceId:id,reference:payload.title,scope:'metadata_only'};
+      }
+      if(kind==='feedback')await client.query('INSERT INTO ai_feedback(id,case_id,engine_version,risk_score,reason,note,actor) VALUES($1,$2,$3,$4,$5,$6,$7)',[id,caseId,row.engine_version,row.risk_score,payload.reason,payload.note||'',actor.username]);
+      await client.query('INSERT INTO case_documents(id,case_id,kind,payload,actor) VALUES($1,$2,$3,$4,$5)',[id,caseId,kind,JSON.stringify(payload),actor.username]);
+      if(kind==='dispute')await client.query("UPDATE cases SET case_status='RECONCILIATION' WHERE case_id=$1",[caseId]);
+    }
+    await client.query('INSERT INTO audit_logs(case_id,actor_id,action,detail) VALUES($1,$2,$3,$4)',[caseId,actor.username,{ownership:'CASE_CLAIMED',dispute:'DISPUTE_SUBMITTED',clarification:'CLARIFICATION_REQUESTED',evidence:'EVIDENCE_ATTACHED',copilot:'EVIDENCE_GAP_DRAFT_SAVED',schedule:'CLARIFICATION_SCHEDULED',feedback:'AI_FEEDBACK_RECORDED'}[kind],JSON.stringify({actorName:actor.name,...payload})]);
+    if(['evidence','dispute'].includes(kind)) {
+      const items=(await client.query('SELECT * FROM claim_items WHERE claim_id=$1',[row.claim_id])).rows;
+      const links=(await client.query('SELECT e.* FROM evidence_links e JOIN claim_items i USING(claim_item_id) WHERE i.claim_id=$1',[row.claim_id])).rows;
+      const canonical=items.map(i=>itemContract(i,links));
+      const analysis=analyzeClaim({...row.metadata?.features,evidenceAvailable:canonical.every(i=>i.calculatedStatus!=='UNAVAILABLE'),claimedQty:canonical.reduce((n,i)=>n+i.claimedQuantity,0),supportedQty:canonical.reduce((n,i)=>n+i.supportedQuantity,0)});
+      await client.query('INSERT INTO case_documents(id,case_id,kind,payload,actor) VALUES($1,$2,\'score_history\',$3,$4)',[randomUUID(),caseId,JSON.stringify({before:row.analysis,after:analysis}),actor.username]);
+      await client.query('UPDATE cases SET analysis=$1,risk_score=$2,review_priority=$3,evidence_coverage_pct=$4,evidence_gap=$5 WHERE case_id=$6',[JSON.stringify(analysis),analysis.riskScore,analysis.reviewPriority,analysis.evidenceCoveragePct,analysis.evidenceGap,caseId]);
+    }
+    await client.query('COMMIT');return {id,caseId,persisted:true,kind};
+  }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
 }

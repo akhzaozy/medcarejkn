@@ -3,7 +3,7 @@ import { getAllCases, getCaseById, getCaseEvidence, submitCaseOutcome, assignCas
 export async function getCases(req, res, next) {
   try {
     const { status, priority, riskMode, search, assignedTo, page, limit } = req.query;
-    const result = await getAllCases({ status, priority, riskMode, search, assignedTo, page, limit });
+    const result = await getAllCases({ status, priority, riskMode, search, assignedTo:req.user.role==='clinical_reviewer'?req.user.username:assignedTo, page, limit });
     res.status(200).json({
       success: true,
       total: result.total,
@@ -70,7 +70,7 @@ export async function postCaseOutcome(req, res, next) {
     const result = await submitCaseOutcome(caseId, {
       outcome,
       notes,
-      reviewerId: reviewerId || 'reviewer-001'
+      reviewerId:req.user.username,reviewerName:req.user.name
     });
 
     res.status(200).json({
@@ -99,7 +99,7 @@ export async function assignCase(req, res, next) {
       assignedTo,
       assignedName: assignedName || 'Tenaga Kesehatan (Reviewer)',
       note,
-      assignedBy: assignedBy || 'Staff JKN'
+      assignedBy:req.user.username
     });
 
     res.status(200).json({

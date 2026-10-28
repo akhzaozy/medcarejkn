@@ -5,7 +5,7 @@ import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 export default function LoginPage({ onLoginSuccess }) {
   const [username, setUsername] = useState('dr.anindya');
-  const [password, setPassword] = useState('nakes');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -15,7 +15,6 @@ export default function LoginPage({ onLoginSuccess }) {
     {
       id: 'dr.anindya',
       username: 'dr.anindya',
-      pass: 'nakes',
       name: 'dr. Anindya Kusuma, Sp.PK',
       role: 'Spesialis Patologi Klinis',
       cases: '1.446 Kasus',
@@ -24,7 +23,6 @@ export default function LoginPage({ onLoginSuccess }) {
     {
       id: 'dr.budi',
       username: 'dr.budi',
-      pass: 'nakes',
       name: 'dr. Budi Santoso, Sp.A',
       role: 'Spesialis Anak',
       cases: '1.445 Kasus',
@@ -33,7 +31,6 @@ export default function LoginPage({ onLoginSuccess }) {
     {
       id: 'dr.ratna',
       username: 'dr.ratna',
-      pass: 'nakes',
       name: 'dr. Ratna Dewi, Sp.PD',
       role: 'Spesialis Penyakit Dalam',
       cases: '1.445 Kasus',
@@ -45,7 +42,6 @@ export default function LoginPage({ onLoginSuccess }) {
     {
       id: 'staff.ahmad',
       username: 'staff.ahmad',
-      pass: 'jkn',
       name: 'Ahmad Fauzi, S.E.',
       role: 'Senior Verifikator JKN',
       cases: '2.168 Kasus',
@@ -54,7 +50,6 @@ export default function LoginPage({ onLoginSuccess }) {
     {
       id: 'staff.adit',
       username: 'staff.adit',
-      pass: 'jkn',
       name: 'Aditya Pratama, S.Kep.',
       role: 'Verifikator Klaim JKN',
       cases: '2.168 Kasus',
@@ -64,7 +59,7 @@ export default function LoginPage({ onLoginSuccess }) {
 
   const handleSelectAccount = (acc) => {
     setUsername(acc.username);
-    setPassword(acc.pass);
+    setPassword('');
     setError(null);
   };
 
@@ -123,7 +118,7 @@ export default function LoginPage({ onLoginSuccess }) {
       };
     }
 
-    onLoginSuccess(user, 'mock-jwt-offline-token');
+    onLoginSuccess(user, null);
   };
 
   const handleLogin = async (e) => {
@@ -133,7 +128,7 @@ export default function LoginPage({ onLoginSuccess }) {
       return;
     }
     if (!password) {
-      setError('Silakan masukkan kata sandi (contoh: nakes).');
+      setError('Silakan masukkan kata sandi akun Anda.');
       return;
     }
 
@@ -143,14 +138,8 @@ export default function LoginPage({ onLoginSuccess }) {
       const res = await loginUser({ username: username.trim(), password });
       onLoginSuccess(res.user, res.token);
     } catch (err) {
-      console.warn('[LoginPage] Login error encountered:', err.message);
-      // If error indicates bad password, display it
-      if (err.message && !err.message.includes('backend') && !err.message.includes('fetch')) {
-        setError(err.message);
-      } else {
-        // Graceful fallback login so demo never fails
-        handleDirectDemoLogin();
-      }
+
+      setError(err.message || 'Login belum berhasil. Coba kembali atau pilih mode demo secara eksplisit.');
     } finally {
       setLoading(false);
     }
@@ -230,7 +219,7 @@ export default function LoginPage({ onLoginSuccess }) {
                   <input id="login-password" name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={event => { setPassword(event.target.value); setError(null); }} placeholder="Masukkan kata sandi" autoComplete="current-password" disabled={loading} aria-invalid={Boolean(error)} aria-describedby={error ? 'login-error' : 'login-password-hint'} />
                   <button type="button" className="login-password-toggle" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'} aria-pressed={showPassword} disabled={loading}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                 </div>
-                <p id="login-password-hint" className="login-field-hint">{selectedAccount ? <>Sandi akun simulasi: <strong>{selectedAccount.pass}</strong></> : 'Pilih akun simulasi untuk mengisi username dan sandi.'}</p>
+                <p id="login-password-hint" className="login-field-hint">Gunakan kata sandi akun Anda.</p>
               </div>
               {error && <div id="login-error" className="login-error" role="alert">{error}</div>}
               <button type="submit" className="login-submit" disabled={loading} aria-busy={loading}><span>{loading ? 'Memeriksa akun…' : 'Masuk ke ruang audit'}</span><ArrowRight size={18} aria-hidden="true" /></button>

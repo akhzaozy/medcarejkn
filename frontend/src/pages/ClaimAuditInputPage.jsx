@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import AuditResultHeadline from '../components/common/AuditResultHeadline';
+import {normalizeAuditResult} from '../../../shared/riskEngine.js';
 import { auditCheckClaim } from '../api/client';
 import { 
   ShieldAlert, CheckCircle2, AlertTriangle, UserX, 
@@ -22,7 +24,7 @@ const PRESETS = [
       dateEncounter: '2025-03-10',
       dateDischarge: '2025-03-10',
       diagnosis: 'HTN CAUSE MALARIA ANEAMIA',
-      amountBilled: 25000,
+      amountBilled: 25000, evidenceAvailable: true, claimedQty: 1, supportedQty: 0,
       providerId: 'PROV-002'
     }
   },
@@ -41,7 +43,7 @@ const PRESETS = [
       dateEncounter: '2025-02-13',
       dateDischarge: '2025-02-13',
       diagnosis: 'CYESIS LMP',
-      amountBilled: 6160,
+      amountBilled: 6160, diagnosisProcedureMatch: false, evidenceAvailable: true, claimedQty: 1, supportedQty: 1,
       providerId: 'PROV-001'
     }
   },
@@ -60,7 +62,7 @@ const PRESETS = [
       dateEncounter: '2025-02-18',
       dateDischarge: '2025-02-18',
       diagnosis: 'TONSILITIS OBSTRUCTIVE SLEEP APEANA',
-      amountBilled: 0,
+      amountBilled: 0, enrollmentValid: false, evidenceAvailable: false,
       providerId: 'PROV-003'
     }
   },
@@ -79,7 +81,7 @@ const PRESETS = [
       dateEncounter: '2025-02-18',
       dateDischarge: '2025-02-18',
       diagnosis: 'REFRACTIVE ERROR',
-      amountBilled: 8400,
+      amountBilled: 8400, evidenceAvailable: true, claimedQty: 1, supportedQty: 1,
       providerId: 'PROV-004'
     }
   }
@@ -93,7 +95,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
     dateEncounter: '2025-03-10',
     dateDischarge: '2025-03-10',
     diagnosis: 'HTN CAUSE MALARIA ANEAMIA',
-    amountBilled: 25000,
+    amountBilled: 25000, evidenceAvailable: true, claimedQty: 1, supportedQty: 0,
     providerId: 'PROV-001',
     saveCase: true
   });
@@ -108,7 +110,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
 
   const handleSelectPreset = (preset) => {
     setFormData(prev => ({
-      ...prev,
+      saveCase: prev.saveCase,
       ...preset.data
     }));
     setResult(null);
@@ -121,7 +123,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
       setLoading(true);
       setError(null);
       const res = await auditCheckClaim(formData);
-      setResult(res);
+      setResult(normalizeAuditResult(res));
     } catch (err) {
       console.error(err);
       setError('Gagal menjalankan deteksi audit. Pastikan backend aktif.');
@@ -401,6 +403,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
               </div>
             </div>
 
+            <fieldset className="structured-evidence"><legend>Bukti layanan</legend><label><input type="checkbox" checked={formData.evidenceAvailable===true} onChange={e=>handleInputChange('evidenceAvailable',e.target.checked)}/> Bukti tersedia untuk ditelaah</label><label>Kuantitas tagihan<input type="number" min="1" value={formData.claimedQty??1} onChange={e=>handleInputChange('claimedQty',Number(e.target.value))}/></label><label>Kuantitas didukung<input type="number" min="0" value={formData.supportedQty??0} onChange={e=>handleInputChange('supportedQty',Number(e.target.value))}/></label><p>Data skenario; bukan pembacaan dokumen otomatis.</p></fieldset>
             <div style={{ marginBottom: '1.5rem', background: 'var(--mc-bg)', padding: '0.85rem 1.25rem', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <input
                 type="checkbox"
@@ -512,10 +515,10 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
                     fontWeight: 800,
                     color: result.isPhantom ? '#c2410c' : result.fraudType === 'No Fraud' ? '#15803d' : '#b91c1c'
                   }}>
-                    {result.isPhantom ? 'TERINDIKASI PHANTOM BILLING' : result.fraudType.toUpperCase()}
+                    <AuditResultHeadline analysis={result}/>
                   </div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--mc-text-body)', marginTop: '2px' }}>
-                    Skor Risiko: <strong>{result.riskScore}%</strong> | Primary Risk Mode: <code>{result.primaryRiskMode}</code>
+                    Skor aturan: <strong>{result.riskScore}/100</strong> (bukan probabilitas) | Primary Risk Mode: <code>{result.primaryRiskMode}</code>
                   </div>
                 </div>
               </div>
@@ -525,15 +528,15 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid var(--mc-card-border)' }}>
                   <div style={{ fontSize: '0.72rem', color: 'var(--mc-text-muted)', fontWeight: 700 }}>EVIDENCE DISPARITY (GAP)</div>
                   <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--mc-text-heading)', marginTop: '2px' }}>
-                    Rp {result.evidenceGap ? result.evidenceGap.toLocaleString('id-ID') : '0'}
+                    {result.evidenceGap==null?'Belum dapat dihitung':`${result.evidenceGap} item`}
                   </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--mc-text-muted)', marginTop: '2px' }}>Selisih potensi klaim fiktif</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--mc-text-muted)', marginTop: '2px' }}>Kuantitas tanpa dukungan bukti tercatat</div>
                 </div>
 
                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid var(--mc-card-border)' }}>
                   <div style={{ fontSize: '0.72rem', color: 'var(--mc-text-muted)', fontWeight: 700 }}>EVIDENCE COVERAGE</div>
                   <div style={{ fontSize: '1.25rem', fontWeight: 800, color: result.evidenceCoveragePct >= 80 ? '#10b981' : '#dc2626', marginTop: '2px' }}>
-                    {result.evidenceCoveragePct}%
+                    {result.evidenceCoveragePct==null?'Belum tersedia':`${result.evidenceCoveragePct}%`}
                   </div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--mc-text-muted)', marginTop: '2px' }}>Tingkat ketercukupan bukti</div>
                 </div>
@@ -545,7 +548,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
                   Temuan & Indikasi Anomali:
                 </h5>
                 <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.8rem', color: 'var(--mc-text-body)', lineHeight: 1.6 }}>
-                  {result.reasons.map((r, i) => (
+                  {(result.reasons || []).map((r, i) => (
                     <li key={i} style={{ marginBottom: '4px' }}>{r}</li>
                   ))}
                 </ul>
@@ -562,6 +565,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
               </div>
 
               {/* Saved Record Link */}
+              {result.save && <p className={`audit-save-status ${result.save.status}`} role="status">{result.save.message}</p>}
               {result.savedRecord && (
                 <div style={{
                   background: 'var(--mc-bg)',

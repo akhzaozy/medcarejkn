@@ -167,3 +167,9 @@ body { background: var(--mc-bg, #edf3f4); }
 }
 
 @media (max-width: 600px) { .ba-history .ba-section-head { flex-wrap: wrap; gap: 2px; } }
+.med-profile-initials{width:34px;height:34px;border-radius:50%;background:#e5f1ed;color:#357569;display:grid;place-items:center;font-size:12px;font-weight:700;flex-shrink:0}
+.demo-mode-banner{padding:10px 14px;background:#fff4d5;border:1px solid #e8d6a6;border-radius:10px;color:#725d24;font-size:12px;margin-bottom:16px}
+.audit-save-status{padding:12px;border-radius:10px;margin:12px 0;font-size:13px;background:#f1f6f4}.audit-save-status.failed{background:#fff4db;color:#715a20}
+@media(max-width:1280px){.med-nav{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.med-header{z-index:40}
+.med-inner main :is(section,[id]){scroll-margin-top:var(--med-header-offset,160px)}

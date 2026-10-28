@@ -772,7 +772,7 @@ export default function GuidePage({
                   Klaim obat &amp; tindakan ditagihkan 10 unit, tetapi lembar tindakan di rekam medis terbukti 0 (kosong).
                 </p>
                 <button
-                  onClick={() => onSelectCase ? onSelectCase('CASE-0025') : onOpenQueue()}
+                  onClick={() => onSelectCase ? onSelectCase('CASE-PB-001') : onOpenQueue()}
                   style={{
                     width: '100%',
                     padding: '0.6rem 1rem',
@@ -790,7 +790,7 @@ export default function GuidePage({
                     boxShadow: '0 4px 10px rgba(225, 29, 72, 0.25)'
                   }}
                 >
-                  <Eye size={14} /> Buka Kasus CASE-0025
+                  <Eye size={14} /> Buka Kasus CASE-PB-001
                 </button>
               </div>
 
@@ -852,7 +852,7 @@ export default function GuidePage({
                   Melihat bagaimana sistem mengaktifkan Guardrail #1 sehingga tidak menuduh fraud sembarangan.
                 </p>
                 <button
-                  onClick={() => onSelectCase ? onSelectCase('CASE-0033') : onOpenQueue()}
+                  onClick={() => onSelectCase ? onSelectCase('CASE-PB-003') : onOpenQueue()}
                   style={{
                     width: '100%',
                     padding: '0.6rem 1rem',
@@ -869,7 +869,7 @@ export default function GuidePage({
                     gap: '6px'
                   }}
                 >
-                  <Eye size={14} /> Buka Kasus CASE-0033
+                  <Eye size={14} /> Buka Kasus CASE-PB-003
                 </button>
               </div>
 

@@ -12,14 +12,17 @@ import BpjsAuditPage from './pages/BpjsAuditPage';
 import GuidePage from './pages/GuidePage';
 import LoginPage from './pages/LoginPage';
 import BpjsDataPage from './pages/BpjsDataPage';
-import { fetchDashboard } from './api/client';
+import PageErrorBoundary from './components/common/PageErrorBoundary';
+import {publicUser} from '../../shared/userIdentity.js';
+import { fetchDashboard,logoutUser,isDemoMode } from './api/client';
 import './styles/responsive.css';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const saved = localStorage.getItem('jkn_user');
-      return saved ? JSON.parse(saved) : null;
+      if(!saved)return null;
+      const safe=publicUser(JSON.parse(saved));localStorage.setItem('jkn_user',JSON.stringify(safe));return safe;
     } catch {
       return null;
     }
@@ -33,7 +36,9 @@ export default function App() {
       return 'login';
     }
   });
+  useEffect(()=>{const expired=()=>{localStorage.removeItem('jkn_user');localStorage.removeItem('jkn_token');setCurrentUser(null);setView('login');};window.addEventListener('jkn_session_expired',expired);return()=>window.removeEventListener('jkn_session_expired',expired);},[]);
   const [selectedCaseId, setSelectedCaseId] = useState(null);
+  const [dashboardError,setDashboardError]=useState('');
   const [dashboardData, setDashboardData] = useState(null);
   const [auditTab,setAuditTab]=useState('patients');
   const [auditCohort,setAuditCohort]=useState('Reguler');
@@ -58,14 +63,16 @@ export default function App() {
         params.assignedTo = user.username;
         params.role = user.role;
       }
+      setDashboardError('');
       const data = await fetchDashboard(params);
       setDashboardData(data);
     } catch (err) {
-      console.error(err);
+      setDashboardError(err.message);
     }
   };
 
   const handleLoginSuccess = (user, token) => {
+    user=publicUser(user);
     setCurrentUser(user);
     try {
       localStorage.setItem('jkn_user', JSON.stringify(user));
@@ -78,6 +85,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    logoutUser();
     setCurrentUser(null);
     try {
       localStorage.removeItem('jkn_user');
@@ -157,7 +165,8 @@ export default function App() {
         <MedcareHeader
           activeSection={view==='input' && auditTab==='queue' ? 'cases' : view}
           onNavigate={handleNavigateSection}
-          onOpenQueue={() => handleOpenBpjsAudit('Reguler','queue')}
+          onOpenQueue={handleOpenQueue}
+          onOpenValidation={handleOpenValidation}
           onOpenInput={handleOpenInput}
           onOpenGuide={handleOpenGuide}
           onOpenBpjs={() => { setView('bpjs'); window.scrollTo({ top: 0 }); }}
@@ -166,9 +175,10 @@ export default function App() {
           onLogout={handleLogout}
         />
 
-        <main style={{ minHeight: view === 'input' ? 0 : '70vh' }}>
+        {isDemoMode() && <p className="demo-mode-banner" role="status">Mode Demo — data tidak disimpan</p>}
+        <main style={{ minHeight: view === 'input' ? 0 : '70vh' }}><PageErrorBoundary key={view+selectedCaseId} onBack={handleBackToLanding}>
           {view === 'bpjs' && <BpjsDataPage onOpenPatients={handleOpenBpjsAudit} />}
-          {view === 'landing' && (
+          {view === 'landing' && (dashboardError ? <section className="med-subpage-card" role="alert"><h2>Ringkasan belum dapat dimuat</h2><p>{dashboardError}</p><button className="btn-pill-primary" onClick={()=>loadDashboard()}>Coba lagi</button></section> : !dashboardData ? <p role="status">Memuat ringkasan…</p> : (
             <MedcareLanding
               dashboardData={dashboardData}
               onSelectCase={handleSelectCase}
@@ -179,7 +189,7 @@ export default function App() {
               onLogout={handleLogout}
               hideHeader={true}
             />
-          )}
+          ))}
 
           {view === 'guide' && (
             <GuidePage
@@ -235,7 +245,7 @@ export default function App() {
               />
             </div>
           )}
-        </main>
+        </PageErrorBoundary></main>
 
         {/* Minimalist medCare Footer — matches landing page */}
         {view !== 'input' && <footer style={{

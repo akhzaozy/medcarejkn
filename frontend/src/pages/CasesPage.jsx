@@ -13,6 +13,7 @@ import {
 
 export default function CasesPage({ onSelectCase, currentUser }) {
   const isClinician = currentUser?.role === 'clinical_reviewer';
+  const [error, setError] = useState('');
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('cards'); // 'cards' (visual & easy to read) or 'table'
@@ -28,7 +29,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
     search: '',
     priority: 'ALL',
     status: 'ALL',
-    riskMode: isClinician ? 'PHANTOM_BILLING' : 'ALL',
+    riskMode: 'ALL',
     assignedTo: isClinician ? currentUser.username : 'ALL'
   });
 
@@ -43,7 +44,6 @@ export default function CasesPage({ onSelectCase, currentUser }) {
       const q = { limit: 'ALL' };
       if (isClinician && currentUser) {
         q.assignedTo = currentUser.username;
-        q.riskMode = 'PHANTOM_BILLING';
       }
       const res = await fetchCases(q);
       const allItems = res?.data || (Array.isArray(res) ? res : []);
@@ -64,15 +64,12 @@ export default function CasesPage({ onSelectCase, currentUser }) {
 
   const loadCases = async () => {
     try {
-      setLoading(true);
+      setLoading(true);setError('');
       const queryFilters = { ...filters, page, limit };
       if (isClinician && currentUser) {
         queryFilters.assignedTo = currentUser.username;
-        if (queryFilters.riskMode === 'ALL') {
-          queryFilters.riskMode = 'PHANTOM_BILLING';
-        }
       } else if (activeQueueTab === 'assigned' && currentUser) {
-        queryFilters.assignedTo = currentUser.username;
+        queryFilters.assignedTo = 'UNASSIGNED';
       } else if (activeQueueTab === 'all') {
         if (!filters.assignedTo || filters.assignedTo === 'ALL') {
           delete queryFilters.assignedTo;
@@ -89,7 +86,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
       setTotalPages(totalP);
       loadStats();
     } catch (err) {
-      console.error(err);
+      setError(err.message);setCases([]);
     } finally {
       setLoading(false);
     }
@@ -117,7 +114,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
     if (isClinician) return;
     setActiveQueueTab(tab);
     if (tab === 'assigned') {
-      setFilters(prev => ({ ...prev, assignedTo: 'dr.anindya' }));
+      setFilters(prev => ({ ...prev, assignedTo: isClinician ? currentUser.username : 'UNASSIGNED' }));
     } else {
       setFilters(prev => {
         const copy = { ...prev };
@@ -128,7 +125,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
   };
 
   return (
-    <div style={{ paddingBottom: '3rem' }}>
+    <div style={{ paddingBottom: '3rem' }}>{error && <p className="ba-error" role="alert">{error}<button onClick={loadCases}>Coba lagi</button></p>}
       {/* Editorial Minimalist Hero Header */}
       <div className="med-hero-row" style={{ alignItems: 'flex-start', marginBottom: '2rem' }}>
         <div className="med-greeting-col">
@@ -150,14 +147,14 @@ export default function CasesPage({ onSelectCase, currentUser }) {
           </div>
           <h1 className="med-greeting-title">
             {isClinician ? (
-              <>Audit <strong>Phantom Billing Dokter</strong></>
+              <>Antrean <strong>Telaah Dokter</strong></>
             ) : (
-              <>Antrean Investigasi &amp; <strong>Verifikasi Klaim</strong></>
+              <>Antrean <strong>Kasus Klaim</strong></>
             )}
           </h1>
           <p className="med-greeting-subtitle">
             {isClinician ? (
-              <>Antrean khusus penelaahan klinis untuk <strong>{currentUser?.name || 'dr. Anindya Kusuma, Sp.PK'}</strong> berfokus pada audit disparitas tagihan <strong>Phantom Billing</strong>.</>
+              <>Antrean khusus penelaahan klinis untuk <strong>{currentUser?.name || 'dr. Anindya Kusuma, Sp.PK'}</strong> mencakup semua mode risiko yang ditugaskan.</>
             ) : (
               <>Daftar antrean kasus klaim JKN yang teridentifikasi untuk penelaahan berbasis disparitas bukti klinis dan rekam medis.</>
             )}
@@ -336,6 +333,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
             </div>
           </div>
 
+          <div><label htmlFor="queue-risk-mode">Filter Mode Risiko</label><select id="queue-risk-mode" className="med-pill-input" value={filters.riskMode} onChange={e=>handleFilterChange('riskMode',e.target.value)}>{['ALL','PHANTOM_BILLING','UPCODING','UNNECESSARY_PROCEDURES','DUPLICATE_CLAIM','WRONG_DIAGNOSIS','GHOST_ENROLLEE','UNAVAILABLE'].map(mode=><option key={mode} value={mode}>{mode==='ALL'?'Semua mode risiko':formatRiskMode(mode)}</option>)}</select></div>
           {/* Priority */}
           <div>
             <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--mc-text-heading)', marginBottom: '0.45rem' }}>
@@ -442,7 +440,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                     color: activeQueueTab === 'assigned' ? '#ffffff' : '#64748b'
                   }}
                 >
-                  🩺 Ditugaskan ke Saya
+                  {isClinician ? 'Ditugaskan ke Saya' : 'Belum Didisposisi'}
                 </button>
                 <button
                   onClick={() => handleSwitchTab('all')}
