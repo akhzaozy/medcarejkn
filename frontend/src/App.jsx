@@ -8,9 +8,10 @@ import MedcareLanding from './pages/MedcareLanding';
 import CasesPage from './pages/CasesPage';
 import CaseDetailPage from './pages/CaseDetailPage';
 import ValidationPage from './pages/ValidationPage';
-import ClaimAuditInputPage from './pages/ClaimAuditInputPage';
+import BpjsAuditPage from './pages/BpjsAuditPage';
 import GuidePage from './pages/GuidePage';
 import LoginPage from './pages/LoginPage';
+import BpjsDataPage from './pages/BpjsDataPage';
 import { fetchDashboard } from './api/client';
 
 export default function App() {
@@ -26,13 +27,22 @@ export default function App() {
   const [view, setView] = useState(() => {
     try {
       const saved = localStorage.getItem('jkn_user');
-      return saved ? 'landing' : 'login';
+      return saved ? (window.location.hash === '#data-bpjs' ? 'bpjs' : window.location.hash === '#audit-bpjs' ? 'input' : 'landing') : 'login';
     } catch {
       return 'login';
     }
   });
   const [selectedCaseId, setSelectedCaseId] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
+  const [auditTab,setAuditTab]=useState('patients');
+  const [auditCohort,setAuditCohort]=useState('Reguler');
+
+  useEffect(() => {
+    if (!currentUser) return;
+    if (view === 'bpjs') window.history.replaceState(null, '', '#data-bpjs');
+    else if (view === 'input') window.history.replaceState(null, '', '#audit-bpjs');
+    else if (['#data-bpjs','#audit-bpjs'].includes(window.location.hash)) window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  }, [view, currentUser]);
 
   useEffect(() => {
     if (currentUser) {
@@ -62,7 +72,7 @@ export default function App() {
     } catch (e) {
       console.error(e);
     }
-    setView('landing');
+    setView(window.location.hash === '#data-bpjs' ? 'bpjs' : window.location.hash === '#audit-bpjs' ? 'input' : 'landing');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -102,9 +112,16 @@ export default function App() {
   };
 
   const handleOpenInput = () => {
+    setAuditTab('patients');
+    setAuditCohort('Reguler');
     setSelectedCaseId(null);
     setView('input');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenBpjsAudit = (cohort='Reguler',tab='patients') => {
+    setAuditCohort(cohort);setAuditTab(tab);setSelectedCaseId(null);setView('input');
+    window.scrollTo({top:0,behavior:'smooth'});
   };
 
   const handleOpenGuide = () => {
@@ -137,17 +154,19 @@ export default function App() {
     <div className="med-container">
       <div className="med-inner">
         <MedcareHeader
-          activeSection={view}
+          activeSection={view==='input' && auditTab==='queue' ? 'cases' : view}
           onNavigate={handleNavigateSection}
-          onOpenQueue={handleOpenQueue}
+          onOpenQueue={() => handleOpenBpjsAudit('Reguler','queue')}
           onOpenInput={handleOpenInput}
           onOpenGuide={handleOpenGuide}
+          onOpenBpjs={() => { setView('bpjs'); window.scrollTo({ top: 0 }); }}
           onSelectCase={handleSelectCase}
           currentUser={currentUser}
           onLogout={handleLogout}
         />
 
         <main style={{ minHeight: '70vh' }}>
+          {view === 'bpjs' && <BpjsDataPage onOpenPatients={handleOpenBpjsAudit} />}
           {view === 'landing' && (
             <MedcareLanding
               dashboardData={dashboardData}
@@ -171,7 +190,10 @@ export default function App() {
           )}
 
           {view === 'input' && (
-            <ClaimAuditInputPage
+            <BpjsAuditPage
+              onTabChange={setAuditTab}
+              initialTab={auditTab}
+              initialCohort={auditCohort}
               onSelectCase={handleSelectCase}
               onOpenQueue={handleOpenQueue}
               onBack={handleBackToLanding}
@@ -189,6 +211,7 @@ export default function App() {
                 >
                   ← Kembali ke Beranda
                 </button>
+                <button className="btn-pill-primary" style={{marginLeft:12}} onClick={()=>handleOpenBpjsAudit('Reguler','queue')}>Antrean audit pasien BPJS</button>
               </div>
               <CasesPage onSelectCase={handleSelectCase} currentUser={currentUser} />
             </div>
@@ -232,7 +255,7 @@ export default function App() {
             <span style={{ fontWeight: 700, color: 'var(--mc-teal-primary, #007a78)', fontSize: '0.95rem' }}>JKN</span>
           </div>
           <p style={{ fontSize: '0.8rem', color: 'var(--mc-text-muted)', maxWidth: '550px', margin: '0 auto' }}>
-            Decision Support System Prototype — Berbasis Synthetic Dataset V4 &amp; Rule-based Evidence Reconciliation Engine.
+            Prototipe audit berbasis bukti dan eksplorasi data sampel BPJS. Data simulasi audit dan data BPJS ditampilkan dengan cakupan masing-masing.
           </p>
         </footer>
       </div>

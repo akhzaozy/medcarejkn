@@ -7,6 +7,8 @@ import claimRoutes from './routes/claimRoutes.js';
 import analysisRoutes from './routes/analysisRoutes.js';
 import validationRoutes from './routes/validationRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import bpjsRoutes from './routes/bpjsRoutes.js';
+import bpjsPatientRoutes from './routes/bpjsPatientRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
@@ -35,6 +37,8 @@ app.use('/api/cases', caseRoutes);
 app.use('/api/claims', claimRoutes);
 app.use('/api/analysis', analysisRoutes);
 app.use('/api/validation', validationRoutes);
+app.use('/api/bpjs', bpjsRoutes);
+app.use('/api/bpjs', bpjsPatientRoutes);
 
 import path from 'path';
 import fs from 'fs';

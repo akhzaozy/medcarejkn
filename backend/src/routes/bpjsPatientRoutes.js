@@ -1,0 +1,13 @@
+import express from 'express';
+import { patientCatalog,listBpjsPatients,getBpjsPatient,getBpjsEncounter,createBpjsAudit,listBpjsAudits,getBpjsAudit,reviewBpjsAudit } from '../services/bpjsPatientService.js';
+const router=express.Router();
+const respond=fn=>(req,res,next)=>{try{res.json({data:fn(req)});}catch(error){next(error);}};
+router.get('/patient-catalog',respond(()=>patientCatalog()));
+router.get('/patients',respond(req=>listBpjsPatients({cohort:req.query.cohort,search:req.query.search,after:req.query.after,fkrtlOnly:req.query.fkrtlOnly!=='false'})));
+router.get('/patients/:cohort/:id',respond(req=>getBpjsPatient(req.params.cohort,req.params.id,Number(req.query.page || 1))));
+router.get('/encounters/:id',respond(req=>getBpjsEncounter(Number(req.params.id))));
+router.get('/audits',respond(()=>listBpjsAudits()));
+router.post('/audits',respond(req=>createBpjsAudit(req.body)));
+router.get('/audits/:id',respond(req=>getBpjsAudit(req.params.id)));
+router.patch('/audits/:id',respond(req=>reviewBpjsAudit(req.params.id,req.body)));
+export default router;

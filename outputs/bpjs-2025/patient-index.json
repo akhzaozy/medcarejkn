@@ -1,0 +1,212 @@
+{
+  "edition": 2025,
+  "cohorts": {
+    "COVID": {
+      "participants": 35994,
+      "encounters": 1735926,
+      "secondaryDiagnoses": 968227
+    },
+    "DM": {
+      "participants": 164132,
+      "encounters": 2506816,
+      "secondaryDiagnoses": 1706465
+    },
+    "KIA Anak": {
+      "participants": 322128,
+      "encounters": 823164,
+      "secondaryDiagnoses": 197400
+    },
+    "KIA Ibu": {
+      "participants": 523352,
+      "encounters": 2057602,
+      "secondaryDiagnoses": 414033
+    },
+    "Kesehatan Mental": {
+      "participants": 89859,
+      "encounters": 1579745,
+      "secondaryDiagnoses": 1104397
+    },
+    "TB": {
+      "participants": 118747,
+      "encounters": 633493,
+      "secondaryDiagnoses": 294733
+    },
+    "Reguler": {
+      "participants": 2590751,
+      "encounters": 6030808,
+      "secondaryDiagnoses": 1967670
+    }
+  },
+  "tables": [
+    {
+      "id": "T01",
+      "sourceRows": 968227,
+      "indexedRows": 968227
+    },
+    {
+      "id": "T02",
+      "sourceRows": 899083,
+      "indexedRows": 899083
+    },
+    {
+      "id": "T03",
+      "sourceRows": 834163,
+      "indexedRows": 834163
+    },
+    {
+      "id": "T04",
+      "sourceRows": 2680,
+      "indexedRows": 2680
+    },
+    {
+      "id": "T05",
+      "sourceRows": 35994,
+      "indexedRows": 35994
+    },
+    {
+      "id": "T10",
+      "sourceRows": 1706465,
+      "indexedRows": 1706465
+    },
+    {
+      "id": "T11",
+      "sourceRows": 1074811,
+      "indexedRows": 1074811
+    },
+    {
+      "id": "T12",
+      "sourceRows": 1428115,
+      "indexedRows": 1428115
+    },
+    {
+      "id": "T13",
+      "sourceRows": 164132,
+      "indexedRows": 164132
+    },
+    {
+      "id": "T14",
+      "sourceRows": 3890,
+      "indexedRows": 3890
+    },
+    {
+      "id": "T19",
+      "sourceRows": 197400,
+      "indexedRows": 197400
+    },
+    {
+      "id": "T20",
+      "sourceRows": 220773,
+      "indexedRows": 220773
+    },
+    {
+      "id": "T21",
+      "sourceRows": 602391,
+      "indexedRows": 602391
+    },
+    {
+      "id": "T22",
+      "sourceRows": 322128,
+      "indexedRows": 322128
+    },
+    {
+      "id": "T27",
+      "sourceRows": 414033,
+      "indexedRows": 414033
+    },
+    {
+      "id": "T28",
+      "sourceRows": 389942,
+      "indexedRows": 389942
+    },
+    {
+      "id": "T29",
+      "sourceRows": 1664659,
+      "indexedRows": 1664659
+    },
+    {
+      "id": "T30",
+      "sourceRows": 523352,
+      "indexedRows": 523352
+    },
+    {
+      "id": "T31",
+      "sourceRows": 3001,
+      "indexedRows": 3001
+    },
+    {
+      "id": "T36",
+      "sourceRows": 1104397,
+      "indexedRows": 1104397
+    },
+    {
+      "id": "T37",
+      "sourceRows": 899004,
+      "indexedRows": 899004
+    },
+    {
+      "id": "T38",
+      "sourceRows": 679731,
+      "indexedRows": 679731
+    },
+    {
+      "id": "T39",
+      "sourceRows": 89859,
+      "indexedRows": 89859
+    },
+    {
+      "id": "T40",
+      "sourceRows": 1010,
+      "indexedRows": 1010
+    },
+    {
+      "id": "T45",
+      "sourceRows": 294733,
+      "indexedRows": 294733
+    },
+    {
+      "id": "T46",
+      "sourceRows": 235671,
+      "indexedRows": 235671
+    },
+    {
+      "id": "T47",
+      "sourceRows": 380429,
+      "indexedRows": 380429
+    },
+    {
+      "id": "T48",
+      "sourceRows": 118747,
+      "indexedRows": 118747
+    },
+    {
+      "id": "T49",
+      "sourceRows": 17393,
+      "indexedRows": 17393
+    },
+    {
+      "id": "T54",
+      "sourceRows": 2590751,
+      "indexedRows": 2590751
+    },
+    {
+      "id": "T55",
+      "sourceRows": 4073388,
+      "indexedRows": 4073388
+    },
+    {
+      "id": "T56",
+      "sourceRows": 1699219,
+      "indexedRows": 1699219
+    },
+    {
+      "id": "T57",
+      "sourceRows": 258201,
+      "indexedRows": 258201
+    },
+    {
+      "id": "T58",
+      "sourceRows": 1967670,
+      "indexedRows": 1967670
+    }
+  ]
+}

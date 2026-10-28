@@ -8,6 +8,7 @@ Decision-support system berbasis evidence reconciliation untuk membantu proses i
 - [Spesifikasi Arsitektur Sistem & Alur Proses Bisnis](ARSITEKTUR_DAN_PROSES_BISNIS.md)
 - [Dokumen PRD Lengkap](docs/PRD.md)
 - [Kamus Data Database](docs/DATA_DICTIONARY.md)
+- [Eksplorasi dan Ekspor Data Sampel BPJS 2025](docs/BPJS_2025.md)
 
 ---
 
