@@ -1,0 +1,45 @@
+{
+  "BUG-01": "TypeError from missing fallback fraudType",
+  "BUG-02": true,
+  "BUG-03": true,
+  "BUG-04": true,
+  "BUG-05": "CASE-PB-001",
+  "BUG-06": {
+    "normalModeUsesMemoryFallback": true,
+    "schemaNotIdempotent": true
+  },
+  "BUG-07": true,
+  "BUG-08": {
+    "uiUsesLegacyFields": true,
+    "demoUsesDifferentFields": true
+  },
+  "BUG-09": {
+    "responseContainsPassword": true,
+    "roleBypassesCredentials": true
+  },
+  "BUG-10": {
+    "validationHasNoNavigation": true,
+    "modalStateNeverOpened": true
+  },
+  "BUG-11": false,
+  "BUG-12": {
+    "stickyHeader": true,
+    "fixedResultOffset": true
+  },
+  "validation": {
+    "implementation": "rules without trained model",
+    "fallbackKeys": [
+      "f1Score",
+      "precision",
+      "recall",
+      "accuracy",
+      "totalAudited",
+      "reconciledCount",
+      "falsePositiveRate",
+      "modelName",
+      "lastBenchmarkRun",
+      "rulePerformance"
+    ],
+    "source": "runtime rule evaluation over local CSV"
+  }
+}
