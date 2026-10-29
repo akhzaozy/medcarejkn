@@ -11,3 +11,5 @@ Rollback: hentikan container backend baru, kembali ke tag/commit aplikasi sebelu
 Validasi lokal: migrasi dua kali, delapan seed unik, lima login, semua kombinasi Phantom Checker, kegagalan simpan, disposisi lintas-role, dan penolakan keputusan staf diuji oleh `backend/tests/stability.integration.test.js`. Tes membuat database baru berawalan `jkn_prd_test_`; tidak memakai database produksi.
 
 Startup image produksi menjalankan migrasi sebelum membuka port API dan mencetak hanya status, versi, serta basename backup. Backup disimpan dalam volume migration_backups pada /app/backups dengan permission0600. Hash akun yang tidak valid membuat migrasi gagal tertutup.
+
+Pada deployment Portainer, isi kedua nilai bcrypt dengan pembungkus petik tunggal agar tanda dolar dipertahankan oleh pemrosesan environment Compose. Petik bukan bagian hash yang diterima aplikasi. Verifikasi format hash60 karakter dan login setelah redeploy tanpa mencetak nilainya. Perilaku interpolation ini juga didokumentasikan dalam [penjelasan pengelola Portainer](https://github.com/portainer/portainer/issues/12635). Jangan memasukkan hash nyata ke contoh/commit.

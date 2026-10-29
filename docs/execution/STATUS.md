@@ -38,3 +38,5 @@ Dashboard kini merekap antrean dan jadwal DB sesuai akun; angka persentase/jadwa
 ## Deployment
 
 Laporan ini mendokumentasikan keadaan pra-deploy. Dua hash akun yang sudah ada telah diizinkan pengguna untuk environment privat stack jkn di Portainer; sandi tidak dirotasi dan nilai aktual tidak masuk Git. Docker memakai Node24 dan PostgreSQL client untuk backup, build context root untuk shared/config/data, pull_policy build, serta volume backup terpisah. Git push dan redeploy dilakukan sesudah verifikasi lokal, lalu hasil produksi diperiksa terpisah.
+
+Hasil produksi sesudah laporan pra-deploy: lihat [DEPLOYMENT.md](DEPLOYMENT.md). Masalah interpolation hash diperbaiki di environment Portainer; backup/migrasi003 berhasil dan login staf/dokter serta indeks pasien telah diverifikasi.
