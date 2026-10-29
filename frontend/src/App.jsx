@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import './index.css';
 import './styles/medcare.css';
 import './styles/medcare-minimalist.css';
 
 import MedcareHeader from './components/layout/MedcareHeader';
-import MedcareLanding from './pages/MedcareLanding';
-import CasesPage from './pages/CasesPage';
-import CaseDetailPage from './pages/CaseDetailPage';
-import ValidationPage from './pages/ValidationPage';
-import BpjsAuditPage from './pages/BpjsAuditPage';
-import GuidePage from './pages/GuidePage';
+const MedcareLanding=lazy(()=>import('./pages/MedcareLanding'));
+const CasesPage=lazy(()=>import('./pages/CasesPage'));
+const CaseDetailPage=lazy(()=>import('./pages/CaseDetailPage'));
+const ValidationPage=lazy(()=>import('./pages/ValidationPage'));
+const BpjsAuditPage=lazy(()=>import('./pages/BpjsAuditPage'));
+const GuidePage=lazy(()=>import('./pages/GuidePage'));
 import LoginPage from './pages/LoginPage';
-import BpjsDataPage from './pages/BpjsDataPage';
+const BpjsDataPage=lazy(()=>import('./pages/BpjsDataPage'));
 import PageErrorBoundary from './components/common/PageErrorBoundary';
 import {publicUser} from '../../shared/userIdentity.js';
 import { fetchDashboard,logoutUser,isDemoMode } from './api/client';
@@ -51,10 +51,8 @@ export default function App() {
   }, [view, currentUser]);
 
   useEffect(() => {
-    if (currentUser) {
-      loadDashboard();
-    }
-  }, [currentUser]);
+    if (currentUser && view==='landing') loadDashboard();
+  }, [currentUser,view]);
 
   const loadDashboard = async (user = currentUser) => {
     try {
@@ -163,7 +161,7 @@ export default function App() {
     <div className="med-container">
       <div className="med-inner">
         <MedcareHeader
-          activeSection={view==='input' && auditTab==='queue' ? 'cases' : view}
+          activeSection={view}
           onNavigate={handleNavigateSection}
           onOpenQueue={handleOpenQueue}
           onOpenValidation={handleOpenValidation}
@@ -176,8 +174,8 @@ export default function App() {
         />
 
         {isDemoMode() && <p className="demo-mode-banner" role="status">Mode Demo — data tidak disimpan</p>}
-        <main style={{ minHeight: view === 'input' ? 0 : '70vh' }}><PageErrorBoundary key={view+selectedCaseId} onBack={handleBackToLanding}>
-          {view === 'bpjs' && <BpjsDataPage onOpenPatients={handleOpenBpjsAudit} />}
+        <main style={{ minHeight: view === 'input' ? 0 : '70vh' }}><PageErrorBoundary key={view+selectedCaseId} onBack={handleBackToLanding}><Suspense fallback={<p role="status">Memuat halaman…</p>}>
+          {view === 'bpjs' && <BpjsDataPage currentUser={currentUser} onSelectCase={handleSelectCase} onOpenPatients={handleOpenBpjsAudit} />}
           {view === 'landing' && (dashboardError ? <section className="med-subpage-card" role="alert"><h2>Ringkasan belum dapat dimuat</h2><p>{dashboardError}</p><button className="btn-pill-primary" onClick={()=>loadDashboard()}>Coba lagi</button></section> : !dashboardData ? <p role="status">Memuat ringkasan…</p> : (
             <MedcareLanding
               dashboardData={dashboardData}
@@ -230,6 +228,7 @@ export default function App() {
 
           {view === 'validation' && (
             <ValidationPage
+              onOpenQueue={handleOpenQueue}
               onSelectCase={handleSelectCase}
               onBack={handleBackToLanding}
               currentUser={currentUser}
@@ -245,7 +244,7 @@ export default function App() {
               />
             </div>
           )}
-        </PageErrorBoundary></main>
+        </Suspense></PageErrorBoundary></main>
 
         {/* Minimalist medCare Footer — matches landing page */}
         {view !== 'input' && <footer style={{

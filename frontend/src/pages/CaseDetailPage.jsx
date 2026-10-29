@@ -1,3 +1,7 @@
+import PatternCaseView from '../components/common/PatternCaseView';
+import RiskEvidencePanels from '../components/common/RiskEvidencePanels';
+import MedcareAuditScheduleModal from '../components/medcare/MedcareAuditScheduleModal';
+import {apiRequest,isDemoMode} from '../api/client';
 import React, { useEffect, useState } from 'react';
 import { 
   fetchCaseDetails, fetchCaseEvidence, submitReviewOutcome, 
@@ -20,6 +24,7 @@ import {
 } from 'lucide-react';
 
 export default function CaseDetailPage({ caseId, onBack, currentUser }) {
+  const [showSchedule,setShowSchedule]=useState(false);
   const [loadError,setLoadError]=useState('');
   const [details, setDetails] = useState(null);
   const [evidenceChain, setEvidenceChain] = useState(null);
@@ -306,6 +311,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
     );
   }
 
+  if(details.case.case_type==='pattern')return <PatternCaseView details={details} onBack={onBack}/>;
   const { case: c, claimItems, evidenceLinks, riskSignals, reviewOutcomes, auditLogs } = details;
 
   const isPhantom = c.primary_risk_mode === 'PHANTOM_BILLING';
@@ -321,9 +327,9 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
   const totalGapCount = c.evidence_gap !== null ? `${c.evidence_gap} Prosedur` : 'Tidak Ada Data';
 
   return (
-    <div style={{ maxWidth: '1280px', margin: '0 auto', paddingBottom: '3.5rem' }}>
+    <div className="case-detail-page" style={{ maxWidth: '1280px', margin: '0 auto', paddingBottom: '3.5rem' }}>
       {/* Top Breadcrumb Navigation */}
-      <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap:'wrap' }}>
         <button
           onClick={onBack}
           className="med-pill-btn-outline"
@@ -495,7 +501,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
       <div className="med-subpage-card" style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '0.65rem' }}>
+            <div className="case-identifiers" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '0.65rem' }}>
               <h1 style={{ fontSize: '2.1rem', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>
                 {c.case_id}
               </h1>
@@ -506,12 +512,12 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
             <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem', color: '#475569', flexWrap: 'wrap', lineHeight: 1.6 }}>
               <div>Nomor Klaim: <strong style={{ color: '#0f172a', fontWeight: 700 }}>{c.claim_id}</strong></div>
               <div>Faskes: <strong style={{ color: '#0f172a' }}>{c.provider_name}</strong> ({c.provider_id})</div>
-              <div>Pasien: <strong style={{ color: '#0f172a', fontWeight: 700 }}>{c.patient_id || 'PAT-SYN-001'}</strong> ({genderLabel}, {ageLabel})</div>
+              <div>Pasien: <strong style={{ color: '#0f172a', fontWeight: 700 }}>{c.patient_id || 'Belum tersedia'}</strong> ({genderLabel}, {ageLabel})</div>
               <div>Tgl Layanan: <strong style={{ color: '#0f172a' }}>{formatDateIndo(c.service_date)}</strong></div>
             </div>
 
             {/* Assignment Tag */}
-            <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap:'wrap' }}>
               <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>Tenaga Kesehatan Ditugaskan:</span>
               {c.assigned_name ? (
                 <span style={{
@@ -591,7 +597,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
         </div>
 
         <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.65, margin: '0 0 1.25rem 0' }}>
-          Klaim berkas <strong>{c.case_id}</strong> diajukan oleh <strong>{c.provider_name}</strong> atas pelayanan pasien <strong>{c.patient_id || 'PAT-SYN-001'}</strong> ({genderLabel}, {ageLabel}) dengan nilai tagihan <strong>{totalClaim}</strong>. 
+          Klaim berkas <strong>{c.case_id}</strong> diajukan oleh <strong>{c.provider_name}</strong> atas pelayanan pasien <strong>{c.patient_id || 'Belum tersedia'}</strong> ({genderLabel}, {ageLabel}) dengan nilai tagihan <strong>{totalClaim}</strong>.
           Pemeriksaan audit klinis mengidentifikasi indikasi <strong>{riskLabel}</strong> karena {c.review_focus || 'ditemukan ketidaksesuaian lembar tagihan rumah sakit dengan catatan rekam jejak medis fisik'}. 
           Tingkat pembuktian rekam medis terverifikasi adalah <strong>{c.evidence_coverage_pct==null?'Belum tersedia':`${c.evidence_coverage_pct}%`}</strong>, sehingga terdapat selisih pembuktian (evidence gap) sebesar <strong>{totalGapCount}</strong> yang tidak memiliki dukungan dokumen medis.
         </p>
@@ -748,6 +754,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
         </div>
       </div>
 
+      <RiskEvidencePanels panel="risk" details={details} currentUser={currentUser} onUpdated={loadCaseData}/>
       {/* ==================== 6. EVIDENCE CHAIN TRACEABILITY ==================== */}
       <div className="med-subpage-card" style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -961,6 +968,9 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
         </div>
       </div>
 
+      <RiskEvidencePanels panel="copilot" details={details} currentUser={currentUser} onUpdated={loadCaseData}/>
+      {currentUser?.role==='staff_jkn'&&<div className="risk-actions" style={{marginBottom:20}}><button className="btn-pill-outline" onClick={()=>setShowSchedule(true)}>Jadwalkan Klarifikasi Audit Faskes</button></div>}
+      <MedcareAuditScheduleModal isOpen={showSchedule} onClose={()=>setShowSchedule(false)} hospital={c.provider_name} onBookingSuccess={async booking=>{if(isDemoMode())throw new Error('Jadwal tidak disimpan pada mode demo browser.');await apiRequest(`/cases/${caseId}/schedule`,{method:'POST',body:{...booking,title:'Jadwal klarifikasi faskes'}});await loadCaseData();}}/>
       {/* ==================== 7B. DISPUTE & REBUTTAL RECONCILIATION TRAIL ==================== */}
       <div className="med-subpage-card" style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -1177,7 +1187,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
               </div>
             )}
 
-            {/* Machine Learning Decision Advisor */}
+            {/* Rule Decision Advisor */}
             {details?.mlRecommendation && (
               <div style={{
                 background: 'linear-gradient(135deg, #f0fdfa 0%, #e6f6f5 100%)',
@@ -1226,7 +1236,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
 
                 <div style={{ fontSize: '0.84rem', color: '#134e4a', fontWeight: 700, marginBottom: '0.3rem' }}>
                   Draf tindak lanjut: <span style={{ color: details.mlRecommendation.suggestedOutcome === 'CONFIRMED' ? '#e11d48' : '#0f766e', fontWeight: 800 }}>
-                    {details.mlRecommendation.suggestedOutcome === 'NEEDS_MORE_EVIDENCE' ? 'MINTA KONFIRMASI BERKAS FISIK (Evidence Gap Terdeteksi)' : details.mlRecommendation.suggestedOutcome === 'CONFIRMED' ? 'TERBUKTI FRAUD / PHANTOM' : 'KLAIM WAJAR'}
+                    {details.mlRecommendation.suggestedOutcome === 'NEEDS_MORE_EVIDENCE' ? 'MINTA KONFIRMASI BERKAS FISIK (Evidence Gap Terdeteksi)' : details.mlRecommendation.suggestedOutcome === 'CONFIRMED' ? 'SINYAL PERLU DITELAAH' : 'TINJAU DATA PENDUKUNG'}
                   </span>
                 </div>
                 <p style={{ fontSize: '0.8rem', color: '#334155', margin: '0 0 0.65rem 0', lineHeight: 1.45 }}>
@@ -1371,7 +1381,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                     marginBottom: '0.75rem'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem', flexWrap:'wrap', gap:6 }}>
                     <span style={{
                       fontWeight: 800,
                       color: '#007a78',
@@ -1387,7 +1397,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                     </span>
                   </div>
                   <div style={{ color: '#334155', fontSize: '0.8rem', lineHeight: 1.5 }}>
-                    {log.details?.message || JSON.stringify(log.details)}
+                    {log.details?.message || log.details?.title || log.details?.reason || 'Tindakan dicatat pada kasus ini.'}{!log.details?.message&&<details><summary>Rincian catatan</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontSize:11}}>{JSON.stringify(log.details,null,2)}</pre></details>}
                   </div>
                   <div style={{ marginTop: '0.35rem', fontSize: '0.7rem', color: '#64748b' }}>
                     Penanggung Jawab: <strong style={{ color: '#0f172a' }}>{log.actor?.name || log.actor?.username}</strong>

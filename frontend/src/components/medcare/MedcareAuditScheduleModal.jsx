@@ -1,30 +1,18 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function MedcareAuditScheduleModal({ isOpen, onClose, onBookingSuccess }) {
-  const [selectedHospital, setSelectedHospital] = useState('RS Citra Medika');
+export default function MedcareAuditScheduleModal({ isOpen, onClose, onBookingSuccess, hospital }) {
+  const [selectedHospital, setSelectedHospital] = useState(hospital||'Faskes kasus ini');
   const [selectedTime, setSelectedTime] = useState('09:00 WIB');
-  const [selectedDate, setSelectedDate] = useState('2026-09-15');
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0,10));
+  const [error,setError]=useState('');
   const [isBooked, setIsBooked] = useState(false);
 
   if (!isOpen) return null;
 
-  const hospitals = [
-    { title: 'RS Citra Medika', type: 'Faskes Rujukan Lanjutan (FKRTL)', cases: '12 Kasus Prioritas' },
-    { title: 'RSUD Sehat Sentosa', type: 'RS Tipe B Daerah', cases: '8 Kasus Prioritas' },
-    { title: 'RS Hermina Utama', type: 'RS Swasta Terakreditasi', cases: '5 Kasus Prioritas' },
-    { title: 'Klinik Rawat Inap Sejahtera', type: 'Faskes Tingkat Pertama (FKTP)', cases: '3 Kasus Prioritas' }
-  ];
+  const hospitals = [{title:hospital||'Faskes kasus ini',type:'Faskes pada kasus ini',cases:'Klarifikasi bukti'}];
 
-  const handleConfirm = (e) => {
-    e.preventDefault();
-    setIsBooked(true);
-    setTimeout(() => {
-      setIsBooked(false);
-      if (onBookingSuccess) onBookingSuccess({ hospital: selectedHospital, time: selectedTime, date: selectedDate });
-      onClose();
-    }, 1200);
-  };
+  const handleConfirm = async(e) => {e.preventDefault();setError('');setIsBooked(true);try{if(!onBookingSuccess)throw new Error('Penyimpanan jadwal belum tersedia.');await onBookingSuccess({hospital:selectedHospital,time:selectedTime,date:selectedDate});onClose();}catch(e){setError(e.message);}finally{setIsBooked(false);}};
 
   return (
     <AnimatePresence>
@@ -55,38 +43,14 @@ export default function MedcareAuditScheduleModal({ isOpen, onClose, onBookingSu
             </button>
           </div>
 
-          {isBooked ? (
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              style={{ textAlign: 'center', padding: '2rem 1rem' }}
-            >
-              <div style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '50%',
-                background: '#e6f6f5',
-                color: '#007a78',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1rem auto',
-                fontSize: '1.8rem'
-              }}>
-                ✓
-              </div>
-              <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--mc-text-heading)' }}>Jadwal Audit Ditetapkan!</h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--mc-text-muted)', margin: 0 }}>
-                {selectedHospital} pada {selectedDate} pukul {selectedTime}. Undangan berita acara terkirim ke manajemen faskes.
-              </p>
-            </motion.div>
-          ) : (
-            <form onSubmit={handleConfirm}>
+            {error&&<p className="ba-error" role="alert">{error}</p>}
+          <p className="ba-note">Jadwal hanya dicatat di aplikasi. Undangan tidak dikirim otomatis.</p>
+          <form onSubmit={handleConfirm}>
               <div style={{ marginBottom: '1.15rem' }}>
                 <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--mc-text-heading)', marginBottom: '0.5rem' }}>
                   Fasilitas Kesehatan Tujuan
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,220px),1fr))', gap: '0.6rem' }}>
                   {hospitals.map((item) => {
                     const isSelected = selectedHospital === item.title;
                     return (
@@ -114,7 +78,7 @@ export default function MedcareAuditScheduleModal({ isOpen, onClose, onBookingSu
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,220px),1fr))', gap: '0.85rem', marginBottom: '1.5rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--mc-text-heading)', marginBottom: '0.4rem' }}>
                     Tanggal Sesi
@@ -178,6 +142,7 @@ export default function MedcareAuditScheduleModal({ isOpen, onClose, onBookingSu
                 </button>
                 <button
                   type="submit"
+                  disabled={isBooked}
                   style={{
                     padding: '0.6rem 1.4rem',
                     borderRadius: '9999px',
@@ -190,11 +155,10 @@ export default function MedcareAuditScheduleModal({ isOpen, onClose, onBookingSu
                     boxShadow: '0 4px 12px rgba(0, 122, 120, 0.25)'
                   }}
                 >
-                  Konfirmasi Jadwal
+                  {isBooked?'Menyimpan jadwal…':'Konfirmasi Jadwal'}
                 </button>
               </div>
             </form>
-          )}
         </motion.div>
       </div>
     </AnimatePresence>

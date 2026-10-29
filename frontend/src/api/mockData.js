@@ -1,4 +1,4 @@
-import seeds from '../../../data/demo/cases.json';
+import seeds from '../../../data/demo/cases.json' with {type:'json'};
 import {users as identities} from '../../../shared/users.js';
 import {analyzeClaim} from '../../../shared/riskEngine.js';
 import {itemContract,evidenceContract,eventContract} from '../../../shared/caseContract.js';

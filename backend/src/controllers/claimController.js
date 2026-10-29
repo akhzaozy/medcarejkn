@@ -88,7 +88,11 @@ export async function getClaimById(req, res, next) {
 
 export async function auditCheckClaim(req,res,next) {
   const input=req.body||{};
-  if(!Number.isFinite(Number(input.amountBilled??0))||Number(input.amountBilled??0)<0)return res.status(400).json({message:'Nilai tagihan tidak valid.'});
+  const amount=Number(input.amountBilled??0),qty=Number(input.claimedQty??1),supported=Number(input.supportedQty??0);
+  if(!Number.isFinite(amount)||amount<0||amount>9999999999)return res.status(400).json({message:'Nilai tagihan tidak valid.'});
+  if(!Number.isFinite(qty)||qty<=0||!Number.isFinite(supported)||supported<0||supported>qty)return res.status(400).json({message:'Kuantitas layanan dan bukti tidak valid.'});
+  if(input.dateEncounter&&(!/^\d{4}-\d{2}-\d{2}$/.test(input.dateEncounter)||!Number.isFinite(Date.parse(input.dateEncounter))||new Date(input.dateEncounter).toISOString().slice(0,10)!==input.dateEncounter))return res.status(400).json({message:'Tanggal layanan tidak valid.'});
+
   const analysis=analyzeClaim(input);
   let save={status:'not_requested',caseId:null,message:'Tidak disimpan (opsi simpan dimatikan).'};
   if(input.saveCase){
@@ -100,12 +104,12 @@ export async function auditCheckClaim(req,res,next) {
       await client.query('INSERT INTO patients(patient_id,age_group,sex) VALUES($1,$2,$3)',[patientId,String(input.age??'Tidak tersedia').slice(0,30),String(input.gender||'U').slice(0,1)]);
       await client.query("INSERT INTO encounters(encounter_id,patient_id,provider_id,service_date,encounter_type) VALUES($1,$2,$3,$4,'MANUAL')",[encounterId,patientId,providerId,input.dateEncounter||new Date().toISOString().slice(0,10)]);
       await client.query("INSERT INTO claims(claim_id,encounter_id,provider_id,claim_date,claim_status,total_amount) VALUES($1,$2,$3,$4,'SUBMITTED',$5)",[claimId,encounterId,providerId,input.dateEncounter||new Date().toISOString().slice(0,10),Number(input.amountBilled||0)]);
-      await client.query("INSERT INTO claim_items(claim_item_id,claim_id,sequence_no,service_code,service_type,quantity,unit_price,net_amount,encounter_id,description) VALUES($1,$2,1,'MANUAL','DEFAULT',$3,$4,$4,$5,$6)",[`ITEM-${id}`,claimId,Number(input.claimedQty||1),Number(input.amountBilled||0),encounterId,String(input.diagnosis||'Layanan manual').slice(0,300)]);
+      await client.query("INSERT INTO claim_items(claim_item_id,claim_id,sequence_no,service_code,service_type,quantity,unit_price,net_amount,encounter_id,description) VALUES($1,$2,1,'MANUAL','DEFAULT',$3,$4,$7,$5,$6)",[`ITEM-${id}`,claimId,qty,amount/qty,encounterId,String(input.diagnosis||'Layanan manual').slice(0,300),amount]);
       if(typeof input.evidenceAvailable==='boolean')await client.query("INSERT INTO evidence_links(evidence_link_id,claim_item_id,evidence_type,source_id,match_status,match_quantity,availability,reason,created_by) VALUES($1,$2,'INPUT_SCENARIO','Skenario input manual',$3,$4,$5,'Nilai terstruktur dari formulir; bukan pembacaan dokumen',$6)",[`EVD-${id}`,`ITEM-${id}`,input.evidenceAvailable?(Number(input.supportedQty)>0?'MATCHED':'UNSUPPORTED'):'UNAVAILABLE',input.evidenceAvailable?Number(input.supportedQty||0):0,input.evidenceAvailable?'YES':'UNAVAILABLE',req.user?.username||'unknown']);
       await client.query("INSERT INTO cases(case_id,claim_id,primary_risk_mode,review_priority,case_status,evidence_gap,evidence_coverage_pct,review_focus,source,risk_score,engine_type,engine_version,initial_analysis,analysis,metadata,assigned_to,assigned_name) VALUES($1,$2,$3,$4,'OPEN',$5,$6,$7,'phantom_checker',$8,$9,$10,$11,$11,$12,$13,$14)",[caseId,claimId,analysis.primaryRiskMode,analysis.reviewPriority,analysis.evidenceGap,analysis.evidenceCoveragePct,analysis.reviewFocus,analysis.riskScore,analysis.engine.type,analysis.engine.version,JSON.stringify(analysis),JSON.stringify({features:input,primary_diagnosis:input.diagnosis}),req.user?.role==='clinical_reviewer'?req.user.username:null,req.user?.role==='clinical_reviewer'?req.user.name:null]);
       await client.query("INSERT INTO audit_logs(case_id,actor_id,action,detail) VALUES($1,$2,'CASE_CREATED',$3)",[caseId,req.user?.username||'unknown',JSON.stringify({source:'phantom_checker',engine:analysis.engine})]);
       await client.query('COMMIT');save={status:'saved',caseId,claimId,message:`Tersimpan sebagai kasus ${caseId}`};
-    }catch(e){if(client)await client.query('ROLLBACK');save={status:'failed',caseId:null,message:'Analisis berhasil, tetapi kasus gagal disimpan. Periksa layanan database dan coba simpan kembali.'};}
+    }catch(e){if(client)await client.query('ROLLBACK').catch(()=>{});save={status:'failed',caseId:null,message:'Analisis berhasil, tetapi kasus gagal disimpan. Periksa layanan database dan coba simpan kembali.'};}
     finally{client?.release();}
   }
   res.json({success:true,analysis,save});

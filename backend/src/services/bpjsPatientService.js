@@ -109,7 +109,7 @@ export function evaluateBpjsEvidence(scenario) {
   const result=reconcileItem({claimedQty:2,supportedQty:s.supported,evidenceAvailable:s.available});
   return {...result,scenario,scenarioLabel:s.label,expectedEvidence:2,supportedEvidence:s.available?s.supported:null,
     summary:{UNAVAILABLE:'Bukti pelayanan belum tersedia untuk diperiksa.',SUPPORTED:'Dua bukti simulasi sesuai dengan layanan.',PARTIAL:'Satu dari dua bukti simulasi belum cocok.',UNSUPPORTED:'Bukti simulasi tersedia, tetapi tidak mendukung layanan yang ditagihkan.'}[result.status],
-    evidenceBasis:'Presensi dan catatan pelayanan adalah bukti tambahan dalam skenario simulasi lomba.'};
+    evidenceBasis:'Presensi dan catatan pelayanan adalah bukti tambahan dalam skenario bukti tambahan.'};
 }
 export function createBpjsAudit(input={}) {
   if(!input || typeof input!=='object' || Array.isArray(input)) fail('Data audit tidak valid.');

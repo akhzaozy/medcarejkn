@@ -35,7 +35,7 @@ const PRESETS = [
     badgeColor: '#d97706',
     badgeBg: '#fffbeb',
     icon: AlertTriangle,
-    desc: 'Ketidaksesuaian klinis diagnosa obstetrik pada pasien laki-laki.',
+    desc: 'Field telaah skenario menandai ketidaksesuaian diagnosis dan prosedur.',
     data: {
       patientId: 'JKN-44102',
       gender: 'M',
@@ -54,7 +54,7 @@ const PRESETS = [
     badgeColor: '#2563eb',
     badgeBg: '#eff6ff',
     icon: UserX,
-    desc: 'Riwayat tagihan tercatat tanpa rekaman kehadiran fisik pada faskes.',
+    desc: 'Status peserta pada skenario membutuhkan verifikasi ulang.',
     data: {
       patientId: 'JKN-11093',
       gender: 'M',
@@ -126,14 +126,14 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
       setResult(normalizeAuditResult(res));
     } catch (err) {
       console.error(err);
-      setError('Gagal menjalankan deteksi audit. Pastikan backend aktif.');
+      setError(err.message || 'Audit belum berhasil. Silakan periksa isian dan coba lagi.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: '1280px', margin: '0 auto', paddingBottom: '3rem' }}>
+    <div className="manual-audit-page" style={{ maxWidth: '1280px', margin: '0 auto', paddingBottom: '3rem' }}>
       {/* Top Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
         <button
@@ -186,8 +186,8 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
               <Stethoscope size={20} />
             </div>
             <div>
-              <div className="med-vital-val">KMK No. 26</div>
-              <div className="med-vital-lbl">Standar Tarif Klaim</div>
+              <div className="med-vital-val">Aturan tercatat</div>
+              <div className="med-vital-lbl">Skor dapat ditelusuri</div>
             </div>
           </div>
           <div className="med-vital-pill">
@@ -196,7 +196,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
             </div>
             <div>
               <div className="med-vital-val">Seketika</div>
-              <div className="med-vital-lbl">Uji Keselarasan Medis</div>
+              <div className="med-vital-lbl">Telaah Field Terstruktur</div>
             </div>
           </div>
         </div>
@@ -403,7 +403,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
               </div>
             </div>
 
-            <fieldset className="structured-evidence"><legend>Bukti layanan</legend><label><input type="checkbox" checked={formData.evidenceAvailable===true} onChange={e=>handleInputChange('evidenceAvailable',e.target.checked)}/> Bukti tersedia untuk ditelaah</label><label>Kuantitas tagihan<input type="number" min="1" value={formData.claimedQty??1} onChange={e=>handleInputChange('claimedQty',Number(e.target.value))}/></label><label>Kuantitas didukung<input type="number" min="0" value={formData.supportedQty??0} onChange={e=>handleInputChange('supportedQty',Number(e.target.value))}/></label><p>Data skenario; bukan pembacaan dokumen otomatis.</p></fieldset>
+            <fieldset className="structured-evidence"><legend>Bukti layanan</legend><label><input type="checkbox" checked={formData.evidenceAvailable===true} onChange={e=>handleInputChange('evidenceAvailable',e.target.checked)}/> Bukti tersedia untuk ditelaah</label><label>Kuantitas tagihan<input type="number" min="1" value={formData.claimedQty??1} onChange={e=>handleInputChange('claimedQty',Number(e.target.value))}/></label><label>Kuantitas didukung<input type="number" min="0" value={formData.supportedQty??0} onChange={e=>handleInputChange('supportedQty',Number(e.target.value))}/></label><label>Status kecocokan diagnosis/prosedur<select value={formData.diagnosisProcedureMatch===true?'true':formData.diagnosisProcedureMatch===false?'false':''} onChange={e=>handleInputChange('diagnosisProcedureMatch',e.target.value===''?null:e.target.value==='true')}><option value="">Belum ditelaah</option><option value="true">Sesuai hasil telaah</option><option value="false">Perlu klarifikasi hasil telaah</option></select></label><label>Status verifikasi peserta<select value={formData.enrollmentValid===true?'true':formData.enrollmentValid===false?'false':''} onChange={e=>handleInputChange('enrollmentValid',e.target.value===''?null:e.target.value==='true')}><option value="">Belum diverifikasi</option><option value="true">Sesuai sumber verifikasi</option><option value="false">Perlu verifikasi ulang</option></select></label><p>Data skenario; bukan pembacaan dokumen otomatis.</p></fieldset>
             <div style={{ marginBottom: '1.5rem', background: 'var(--mc-bg)', padding: '0.85rem 1.25rem', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <input
                 type="checkbox"

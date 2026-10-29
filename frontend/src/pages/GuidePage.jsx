@@ -127,7 +127,7 @@ export default function GuidePage({
               marginBottom: '1.5rem',
               fontWeight: 400
             }}>
-              Aplikasi ini adalah <strong>asisten cerdas (Decision-Support System)</strong> untuk membantu tenaga kesehatan dan verifikator mendeteksi indikasi klaim fiktif JKN. Sistem bertindak sebagai <em>radar peringatan dini</em>, sementara <strong>keputusan akhir tetap 100% berada di tangan dokter / nakes penelaah</strong>.
+              Skor risiko dihasilkan oleh aturan yang terdokumentasi. Model bahasa (LLM) tidak digunakan untuk menentukan indikasi anomali. Aplikasi ini adalah <strong>asisten cerdas (Decision-Support System)</strong> untuk membantu tenaga kesehatan dan verifikator mendeteksi indikasi klaim fiktif JKN. Sistem bertindak sebagai <em>radar peringatan dini</em>, sementara <strong>keputusan akhir tetap 100% berada di tangan dokter / nakes penelaah</strong>.
             </p>
 
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -325,7 +325,7 @@ export default function GuidePage({
                 Sistem <strong>TIDAK PERNAH</strong> langsung memotong tagihan atau menghakimi rumah sakit secara sepihak. Sinyal sistem hanyalah tanda peringatan awal.
               </p>
               <div style={{ marginTop: '1rem', background: '#f0fdf4', padding: '0.85rem', borderRadius: '10px', fontSize: '0.82rem', color: '#166534', lineHeight: 1.5 }}>
-                <strong>Peran Dokter Penelaah:</strong> Dokter membuka berkas asli di sistem, membaca resume medis, dan mengklik tombol penetapan: <em>Terbukti Fraud, Salah Input, atau Dokumen Kurang</em>.
+                <strong>Peran Dokter Penelaah:</strong> Dokter membuka berkas asli di sistem, membaca resume medis, dan mengklik tombol penetapan: <em>Temuan Terkonfirmasi Reviewer, Salah Input, atau Dokumen Kurang</em>.
               </div>
             </div>
           </motion.div>
@@ -604,7 +604,7 @@ export default function GuidePage({
                   <h4 style={{ fontSize: '1.02rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>Review Outcome (Putusan Dokter)</h4>
                 </div>
                 <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.55 }}>
-                  Vonis resmi yang diklik oleh dokter pemeriksa setelah membaca semua bukti. Opsinya: <em>CONFIRMED</em> (terbukti fraud), <em>FALSE POSITIVE</em> (klaim ternyata sah), atau <em>NEEDS MORE EVIDENCE</em> (minta berkas faskes).
+                  Vonis resmi yang diklik oleh dokter pemeriksa setelah membaca semua bukti. Opsinya: <em>CONFIRMED</em> (temuan terkonfirmasi reviewer), <em>FALSE POSITIVE</em> (klaim ternyata sah), atau <em>NEEDS MORE EVIDENCE</em> (minta berkas faskes).
                 </p>
               </div>
             </div>

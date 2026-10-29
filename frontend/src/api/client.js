@@ -1,5 +1,5 @@
-import {MOCK_DASHBOARD,MOCK_CASES,MOCK_USERS,getMockCaseDetails} from './mockData';
-import {auditResponse,normalizeAuditResult} from '../../../shared/riskEngine.js';
+import {MOCK_CASES,MOCK_USERS,getMockCaseDetails} from './mockData';
+import {auditResponse,normalizeAuditResult,catalog} from '../../../shared/riskEngine.js';
 import {publicUser} from '../../../shared/userIdentity.js';
 export {getNotifications,addNotification,markNotificationsAsRead} from './notifications';
 const API_BASE=import.meta.env.VITE_API_BASE_URL||'/api';
@@ -9,14 +9,21 @@ export async function apiRequest(route,{method='GET',body,signal}={}) {
   let response;try{response=await fetch(API_BASE+route,{method,signal,headers:{...(body?{'Content-Type':'application/json'}:{}),...(localStorage.getItem('jkn_token')?{Authorization:`Bearer ${localStorage.getItem('jkn_token')}`}:{})},...(body?{body:JSON.stringify(body)}:{})});}catch(e){if(e.name==='AbortError')throw e;throw new Error('Layanan tidak dapat dihubungi. Perubahan belum disimpan.');}
   const data=await response.json().catch(()=>({}));if(!response.ok){if(response.status===401&&!route.startsWith('/auth/'))window.dispatchEvent(new Event('jkn_session_expired'));const error=new Error(data.message||'Permintaan belum berhasil. Silakan coba lagi.');error.status=response.status;throw error;}return data;
 }
-function filtered(filters={}){let cases=MOCK_CASES.filter(c=>(!filters.assignedTo||filters.assignedTo==='ALL'||(filters.assignedTo==='UNASSIGNED'?!c.assigned_to:c.assigned_to===filters.assignedTo))&&(!filters.riskMode||filters.riskMode==='ALL'||c.primary_risk_mode===filters.riskMode)&&(!filters.status||filters.status==='ALL'||c.case_status===filters.status)&&(!filters.priority||filters.priority==='ALL'||c.review_priority===filters.priority)&&(!filters.search||JSON.stringify(c).toLowerCase().includes(filters.search.toLowerCase())));const limit=filters.limit==='ALL'?Math.max(1,cases.length):Math.max(1,Number(filters.limit)||12),page=Math.max(1,Number(filters.page)||1);return {data:cases.slice((page-1)*limit,page*limit),total:cases.length,totalPages:Math.max(1,Math.ceil(cases.length/limit)),page};}
-export async function fetchDashboard(params={}){if(isDemoMode()){const cases=filtered({...params,limit:'ALL'}).data;return {...MOCK_DASHBOARD,caseCount:cases.length,claimsAnalyzed:cases.length,topCases:cases};}return (await apiRequest('/dashboard?'+new URLSearchParams(params))).data;}
+function filtered(filters={}){let cases=MOCK_CASES.filter(c=>(!filters.assignedTo||filters.assignedTo==='ALL'||(filters.assignedTo==='UNASSIGNED'?!c.assigned_to:c.assigned_to===filters.assignedTo))&&(!filters.riskMode||filters.riskMode==='ALL'||c.primary_risk_mode===filters.riskMode)&&(!filters.status||filters.status==='ALL'||(filters.status==='COMPLETED'?['CONFIRMED','NOT_CONFIRMED','CLOSED'].includes(c.case_status):c.case_status===filters.status))&&(!filters.reasonCode||filters.reasonCode==='ALL'||c.analysis?.signals?.some(s=>s.id===filters.reasonCode))&&(!filters.priority||filters.priority==='ALL'||c.review_priority===filters.priority)&&(!filters.search||JSON.stringify(c).toLowerCase().includes(filters.search.toLowerCase())));const limit=filters.limit==='ALL'?Math.max(1,cases.length):Math.max(1,Number(filters.limit)||12),page=Math.max(1,Number(filters.page)||1);return {data:cases.slice((page-1)*limit,page*limit),total:cases.length,totalPages:Math.max(1,Math.ceil(cases.length/limit)),page};}
+export async function fetchDashboard(params={}){
+  if(isDemoMode()){
+    const cases=filtered({...params,limit:'ALL'}).data;
+    const completed=cases.filter(c=>['CONFIRMED','NOT_CONFIRMED','CLOSED'].includes(c.case_status)).length;
+    return {caseCount:cases.length,claimsAnalyzed:cases.length,highPriorityCases:cases.filter(c=>c.review_priority==='HIGH').length,completedReview:completed,pendingReview:cases.length-completed,reviewing:cases.filter(c=>c.case_status==='IN_REVIEW').length,unassigned:cases.filter(c=>!c.assigned_to).length,measuredCases:0,evidenceCoverage:null,financials:{totalBilled:cases.reduce((n,c)=>n+Number(c.total_amount||0),0)},topCases:cases.slice(0,4),monthly:[],schedules:[]};
+  }
+  return (await apiRequest('/dashboard?'+new URLSearchParams(params))).data;
+}
 export async function fetchCases(filters={}){return isDemoMode()?filtered(filters):apiRequest('/cases?'+new URLSearchParams(filters));}
 export async function fetchCaseDetails(id){return isDemoMode()?getMockCaseDetails(id):(await apiRequest('/cases/'+encodeURIComponent(id))).data;}
 export async function fetchCaseEvidence(id){if(isDemoMode()){const d=getMockCaseDetails(id);return {caseId:id,claimItems:d.claimItems,evidenceLinks:d.evidenceLinks};}return (await apiRequest(`/cases/${encodeURIComponent(id)}/evidence`)).data;}
 export async function auditCheckClaim(input){
   if(isDemoMode())return normalizeAuditResult(auditResponse(input,{status:input.saveCase?'failed':'not_requested',caseId:null,message:input.saveCase?'Analisis selesai dalam mode demo. Kasus tidak disimpan ke server.':'Tidak disimpan (opsi simpan dimatikan).'}));
-  try{return normalizeAuditResult(await apiRequest('/claims/audit-check',{method:'POST',body:input}));}catch{return normalizeAuditResult(auditResponse(input,{status:input.saveCase?'failed':'not_requested',caseId:null,message:input.saveCase?'Analisis lokal berhasil, tetapi kasus belum tersimpan karena layanan tidak tersedia.':'Analisis lokal; opsi simpan dimatikan.'}));}
+  try{return normalizeAuditResult(await apiRequest('/claims/audit-check',{method:'POST',body:input}));}catch(error){if(error.status&&error.status<500)throw error;return normalizeAuditResult(auditResponse(input,{status:input.saveCase?'failed':'not_requested',caseId:null,message:input.saveCase?'Analisis lokal berhasil, tetapi kasus belum tersimpan karena layanan tidak tersedia.':'Analisis lokal; opsi simpan dimatikan.'}));}
 }
 export async function loginUser(credentials){const result=await apiRequest('/auth/login',{method:'POST',body:credentials});setDemoMode(false);return {...result.data,user:publicUser(result.data.user)};}
 export async function fetchRoles(){return (await apiRequest('/auth/roles')).data;}
@@ -39,4 +46,8 @@ export const sendClarificationRequestToClinician=(id,payload)=>mutate(id,'clarif
 export const submitDisputeRebuttal=(id,payload)=>mutate(id,'dispute',payload);
 export const uploadSupportingEvidence=(id,payload)=>mutate(id,'evidence',payload);
 export const triggerAnalysis=()=>apiRequest('/analysis/run',{method:'POST'}).then(r=>r.data);
-export const fetchValidationBenchmark=()=>apiRequest('/validation').then(r=>r.data);
+export async function fetchValidationBenchmark(){
+  if(!isDemoMode())return apiRequest('/validation').then(r=>r.data);
+  const {default:benchmark}=await import('../../../data/benchmark/validation_report.json');
+  return {...benchmark,rules:catalog,feedback:{label:'Dihitung dari keputusan reviewer di lingkungan demo. Bukan validasi eksternal.',reviewedCases:0,precisionAtK:null,bands:[],reportedSuggestions:0},limitations:['Mode demo browser tidak menyimpan keputusan ke server.','ML terlatih/hybrid belum tersedia.']};
+}

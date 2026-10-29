@@ -11,8 +11,6 @@ import MedcareFraudReportChartCard from '../components/medcare/MedcareFraudRepor
 import MedcarePriorityAuditCard from '../components/medcare/MedcarePriorityAuditCard';
 import MedcareFieldVerificationCard from '../components/medcare/MedcareFieldVerificationCard';
 
-import MedcareAuditScheduleModal from '../components/medcare/MedcareAuditScheduleModal';
-import MedcareVerificationDetailModal from '../components/medcare/MedcareVerificationDetailModal';
 import { ArrowRight, BookOpen } from 'lucide-react';
 
 export default function MedcareMinimalistDashboard({
@@ -26,9 +24,6 @@ export default function MedcareMinimalistDashboard({
   onLogout,
   hideHeader = false
 }) {
-  const [activeTab, setActiveTab] = useState('landing');
-  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
-  const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
   const showToast = (msg) => {
@@ -38,22 +33,17 @@ export default function MedcareMinimalistDashboard({
     }, 3000);
   };
 
-  const data = dashboardData || {
-    claimsAnalyzed: 4538,
-    highPriorityCases: 172,
-    caseCount: 6,
-    financials: { totalBilled: 1998734, totalExposure: 22530892 }
-  };
+  const data = dashboardData || {};
 
   const dashboardBody = (
     <>
       {/* Personalized Welcome Banner & Quick Vital Metrics */}
       <MedcareVitalsBanner
-        userName={currentUser?.name || 'dr. Anindya Kusuma, Sp.PK'}
+        userName={currentUser?.name || 'Pengguna'}
         vitals={{
-          claimsAnalyzed: data.claimsAnalyzed || (currentUser?.role === 'clinical_reviewer' ? 1446 : 4336),
-          totalExposureMiliar: (data.financials?.totalExposure ? data.financials.totalExposure / 1000000 : 22.53),
-          priorityCases: data.caseCount || (currentUser?.role === 'clinical_reviewer' ? 1446 : 4336)
+          claimsAnalyzed: data.claimsAnalyzed ?? 0,
+          totalExposureMiliar: (data.financials?.totalBilled ?? 0) / 1000000,
+          priorityCases: data.highPriorityCases ?? 0
         }}
       />
 
@@ -95,7 +85,7 @@ export default function MedcareMinimalistDashboard({
           <div style={{ fontSize: '0.86rem', color: '#1e293b' }}>
             <strong>Belum familiar dengan istilah Phantom Billing atau alur kerja sistem?</strong>
             <span style={{ color: '#64748b', marginLeft: '6px' }}>
-              Buka panduan ramah awam, kamus istilah, dan skenario uji coba untuk dewan juri.
+              Buka panduan, kamus istilah, dan contoh alur telaah.
             </span>
           </div>
         </div>
@@ -132,7 +122,7 @@ export default function MedcareMinimalistDashboard({
         >
           {/* LEFT COLUMN: Antrean Audit Timeline & Rekap Berkas Harian */}
           <div className="med-col med-col-left">
-            <MedcareAuditTimelineCard
+            <MedcareAuditTimelineCard cases={data.topCases || []}
               onOpenQueue={onOpenQueue}
               onSelectCase={(caseId) => {
                 if (onSelectCase) onSelectCase(caseId);
@@ -140,21 +130,17 @@ export default function MedcareMinimalistDashboard({
               }}
             />
 
-            <MedcareDailyVerificationCard
+            <MedcareDailyVerificationCard data={data}
               onOpenQueue={onOpenQueue}
             />
           </div>
 
           {/* CENTER COLUMN: Skor Integritas Klaim & Laporan Tren Fraud */}
           <div className="med-col med-col-center">
-            <MedcareIntegrityScoreCard
-              score={92}
-              reconciliationRate="94%"
-              resolvedCases={String(data.caseCount || (currentUser?.role === 'clinical_reviewer' ? '1.446' : '4.336'))}
-            />
+            <MedcareIntegrityScoreCard data={data} />
 
             <div id="medcare-fraud-report-section">
-              <MedcareFraudReportChartCard />
+              <MedcareFraudReportChartCard series={data.monthly || []} />
             </div>
           </div>
 
@@ -162,28 +148,13 @@ export default function MedcareMinimalistDashboard({
           <div className="med-col med-col-right">
             <MedcarePriorityAuditCard
               onOpenQueue={onOpenQueue}
-              priorityCount={data.caseCount || (currentUser?.role === 'clinical_reviewer' ? 1446 : 4336)}
+              priorityCount={data.highPriorityCases ?? 0}
+              pendingCount={data.pendingReview ?? 0}
             />
 
-            <MedcareFieldVerificationCard
-              onOpenDetails={() => setIsVerificationOpen(true)}
-            />
+            <MedcareFieldVerificationCard schedules={data.schedules || []} onSelectCase={onSelectCase} />
           </div>
         </motion.div>
-
-      {/* Interactive Modals */}
-      <MedcareAuditScheduleModal
-        isOpen={isScheduleOpen}
-        onClose={() => setIsScheduleOpen(false)}
-        onBookingSuccess={(details) => {
-          showToast(`Jadwal audit ${details.hospital} ditetapkan pada ${details.date} pukul ${details.time}`);
-        }}
-      />
-
-      <MedcareVerificationDetailModal
-        isOpen={isVerificationOpen}
-        onClose={() => setIsVerificationOpen(false)}
-      />
 
       {/* Toast Notification */}
       {toastMessage && (
@@ -209,7 +180,6 @@ export default function MedcareMinimalistDashboard({
             gap: '0.5rem'
           }}
         >
-          <span>🩺</span>
           <span>{toastMessage}</span>
         </motion.div>
       )}

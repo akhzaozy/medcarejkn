@@ -2,7 +2,7 @@
 **/node_modules
 **/.env
 **/.DS_Store
-frontend
+frontend/dist
 dataset
 outputs/01a17fb5*
 outputs/bpjs-simulation
@@ -13,3 +13,6 @@ outputs/**/*.png
 outputs/**/profile.json
 **/*.sqlite-wal
 **/*.sqlite-shm
+
+outputs/backups
+outputs/runtime-auth

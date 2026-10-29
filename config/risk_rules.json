@@ -1,12 +1,98 @@
 {
-  "version":"rules-1.0.0",
-  "aggregation":"Skor 0–100 = min(100, jumlah bobot aturan terpicu). Jika jumlah melebihi 100, kontribusi dinormalisasi proporsional. Skor bukan probabilitas fraud.",
-  "rules":[
-    {"id":"PB-01","label":"Item ditagihkan melebihi bukti layanan yang tercatat","fraudType":"PHANTOM_BILLING","field":"unsupportedQuantity","operator":"gt","threshold":0,"weight":65,"requiredFields":["evidenceAvailable","claimedQty","supportedQty"],"logic":"Bukti tersedia dan kuantitas tertagih melebihi kuantitas pendukung.","nextAction":"Minta log tindakan dan cocokkan kuantitas per item."},
-    {"id":"UC-01","label":"Tarif tagihan melampaui tarif pembanding terverifikasi","fraudType":"UPCODING","field":"tariffGap","operator":"gt","threshold":0,"weight":35,"requiredFields":["tariffGap"],"logic":"Selisih tarif hanya digunakan bila pembanding telah dicatat.","nextAction":"Periksa kode tarif dan dasar tingkat keparahan."},
-    {"id":"UP-01","label":"Indikasi prosedur belum sesuai hasil telaah terstruktur","fraudType":"UNNECESSARY_PROCEDURES","field":"procedureIndication","operator":"eq","threshold":false,"weight":45,"requiredFields":["procedureIndication"],"logic":"Ketidaksesuaian indikasi telah dicatat sebagai temuan, bukan disimpulkan dari biaya.","nextAction":"Minta indikasi klinis prosedur dari DPJP."},
-    {"id":"DC-01","label":"Terdapat referensi klaim pembanding yang serupa","fraudType":"DUPLICATE_CLAIM","field":"duplicateCount","operator":"gt","threshold":1,"weight":55,"requiredFields":["duplicateCount"],"logic":"Jumlah klaim serupa melebihi satu pada kelompok pembanding yang sama.","nextAction":"Bandingkan tanggal, layanan, dan nomor klaim."},
-    {"id":"WD-01","label":"Diagnosis dan prosedur memerlukan klarifikasi","fraudType":"WRONG_DIAGNOSIS","field":"diagnosisProcedureMatch","operator":"eq","threshold":false,"weight":45,"requiredFields":["diagnosisProcedureMatch"],"logic":"Ketidaksesuaian berasal dari field telaah eksplisit.","nextAction":"Konfirmasi diagnosis dan prosedur kepada penelaah klinis."},
-    {"id":"GE-01","label":"Status peserta membutuhkan verifikasi ulang","fraudType":"GHOST_ENROLLEE","field":"enrollmentValid","operator":"eq","threshold":false,"weight":40,"requiredFields":["enrollmentValid"],"logic":"Status peserta ditandai tidak sesuai oleh sumber terstruktur. Nilai tagihan nol tidak cukup menjadi sinyal.","nextAction":"Periksa status kepesertaan dan log kehadiran."}
+  "version": "rules-1.0.0",
+  "aggregation": "Skor 0–100 = min(100, jumlah bobot aturan terpicu). Jika jumlah melebihi 100, kontribusi dinormalisasi proporsional. Skor bukan probabilitas fraud.",
+  "rules": [
+    {
+      "id": "PB-01",
+      "label": "Item ditagihkan melebihi bukti layanan yang tercatat",
+      "fraudType": "PHANTOM_BILLING",
+      "field": "unsupportedQuantity",
+      "operator": "gt",
+      "threshold": 0,
+      "weight": 65,
+      "requiredFields": [
+        "evidenceAvailable",
+        "claimedQty",
+        "supportedQty"
+      ],
+      "logic": "Bukti tersedia dan kuantitas tertagih melebihi kuantitas pendukung.",
+      "nextAction": "Minta log tindakan dan cocokkan kuantitas per item.",
+      "version": "rules-1.0.0"
+    },
+    {
+      "id": "UC-01",
+      "label": "Tarif tagihan melampaui tarif pembanding terverifikasi",
+      "fraudType": "UPCODING",
+      "field": "tariffGap",
+      "operator": "gt",
+      "threshold": 0,
+      "weight": 35,
+      "requiredFields": [
+        "tariffGap"
+      ],
+      "logic": "Selisih tarif hanya digunakan bila pembanding telah dicatat.",
+      "nextAction": "Periksa kode tarif dan dasar tingkat keparahan.",
+      "version": "rules-1.0.0"
+    },
+    {
+      "id": "UP-01",
+      "label": "Indikasi prosedur belum sesuai hasil telaah terstruktur",
+      "fraudType": "UNNECESSARY_PROCEDURES",
+      "field": "procedureIndication",
+      "operator": "eq",
+      "threshold": false,
+      "weight": 45,
+      "requiredFields": [
+        "procedureIndication"
+      ],
+      "logic": "Ketidaksesuaian indikasi telah dicatat sebagai temuan, bukan disimpulkan dari biaya.",
+      "nextAction": "Minta indikasi klinis prosedur dari DPJP.",
+      "version": "rules-1.0.0"
+    },
+    {
+      "id": "DC-01",
+      "label": "Terdapat referensi klaim pembanding yang serupa",
+      "fraudType": "DUPLICATE_CLAIM",
+      "field": "duplicateCount",
+      "operator": "gt",
+      "threshold": 1,
+      "weight": 55,
+      "requiredFields": [
+        "duplicateCount"
+      ],
+      "logic": "Jumlah klaim serupa melebihi satu pada kelompok pembanding yang sama.",
+      "nextAction": "Bandingkan tanggal, layanan, dan nomor klaim.",
+      "version": "rules-1.0.0"
+    },
+    {
+      "id": "WD-01",
+      "label": "Diagnosis dan prosedur memerlukan klarifikasi",
+      "fraudType": "WRONG_DIAGNOSIS",
+      "field": "diagnosisProcedureMatch",
+      "operator": "eq",
+      "threshold": false,
+      "weight": 45,
+      "requiredFields": [
+        "diagnosisProcedureMatch"
+      ],
+      "logic": "Ketidaksesuaian berasal dari field telaah eksplisit.",
+      "nextAction": "Konfirmasi diagnosis dan prosedur kepada penelaah klinis.",
+      "version": "rules-1.0.0"
+    },
+    {
+      "id": "GE-01",
+      "label": "Status peserta membutuhkan verifikasi ulang",
+      "fraudType": "GHOST_ENROLLEE",
+      "field": "enrollmentValid",
+      "operator": "eq",
+      "threshold": false,
+      "weight": 40,
+      "requiredFields": [
+        "enrollmentValid"
+      ],
+      "logic": "Status peserta ditandai tidak sesuai oleh sumber terstruktur. Nilai tagihan nol tidak cukup menjadi sinyal.",
+      "nextAction": "Periksa status kepesertaan dan log kehadiran.",
+      "version": "rules-1.0.0"
+    }
   ]
 }

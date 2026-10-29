@@ -2,8 +2,8 @@ import { getAllCases, getCaseById, getCaseEvidence, submitCaseOutcome, assignCas
 
 export async function getCases(req, res, next) {
   try {
-    const { status, priority, riskMode, search, assignedTo, page, limit } = req.query;
-    const result = await getAllCases({ status, priority, riskMode, search, assignedTo:req.user.role==='clinical_reviewer'?req.user.username:assignedTo, page, limit });
+    const { status, priority, riskMode, reasonCode, search, assignedTo, page, limit } = req.query;
+    const result = await getAllCases({ status, priority, riskMode, reasonCode, search, assignedTo:req.user.role==='clinical_reviewer'?req.user.username:assignedTo, page, limit });
     res.status(200).json({
       success: true,
       total: result.total,
@@ -24,7 +24,7 @@ export async function getCaseDetails(req, res, next) {
     if (!caseData) {
       return res.status(404).json({
         success: false,
-        message: `Case not found: ${caseId}`
+        message: 'Kasus tidak ditemukan.'
       });
     }
     res.status(200).json({
@@ -43,7 +43,7 @@ export async function getCaseEvidenceChain(req, res, next) {
     if (!chain) {
       return res.status(404).json({
         success: false,
-        message: `Case not found: ${caseId}`
+        message: 'Kasus tidak ditemukan.'
       });
     }
     res.status(200).json({

@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-export default function MedcareDailyVerificationCard({ onOpenQueue }) {
+export default function MedcareDailyVerificationCard({ onOpenQueue, data = {} }) {
   return (
     <motion.div
       className="med-daily-summary-card"
@@ -22,8 +22,8 @@ export default function MedcareDailyVerificationCard({ onOpenQueue }) {
             </svg>
           </div>
           <div>
-            <h3 className="med-card-title" style={{ fontSize: '0.94rem' }}>Status Berkas Harian</h3>
-            <span style={{ fontSize: '0.72rem', color: 'var(--mc-text-muted)' }}>Proses rekonsiliasi berkas klaim</span>
+            <h3 className="med-card-title" style={{ fontSize: '0.94rem' }}>Status Antrean</h3>
+            <span style={{ fontSize: '0.72rem', color: 'var(--mc-text-muted)' }}>Rekap kasus tersimpan sesuai akun</span>
           </div>
         </div>
 
@@ -40,25 +40,25 @@ export default function MedcareDailyVerificationCard({ onOpenQueue }) {
         <div className="med-daily-stat-row">
           <div className="med-daily-stat-left">
             <div className="med-daily-stat-dot teal" />
-            <span className="med-daily-stat-name">Klaim Terekonsiliasi Otomatis</span>
+            <span className="med-daily-stat-name">Telaah Selesai</span>
           </div>
-          <span className="med-daily-stat-num">28 Berkas</span>
+          <span className="med-daily-stat-num">{data.completedReview ?? 0} Kasus</span>
         </div>
 
         <div className="med-daily-stat-row">
           <div className="med-daily-stat-left">
             <div className="med-daily-stat-dot amber" />
-            <span className="med-daily-stat-name">Perlu Uji Petik Faskes</span>
+            <span className="med-daily-stat-name">Sedang Ditelaah</span>
           </div>
-          <span className="med-daily-stat-num" style={{ color: '#d97706' }}>4 Berkas</span>
+          <span className="med-daily-stat-num" style={{ color: '#d97706' }}>{data.reviewing ?? 0} Kasus</span>
         </div>
 
         <div className="med-daily-stat-row">
           <div className="med-daily-stat-left">
             <div className="med-daily-stat-dot slate" />
-            <span className="med-daily-stat-name">Menunggu Konfirmasi DPJP</span>
+            <span className="med-daily-stat-name">Menunggu Telaah</span>
           </div>
-          <span className="med-daily-stat-num" style={{ color: '#64748b' }}>2 Berkas</span>
+          <span className="med-daily-stat-num" style={{ color: '#64748b' }}>{Math.max(0,(data.pendingReview ?? 0)-(data.reviewing ?? 0))} Kasus</span>
         </div>
       </div>
 

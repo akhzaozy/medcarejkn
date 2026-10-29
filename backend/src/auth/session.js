@@ -4,7 +4,13 @@ import pool from '../config/db.js';
 import {users} from '../../../shared/users.js';
 export const sanitizeUser=user=>Object.fromEntries(['id','username','name','role','roleLabel','title','unit'].filter(k=>user?.[k]!==undefined).map(k=>[k,user[k]]));
 export async function seedAuth(client=pool) {
-  for(const user of users){const hash=process.env[user.role==='staff_jkn'?'JKN_STAFF_PASSWORD_HASH':'JKN_CLINICIAN_PASSWORD_HASH'];if(hash&&/^\$2[aby]\$/.test(hash))await client.query('INSERT INTO app_users(username,profile,password_hash) VALUES($1,$2,$3) ON CONFLICT(username) DO NOTHING',[user.username,JSON.stringify(sanitizeUser(user)),hash]);}
+  const existing=new Set((await client.query('SELECT username FROM app_users')).rows.map(r=>r.username));
+  for(const user of users){
+    if(existing.has(user.username))continue;
+    const hash=process.env[user.role==='staff_jkn'?'JKN_STAFF_PASSWORD_HASH':'JKN_CLINICIAN_PASSWORD_HASH'];
+    if(!hash||!/^\$2[aby]\$\d{2}\$[A-Za-z0-9./]{53}$/.test(hash))throw new Error('Konfigurasi hash akun JKN belum tersedia. Migrasi dibatalkan.');
+    await client.query('INSERT INTO app_users(username,profile,password_hash) VALUES($1,$2,$3) ON CONFLICT(username) DO NOTHING',[user.username,JSON.stringify(sanitizeUser(user)),hash]);
+  }
 }
 export async function authenticate(username,password) {
   if(typeof username!=='string'||typeof password!=='string'||!username.trim()||!password||password.length>200)return null;

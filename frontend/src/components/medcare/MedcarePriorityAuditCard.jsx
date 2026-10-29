@@ -1,18 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
-export default function MedcarePriorityAuditCard({ onOpenQueue, priorityCount = 6 }) {
-  const [activeDay, setActiveDay] = useState('Rab');
-
-  const weekSchedule = [
-    { day: 'Sen', height: 40, active: false },
-    { day: 'Sel', height: 60, active: false },
-    { day: 'Rab', height: 85, active: true },
-    { day: 'Kam', height: 35, active: false },
-    { day: 'Jum', height: 70, active: false },
-    { day: 'Sab', height: 50, active: false },
-    { day: 'Min', height: 25, active: false }
-  ];
+export default function MedcarePriorityAuditCard({ onOpenQueue, priorityCount = 0, pendingCount = 0 }) {
 
   return (
     <motion.div
@@ -42,34 +31,12 @@ export default function MedcarePriorityAuditCard({ onOpenQueue, priorityCount = 
         <div className="med-counter-row">
           <span className="med-big-counter">{String(priorityCount).padStart(2, '0')}</span>
           <div className="med-counter-desc">
-            Kasus Phantom Kritis
-            <span className="med-counter-freq">Target Selesai Minggu Ini</span>
+            Kasus Prioritas Tinggi
+            <span className="med-counter-freq">Dari antrean aktif Anda</span>
           </div>
         </div>
 
-        {/* Weekly Mini Schedule Bars */}
-        <div className="med-week-bars">
-          {weekSchedule.map((item) => {
-            const isSelected = activeDay === item.day;
-            return (
-              <div
-                key={item.day}
-                className="med-week-bar-col"
-                onClick={() => setActiveDay(item.day)}
-                style={{ cursor: 'pointer' }}
-              >
-                <div
-                  className={`med-week-bar ${isSelected || item.active ? 'active' : ''}`}
-                  style={{
-                    height: `${item.height}%`,
-                    opacity: isSelected || item.active ? 1 : 0.4
-                  }}
-                />
-                <span className="med-week-day-label">{item.day}</span>
-              </div>
-            );
-          })}
-        </div>
+        <p style={{color:'var(--mc-text-muted)',fontSize:'.84rem'}}>Total {pendingCount.toLocaleString('id-ID')} kasus masih memerlukan telaah. Prioritas membantu pengurutan, keputusan tetap pada penelaah.</p>
 
         {/* Action Button */}
         <button

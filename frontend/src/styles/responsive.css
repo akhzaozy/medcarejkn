@@ -173,3 +173,7 @@ body { background: var(--mc-bg, #edf3f4); }
 @media(max-width:1280px){.med-nav{grid-template-columns:repeat(6,minmax(0,1fr))}}
 .med-header{z-index:40}
 .med-inner main :is(section,[id]){scroll-margin-top:var(--med-header-offset,160px)}
+.queue-case-card{min-width:0;overflow-wrap:anywhere}.queue-case-card div{min-width:0}.case-card-top{flex-wrap:wrap;gap:10px}.case-card-top>div{max-width:100%}.case-card-top>div:last-child{flex-wrap:wrap}.case-card-top>div:first-child>div:first-child{flex-wrap:wrap}
+@media(max-width:600px){.queue-case-card{padding:18px!important}.queue-case-card>div>div:nth-child(2)>div:last-child{flex-wrap:wrap}.med-audit-meter-row .med-meter-header{flex-wrap:wrap;gap:6px}}
+.case-detail-page{min-width:0;overflow-wrap:anywhere}.case-detail-page div{min-width:0}.case-identifiers{flex-wrap:wrap}.case-identifiers h1{overflow-wrap:anywhere;max-width:100%}.case-detail-page .med-subpage-card>div>div{max-width:100%}
+.manual-audit-page{min-width:0;overflow-wrap:anywhere}.manual-audit-page div{min-width:0}.manual-audit-page select{max-width:100%;min-width:0}.manual-audit-page .structured-evidence select{padding:8px;border:1px solid #d5e2d8;border-radius:8px;width:100%;font:inherit;background:white;color:inherit}

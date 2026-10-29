@@ -1,97 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function MedcareAuditTimelineCard({ onOpenQueue, onSelectCase }) {
-  const [selectedDay, setSelectedDay] = useState(6);
-
-  const days = [
-    { dayName: 'Sen', dayNum: 4 },
-    { dayName: 'Sel', dayNum: 5 },
-    { dayName: 'Rab', dayNum: 6 },
-    { dayName: 'Kam', dayNum: 7 },
-    { dayName: 'Jum', dayNum: 8 },
-    { dayName: 'Sab', dayNum: 9 },
-  ];
-
-  const auditSchedule = {
-    6: [
-      {
-        id: 'CASE-PB-001',
-        time: '09:00',
-        role: 'RS Citra Medika',
-        code: 'Klaim Rp 45 jt',
-        description: 'Phantom Billing: Operasi Laparoskopi Tanpa Bukti Anastesi',
-        avatars: [
-          'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=100&auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1594824813501-483017a54460?w=100&auto=format&fit=crop&q=80'
-        ]
-      },
-      {
-        id: 'CASE-PB-002',
-        time: '11:00',
-        role: 'RSUD Sehat Sentosa',
-        code: 'Klaim Rp 18,5 jt',
-        description: 'Tindakan Hemodialisa Fiktif (Pasien Tidak Hadir di RS)',
-        avatars: [
-          'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=100&auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=100&auto=format&fit=crop&q=80'
-        ]
-      }
-    ],
-    4: [
-      {
-        id: 'CASE-PB-003',
-        time: '14:00',
-        role: 'RS Hermina Utama',
-        code: 'Klaim Rp 32 jt',
-        description: 'Upcoding Severity Level 3 Tanpa Komplikasi Medis',
-        avatars: [
-          'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&auto=format&fit=crop&q=80'
-        ]
-      }
-    ],
-    5: [
-      {
-        id: 'CASE-PB-004',
-        time: '10:30',
-        role: 'RS Permata Bunda',
-        code: 'Klaim Rp 14 jt',
-        description: 'Duplikasi Tagihan Obat Kemoterapi Rawat Jalan',
-        avatars: [
-          'https://images.unsplash.com/photo-1594824813501-483017a54460?w=100&auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=100&auto=format&fit=crop&q=80'
-        ]
-      }
-    ],
-    7: [
-      {
-        id: 'CASE-PB-005',
-        time: '15:00',
-        role: 'RS Pelita Sehat',
-        code: 'Klaim Rp 28 jt',
-        description: 'Ghost Enrollee: Kartu JKN Digunakan Oknum Tidak Dikenal',
-        avatars: [
-          'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=100&auto=format&fit=crop&q=80'
-        ]
-      }
-    ],
-    8: [
-      {
-        id: 'CASE-PB-006',
-        time: '08:45',
-        role: 'Klinik Utama Sejahtera',
-        code: 'Klaim Rp 8,5 jt',
-        description: 'Klaim Rawat Jalan Berulang Pada Hari Yang Sama',
-        avatars: [
-          'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=100&auto=format&fit=crop&q=80'
-        ]
-      }
-    ],
-    9: []
-  };
-
-  const currentList = auditSchedule[selectedDay] || [];
+export default function MedcareAuditTimelineCard({ onOpenQueue, onSelectCase, cases = [] }) {
 
   return (
     <motion.div
@@ -123,65 +33,34 @@ export default function MedcareAuditTimelineCard({ onOpenQueue, onSelectCase }) 
         </button>
       </div>
 
-      {/* Calendar Day Strip */}
-      <div className="med-calendar-strip" role="tablist">
-        {days.map((d) => {
-          const isActive = selectedDay === d.dayNum;
-          return (
-            <button
-              key={d.dayNum}
-              className={`med-calendar-day ${isActive ? 'active' : ''}`}
-              onClick={() => setSelectedDay(d.dayNum)}
-              role="tab"
-              aria-selected={isActive}
-            >
-              <span className="med-cal-dayname">{d.dayName}</span>
-              <span className="med-cal-daynum">{String(d.dayNum).padStart(2, '0')}</span>
-            </button>
-          );
-        })}
-      </div>
-
       {/* Timeline Section */}
       <div className="med-timeline">
         <div className="med-timeline-track" />
         <AnimatePresence mode="wait">
-          {currentList.length > 0 ? (
+          {cases.length > 0 ? (
             <motion.div
-              key={selectedDay}
+              key="queue"
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.25 }}
               style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}
             >
-              {currentList.map((item) => (
+              {cases.map((item) => (
                 <div
-                  key={item.id}
+                  key={item.case_id}
                   className="med-timeline-item"
-                  onClick={() => onSelectCase && onSelectCase(item.id)}
+                  onClick={() => onSelectCase && onSelectCase(item.case_id)}
                   title="Klik untuk membuka detail investigasi kasus"
                 >
-                  <div className="med-timeline-badge">{item.time}</div>
+                  <div className="med-timeline-badge">{item.review_priority}</div>
                   <div className="med-timeline-content">
                     <div className="med-timeline-title-row">
-                      <span className="med-timeline-role">{item.role}</span>
-                      <span className="med-timeline-count">{item.code}</span>
+                      <span className="med-timeline-role">{item.provider_name || (item.case_type==='pattern'?'Pola agregat BPJS':'Faskes belum dicatat')}</span>
+                      <span className="med-timeline-count">{item.case_id}</span>
                     </div>
-                    <div className="med-timeline-sub">{item.description}</div>
-                    <div className="med-avatar-cluster">
-                      {item.avatars.map((av, idx) => (
-                        <img
-                          key={idx}
-                          src={av}
-                          alt="Reviewer"
-                          className="med-cluster-avatar"
-                          onError={(e) => {
-                            e.target.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60&auto=format&fit=crop&q=80';
-                          }}
-                        />
-                      ))}
-                    </div>
+                    <div className="med-timeline-sub">{item.review_focus || item.primary_risk_mode}</div>
+                    <div className="med-timeline-sub">{item.assigned_name || 'Belum didisposisi'}</div>
                   </div>
                 </div>
               ))}
@@ -198,7 +77,7 @@ export default function MedcareAuditTimelineCard({ onOpenQueue, onSelectCase }) 
                 fontSize: '0.85rem'
               }}
             >
-              Tidak ada jadwal audit pada tanggal ini.
+              Belum ada kasus aktif pada antrean akun ini.
               <div style={{ marginTop: '0.6rem' }}>
                 <button
                   onClick={onOpenQueue}

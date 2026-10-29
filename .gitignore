@@ -20,3 +20,6 @@ outputs/**/*.ndjson
 
 outputs/backups/
 outputs/runtime-auth/
+
+# Local visual verification evidence (not deployment data)
+outputs/prd-qa/

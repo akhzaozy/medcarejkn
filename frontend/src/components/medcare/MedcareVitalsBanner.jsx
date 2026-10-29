@@ -3,11 +3,11 @@ import { motion } from 'framer-motion';
 import anime from 'animejs';
 
 export default function MedcareVitalsBanner({
-  userName = 'dr. Anindya',
+  userName = 'Pengguna',
   vitals = {
-    claimsAnalyzed: 4538,
-    totalExposureMiliar: 22.53,
-    priorityCases: 6
+    claimsAnalyzed: 0,
+    totalExposureMiliar: 0,
+    priorityCases: 0
   }
 }) {
   const claimsRef = useRef(null);
@@ -17,8 +17,8 @@ export default function MedcareVitalsBanner({
   useEffect(() => {
     // Number counter animation with Anime.js
     const counterObj = {
-      claims: 1200,
-      exposure: 5.0,
+      claims: 0,
+      exposure: 0,
       priority: 0
     };
 
@@ -35,7 +35,7 @@ export default function MedcareVitalsBanner({
           claimsRef.current.textContent = Math.round(counterObj.claims).toLocaleString('id-ID');
         }
         if (exposureRef.current) {
-          exposureRef.current.textContent = `Rp ${counterObj.exposure.toFixed(2)} M`;
+          exposureRef.current.textContent = `Rp ${counterObj.exposure.toFixed(2)} jt`;
         }
         if (priorityRef.current) {
           priorityRef.current.textContent = `${String(Math.round(counterObj.priority)).padStart(2, '0')} Kasus`;
@@ -57,7 +57,7 @@ export default function MedcareVitalsBanner({
           Selamat datang kembali, <strong>{userName}</strong>
         </h1>
         <p className="med-greeting-subtitle">
-          Berikut pembaruan integritas klaim &amp; audit phantom billing hari ini
+          Berikut pembaruan antrean klaim sesuai akun Anda
         </p>
       </motion.div>
 
@@ -68,7 +68,7 @@ export default function MedcareVitalsBanner({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
       >
-        {/* Metric 1: Klaim Teranalisis */}
+        {/* Metric 1: Klaim Tercatat */}
         <motion.div
           className="med-vital-pill"
           whileHover={{ y: -3, transition: { duration: 0.2 } }}
@@ -83,7 +83,7 @@ export default function MedcareVitalsBanner({
             <div className="med-vital-val" ref={claimsRef}>
               {vitals.claimsAnalyzed.toLocaleString('id-ID')}
             </div>
-            <div className="med-vital-lbl">Klaim Teranalisis</div>
+            <div className="med-vital-lbl">Klaim Tercatat</div>
           </div>
         </motion.div>
 
@@ -99,9 +99,9 @@ export default function MedcareVitalsBanner({
           </div>
           <div>
             <div className="med-vital-val" ref={exposureRef}>
-              Rp {vitals.totalExposureMiliar.toFixed(2)} M
+              Rp {vitals.totalExposureMiliar.toFixed(2)} jt
             </div>
-            <div className="med-vital-lbl">Eksposur Risiko Fraud</div>
+            <div className="med-vital-lbl">Nominal Klaim (juta)</div>
           </div>
         </motion.div>
 
@@ -121,7 +121,7 @@ export default function MedcareVitalsBanner({
             <div className="med-vital-val" ref={priorityRef}>
               {String(vitals.priorityCases).padStart(2, '0')} Kasus
             </div>
-            <div className="med-vital-lbl">Prioritas Phantom Billing</div>
+            <div className="med-vital-lbl">Prioritas Tinggi</div>
           </div>
         </motion.div>
       </motion.div>

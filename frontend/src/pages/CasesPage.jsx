@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCases } from '../api/client';
+import rules from '../../../config/risk_rules.json';
+const ReasonChips=({analysis,onFilter})=><span className="reason-chips">{analysis?.signals?.filter(s=>rules.rules.some(r=>r.id===s.id)).slice(0,3).map(s=><button type="button" key={s.id} title={s.label} onClick={()=>onFilter(s.id)}>{s.id}</button>)}</span>;
 import { PriorityBadge } from '../components/common/Badge';
 import { 
   formatRiskMode, formatCaseStatus, formatEncounterType, 
@@ -30,6 +32,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
     priority: 'ALL',
     status: 'ALL',
     riskMode: 'ALL',
+    reasonCode: 'ALL',
     assignedTo: isClinician ? currentUser.username : 'ALL'
   });
 
@@ -53,7 +56,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
       const completed = allItems.filter(c => c.case_status === 'CONFIRMED' || c.case_status === 'NOT_CONFIRMED' || c.case_status === 'CLOSED').length;
       setStageCounts({
         all: totalAll,
-        open: open || (totalAll - inReview - completed),
+        open: open,
         inReview,
         completed
       });
@@ -106,7 +109,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
     } else if (stage === 'IN_REVIEW') {
       handleFilterChange('status', 'IN_REVIEW');
     } else if (stage === 'COMPLETED') {
-      handleFilterChange('status', 'CONFIRMED');
+      handleFilterChange('status', 'COMPLETED');
     }
   };
 
@@ -224,7 +227,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
               </span>
             </div>
             <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
-              Total Antrean Terbuka
+              Total Kasus Terdata
             </div>
             <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '0.2rem' }}>
               Seluruh rekam audit JKN
@@ -333,6 +336,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
             </div>
           </div>
 
+          <div><label htmlFor="queue-reason">Kode alasan</label><select id="queue-reason" className="med-pill-input" value={filters.reasonCode} onChange={e=>handleFilterChange('reasonCode',e.target.value)}><option value="ALL">Semua kode alasan</option>{rules.rules.map(r=><option key={r.id} value={r.id}>{r.id} · {r.label}</option>)}</select></div>
           <div><label htmlFor="queue-risk-mode">Filter Mode Risiko</label><select id="queue-risk-mode" className="med-pill-input" value={filters.riskMode} onChange={e=>handleFilterChange('riskMode',e.target.value)}>{['ALL','PHANTOM_BILLING','UPCODING','UNNECESSARY_PROCEDURES','DUPLICATE_CLAIM','WRONG_DIAGNOSIS','GHOST_ENROLLEE','UNAVAILABLE'].map(mode=><option key={mode} value={mode}>{mode==='ALL'?'Semua mode risiko':formatRiskMode(mode)}</option>)}</select></div>
           {/* Priority */}
           <div>
@@ -346,7 +350,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
               style={{ cursor: 'pointer' }}
             >
               <option value="ALL">Semua Prioritas</option>
-              <option value="HIGH">HIGH (Phantom Billing)</option>
+              <option value="HIGH">HIGH (Prioritas tinggi)</option>
               <option value="MEDIUM">MEDIUM (Pattern / Partial)</option>
               <option value="NO_CONCLUSION">NO CONCLUSION (Unavailable)</option>
               <option value="LOW">LOW (Corroborated)</option>
@@ -369,7 +373,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
               <option value="IN_REVIEW">IN_REVIEW (Sedang Ditinjau)</option>
               <option value="NEEDS_MORE_EVIDENCE">NEEDS_MORE_EVIDENCE</option>
               <option value="CONFIRMED">CONFIRMED (Terkonfirmasi)</option>
-              <option value="CLOSED">CLOSED (Selesai)</option>
+              <option value="NOT_CONFIRMED">NOT_CONFIRMED</option><option value="RECONCILIATION">RECONCILIATION</option><option value="NEW">NEW (Kasus pola)</option><option value="TRIAGED">TRIAGED</option><option value="ESCALATED">ESCALATED</option><option value="CLOSED">CLOSED (Selesai)</option>
             </select>
           </div>
 
@@ -401,9 +405,9 @@ export default function CasesPage({ onSelectCase, currentUser }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ fontSize: '0.92rem', color: '#475569', fontWeight: 600 }}>
             {isClinician ? (
-              <>Menampilkan <strong style={{ color: '#059669' }}>{totalCases > 0 ? (page - 1) * limit + 1 : 0} - {Math.min(page * limit, totalCases)}</strong> dari <strong>{totalCases.toLocaleString('id-ID')}</strong> kasus Phantom Billing terverifikasi khusus Anda</>
+              <>Menampilkan <strong style={{ color: '#059669' }}>{totalCases > 0 ? (page - 1) * limit + 1 : 0} - {Math.min(page * limit, totalCases)}</strong> dari <strong>{totalCases.toLocaleString('id-ID')}</strong> kasus yang ditugaskan kepada Anda, semua mode risiko</>
             ) : (
-              <>Menampilkan <strong style={{ color: '#007a78' }}>{totalCases > 0 ? (page - 1) * limit + 1 : 0} - {Math.min(page * limit, totalCases)}</strong> dari <strong>{totalCases.toLocaleString('id-ID')}</strong> kasus klaim aktif</>
+              <>Menampilkan <strong style={{ color: '#007a78' }}>{totalCases > 0 ? (page - 1) * limit + 1 : 0} - {Math.min(page * limit, totalCases)}</strong> dari <strong>{totalCases.toLocaleString('id-ID')}</strong> kasus pada filter ini</>
             )}
           </div>
 
@@ -423,7 +427,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                 fontWeight: 700
               }}>
                 <Stethoscope size={14} />
-                <span>Dokter: {currentUser?.name || 'dr. Anindya'}</span>
+                <span>Dokter: {currentUser?.name || 'Dokter penelaah'}</span>
               </div>
             ) : (
               <div style={{ display: 'flex', gap: '0.5rem', background: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
@@ -534,6 +538,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                   gap: '1.5rem'
                 }}>
                   {cases.map((c, index) => {
+                    if(c.case_type==='pattern')return <article className="med-subpage-card" key={c.case_id}><p className="ba-eyebrow">KASUS POLA · SUMBER: POLA ANOMALI</p><h3>{c.case_id}</h3><p>Kelompok agregat BPJS — tanpa skor risiko klaim individual.</p><p>Prioritas review: {c.review_priority} · Status: {c.case_status}</p><button className="btn-pill-primary" onClick={()=>onSelectCase(c.case_id)}>Buka kasus pola</button></article>;
                     const isPhantom = c.primary_risk_mode === 'PHANTOM_BILLING';
                     const isGhost = c.primary_risk_mode === 'GHOST_ENROLLEE';
                     const isWrong = c.primary_risk_mode === 'WRONG_DIAGNOSIS';
@@ -541,6 +546,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                     return (
                       <div
                         key={c.case_id}
+                        className="queue-case-card"
                         style={{
                           background: '#ffffff',
                           border: isPhantom ? '1.5px solid #fecdd3' : '1.5px solid #e2e8f0',
@@ -565,7 +571,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                       >
                         <div>
                           {/* Top Card Header */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.85rem' }}>
+                          <div className="case-card-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.85rem' }}>
                             <div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                                 <span style={{
@@ -580,7 +586,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                                   #{(page - 1) * limit + index + 1}
                                 </span>
                                 <span style={{ fontWeight: 800, color: isClinician ? '#059669' : '#007a78', fontSize: '1.05rem' }}>
-                                  {c.case_id}
+                                  {c.case_id}<span className="case-source-tag">Sumber: {c.source||'seed'} · Skor {c.risk_score??'belum tersedia'}/100</span><ReasonChips analysis={c.analysis} onFilter={code=>handleFilterChange('reasonCode',code)}/>
                                 </span>
                               </div>
                               <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
@@ -608,7 +614,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                               {c.provider_name}
                             </div>
                             <div style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', gap: '8px', marginTop: '2px' }}>
-                              <span>Pasien: <strong style={{ color: '#334155' }}>{c.patient_id || 'PAT-SYN-001'}</strong></span>
+                              <span>Pasien: <strong style={{ color: '#334155' }}>{c.patient_id || 'Belum tersedia'}</strong></span>
                               <span>•</span>
                               <span>{formatGender(c.sex)}, {formatAgeGroup(c.age_group)}</span>
                               <span>•</span>
@@ -662,7 +668,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                               </div>
                               <div style={{ textAlign: 'right' }}>
                                 <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700 }}>
-                                  Ketercakupan Bukti: <strong style={{ color: Number(c.evidence_coverage_pct) < 50 ? '#e11d48' : '#059669' }}>{c.evidence_coverage_pct}%</strong>
+                                  Ketercakupan Bukti: <strong style={{ color: Number(c.evidence_coverage_pct) < 50 ? '#e11d48' : '#059669' }}>{c.evidence_coverage_pct==null?'Belum tersedia':`${Number(c.evidence_coverage_pct).toFixed(0)}%`}</strong>
                                 </span>
                                 <div style={{ fontSize: '0.75rem', color: Number(c.evidence_gap) > 0 ? '#e11d48' : '#64748b', fontWeight: 700 }}>
                                   Gap: {c.evidence_gap !== null ? `${c.evidence_gap} unit hilang` : 'N/A'}
@@ -741,7 +747,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                     <th>Mode Risiko</th>
                   )}
                   <th>Prioritas</th>
-                  <th>Disparitas Bukti</th>
+                  <th>Skor risiko</th><th>Sinyal utama</th><th>Disparitas Bukti</th>
                   <th>Nilai Klaim</th>
                   <th>Ditugaskan Ke</th>
                   <th>Status</th>
@@ -751,18 +757,18 @@ export default function CasesPage({ onSelectCase, currentUser }) {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={isClinician ? 10 : 11} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                    <td colSpan={isClinician ? 12 : 13} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
                       Memuat antrean penelaahan kasus...
                     </td>
                   </tr>
                 ) : cases.length === 0 ? (
                   <tr>
-                    <td colSpan={isClinician ? 10 : 11} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                    <td colSpan={isClinician ? 12 : 13} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
                       Tidak ada kasus yang memenuhi kriteria filter.
                     </td>
                   </tr>
                 ) : (
-                  cases.map((c, index) => (
+                  cases.map((c, index) => c.case_type==='pattern'?<tr key={c.case_id}><td colSpan={isClinician ? 12 : 13}>Kasus Pola · {c.case_id} · Sumber: Pola Anomali · Skor individual tidak berlaku <button onClick={()=>onSelectCase(c.case_id)}>Buka kasus pola</button></td></tr>:(
                     <tr
                       key={c.case_id}
                       style={{
@@ -777,7 +783,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                         {(page - 1) * limit + index + 1}
                       </td>
                       <td style={{ padding: '1.1rem 1.25rem', fontWeight: 800, color: '#007a78' }}>
-                        {c.case_id}
+                        {c.case_id}<small className="case-source-tag">Sumber: {c.source || 'seed'}</small>
                       </td>
                       <td style={{ padding: '1.1rem 1.25rem', fontWeight: 600, color: '#334155' }}>
                         {c.claim_id}
@@ -800,6 +806,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                       <td style={{ padding: '1.1rem 1.25rem' }}>
                         <PriorityBadge priority={c.review_priority} />
                       </td>
+                      <td title="Skor aturan, bukan probabilitas fraud">{c.risk_score == null?'Belum tersedia':`${c.risk_score}/100`}</td><td><ReasonChips analysis={c.analysis} onFilter={code=>handleFilterChange('reasonCode',code)}/></td>
                       <td style={{ padding: '1.1rem 1.25rem' }}>
                         {c.evidence_gap !== null ? (
                           <div>
@@ -902,7 +909,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
               )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="queue-pagination-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap:'wrap' }}>
               <button
                 disabled={page <= 1}
                 onClick={() => {

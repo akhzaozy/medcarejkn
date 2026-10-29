@@ -4,12 +4,16 @@
  */
 
 export const RISK_MODE_LABELS = {
-  'PHANTOM_BILLING': 'Klaim Fiktif (Phantom Billing)',
+  'PHANTOM_BILLING': 'Indikasi Phantom Billing',
   'UNAVAILABLE_EVIDENCE': 'Berkas Fisik Belum Tersedia',
   'PATTERN_REVIEW': 'Tinjauan Pola Faskes',
   'WRONG_DIAGNOSIS': 'Ketidaksesuaian Diagnosa',
-  'GHOST_ENROLLEE': 'Peserta Tanpa Presensi Fisik',
-  'UPCODING': 'Upcoding Prosedur',
+  'GHOST_ENROLLEE': 'Status Peserta Perlu Verifikasi',
+  'UPCODING': 'Indikasi Upcoding',
+  'NO_FRAUD':'Tidak ada sinyal pada data tersedia',
+  'UNAVAILABLE':'Bukti belum tersedia',
+  'UNNECESSARY_PROCEDURES':'Indikasi Prosedur Perlu Telaah',
+  'DUPLICATE_CLAIM':'Indikasi Klaim Serupa',
   'ALL': 'Semua Kategori'
 };
 
@@ -17,8 +21,8 @@ export const CASE_STATUS_LABELS = {
   'OPEN': 'Menunggu Telaah',
   'NEW': 'Baru Diajukan',
   'IN_REVIEW': 'Sedang Ditelaah',
-  'CONFIRMED': 'Terverifikasi Fraud',
-  'NOT_CONFIRMED': 'Klaim Wajar (Valid)',
+  'CONFIRMED': 'Temuan Dikonfirmasi Reviewer',
+  'NOT_CONFIRMED': 'Temuan Tidak Dikonfirmasi',
   'NEEDS_MORE_EVIDENCE': 'Perlu Konfirmasi Berkas',
   'FALSE_POSITIVE': 'False Positive (Anomali Teknis)'
 };
@@ -73,7 +77,8 @@ export function formatServiceType(val) {
 
 export function formatGender(val) {
   if (val === 'F') return 'Perempuan';
-  if (val === 'M') return 'Laki-laki';
+  if (val === 'U') return 'Tidak tersedia';
+  if (val === 'M' || val === 'L') return 'Laki-laki';
   return val || '-';
 }
 
