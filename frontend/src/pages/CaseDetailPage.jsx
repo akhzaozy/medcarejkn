@@ -5,7 +5,7 @@ import {apiRequest,isDemoMode} from '../api/client';
 import React, { useEffect, useState } from 'react';
 import { 
   fetchCaseDetails, fetchCaseEvidence, submitReviewOutcome, 
-  assignCaseReviewer, uploadSupportingEvidence, submitDisputeRebuttal,
+  assignCaseReviewer, uploadSupportingEvidence, submitDisputeRebuttal, uploadCaseFile, openCaseFile,
   takeCaseOwnership, sendClarificationRequestToClinician
 } from '../api/client';
 import { PriorityBadge, StatusBadge, CaseStatusPill } from '../components/common/Badge';
@@ -34,6 +34,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
   const [outcome, setOutcome] = useState('NEEDS_MORE_EVIDENCE');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [outcomeError, setOutcomeError] = useState('');
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
   const [appliedMl, setAppliedMl] = useState(false);
   const [mlReevaluated, setMlReevaluated] = useState(false);
@@ -64,6 +65,9 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
   const [evidenceDocNote, setEvidenceDocNote] = useState('');
   const [evidenceUploading, setEvidenceUploading] = useState(false);
   const [evidenceSuccess, setEvidenceSuccess] = useState(false);
+  const [evidenceFile, setEvidenceFile] = useState(null);
+  const [evidenceError, setEvidenceError] = useState('');
+  const evidenceFileInputRef = React.useRef(null);
 
   // Dispute / Sanggahan Modal (DPJP / Faskes with Mandatory Evidence)
   const [showDisputeModal, setShowDisputeModal] = useState(false);
@@ -75,6 +79,9 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
   const [disputeDocNote, setDisputeDocNote] = useState('');
   const [disputeSubmitting, setDisputeSubmitting] = useState(false);
   const [disputeSuccess, setDisputeSuccess] = useState(false);
+  const [disputeFile, setDisputeFile] = useState(null);
+  const [disputeError, setDisputeError] = useState('');
+  const disputeFileInputRef = React.useRef(null);
 
   useEffect(() => {
     loadCaseData();
@@ -120,19 +127,24 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
   const handleSubmitOutcome = async (e) => {
     e.preventDefault();
     try {
+      setOutcomeError('');
+      if (!notes?.trim()) {
+        setOutcomeError('Catatan pertimbangan medis wajib diisi sebelum menyimpan keputusan telaah klinis.');
+        return;
+      }
       setSubmitting(true);
       const reviewerActor = currentUser?.name || 'dr. Anindya Kusuma, Sp.PK (Tenaga Kesehatan)';
       await submitReviewOutcome(caseId, {
         outcome,
         notes,
-        reviewerId: reviewerActor
+        reviewerId: reviewerActor,
       });
       setSubmissionSuccess(true);
       setTimeout(() => setSubmissionSuccess(false), 3000);
       await loadCaseData();
     } catch (err) {
       console.error(err);
-      alert('Gagal menyimpan hasil review');
+      setOutcomeError(err.message || 'Gagal menyimpan hasil review.');
     } finally {
       setSubmitting(false);
     }
@@ -191,20 +203,71 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
     setTimeout(() => setAppliedMl(false), 3500);
   };
 
+  const formatUploadSize = (bytes) => {
+    if (!Number.isFinite(bytes) || bytes < 1024) return `${bytes || 0} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  const handleEvidenceFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setEvidenceError('');
+    const ext = (file.name.match(/\.[^/.]+$/)?.[0] || '').toLowerCase();
+    if (!['.pdf', '.jpg', '.jpeg', '.png', '.dcm', '.dicom'].includes(ext)) {
+      setEvidenceError('Format file bukti tidak didukung. Pilih file PDF, JPG, PNG, atau DICOM (.dcm).');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setEvidenceError('Ukuran file melebihi batas maksimum 10 MB.');
+      e.target.value = '';
+      return;
+    }
+    setEvidenceFile(file);
+    if (!evidenceDocTitle.trim()) {
+      setEvidenceDocTitle(file.name.replace(/\.[^/.]+$/, ''));
+    }
+  };
+
+  const handleDisputeFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDisputeError('');
+    const ext = (file.name.match(/\.[^/.]+$/)?.[0] || '').toLowerCase();
+    if (!['.pdf', '.jpg', '.jpeg', '.png'].includes(ext)) {
+      setDisputeError('Format file lampiran tidak didukung. Pilih file PDF, JPG, atau PNG.');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setDisputeError('Ukuran file lampiran melebihi batas maksimum 10 MB.');
+      e.target.value = '';
+      return;
+    }
+    setDisputeFile(file);
+  };
+
   const handleUploadEvidence = async (e) => {
     e.preventDefault();
     if (!evidenceDocTitle.trim()) {
-      alert('Mohon isi judul dokumen bukti fisik.');
+      setEvidenceError('Mohon isi nama/nomor referensi berkas dokumen bukti.');
       return;
     }
     try {
+      setEvidenceError('');
       setEvidenceUploading(true);
+      let uploadedFileMeta = null;
+      if (evidenceFile) {
+        uploadedFileMeta = await uploadCaseFile(caseId, evidenceFile, 'evidence');
+      }
       await uploadSupportingEvidence(caseId, {
         claimItemId:evidenceItem||undefined,verified:evidenceVerified,supportedQuantity,
         evidenceType: evidenceDocType,
         title: evidenceDocTitle,
         note: evidenceDocNote || 'Dokumen fisik verifikasi disusulkan faskes',
-        uploadedBy: currentUser?.name || 'Staff / DPJP'
+        uploadedBy: currentUser?.name || 'Staff / DPJP',
+        file: uploadedFileMeta,
       });
 
       setEvidenceSuccess(true);
@@ -214,12 +277,14 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
         setShowEvidenceModal(false);
         setEvidenceDocTitle('');
         setEvidenceDocNote('');
+        setEvidenceFile(null);
+        if (evidenceFileInputRef.current) evidenceFileInputRef.current.value = '';
       }, 1500);
       setTimeout(() => setMlReevaluated(false), 6000);
       await loadCaseData();
     } catch (err) {
       console.error(err);
-      alert('Gagal melampirkan bukti pendukung.');
+      setEvidenceError(err.message || 'Gagal melampirkan bukti pendukung.');
     } finally {
       setEvidenceUploading(false);
     }
@@ -228,12 +293,26 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
   const handleAddDispute = async (e) => {
     e.preventDefault();
     if (!disputeTitle.trim() || !disputeContent.trim()) {
-      alert('Mohon lengkapi judul dan isi klarifikasi/sanggahan.');
+      setDisputeError('Mohon lengkapi judul dan isi klarifikasi/sanggahan.');
       return;
     }
     try {
+      setDisputeError('');
       setDisputeSubmitting(true);
       const attachments = [];
+      if (disputeFile) {
+        const uploadedDisputeFile = await uploadCaseFile(caseId, disputeFile, 'dispute');
+        attachments.push({
+          fileId: uploadedDisputeFile.fileId,
+          name: uploadedDisputeFile.fileName,
+          fileName: uploadedDisputeFile.fileName,
+          size: uploadedDisputeFile.size,
+          fileSize: uploadedDisputeFile.fileSize,
+          mimeType: uploadedDisputeFile.mimeType,
+          downloadUrl: uploadedDisputeFile.downloadUrl,
+          type: 'FILE'
+        });
+      }
       
       // If doctor/hospital provided mandatory proof document
       if (disputeDocTitle.trim()) {
@@ -253,11 +332,12 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
       }
 
       await submitDisputeRebuttal(caseId, {
-        actor: disputeActor || (currentUser?.role === 'clinical_reviewer' ? currentUser.name : `Komite Medik ${details?.case?.provider_name || 'Faskes'}`),
-        role: currentUser?.role === 'clinical_reviewer' ? 'Dokter Penelaah Medis (DPJP)' : 'Fasilitas Kesehatan (Rumah Sakit)',
+        actor: disputeActor || `Komite Medik ${details?.case?.provider_name || 'Faskes'}`,
+        role: 'Fasilitas Kesehatan (Rumah Sakit)',
         title: disputeTitle,
         content: disputeContent,
-        attachments
+        attachments,
+        allowRevision: ['CONFIRMED', 'NOT_CONFIRMED', 'CLOSED'].includes(details?.case?.case_status)
       });
 
       setDisputeSuccess(true);
@@ -269,12 +349,14 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
         setDisputeContent('');
         setDisputeDocTitle('');
         setDisputeDocNote('');
+        setDisputeFile(null);
+        if (disputeFileInputRef.current) disputeFileInputRef.current.value = '';
       }, 1500);
       setTimeout(() => setMlReevaluated(false), 6000);
       await loadCaseData();
     } catch (err) {
       console.error(err);
-      alert('Gagal mengajukan sanggahan.');
+      setDisputeError(err.message || 'Gagal mengajukan sanggahan.');
     } finally {
       setDisputeSubmitting(false);
     }
@@ -315,7 +397,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
   const { case: c, claimItems, evidenceLinks, riskSignals, reviewOutcomes, auditLogs } = details;
 
   const isPhantom = c.primary_risk_mode === 'PHANTOM_BILLING';
-  const isUnavailable = c.review_priority === 'NO_CONCLUSION' || c.primary_risk_mode === 'UNAVAILABLE_EVIDENCE';
+  const isUnavailable = c.review_priority === 'NO_CONCLUSION' || c.primary_risk_mode === 'UNAVAILABLE_EVIDENCE' || c.primary_risk_mode === 'UNAVAILABLE';
   const isPattern = c.primary_risk_mode === 'PATTERN_REVIEW';
 
   const riskLabel = formatRiskMode(c.primary_risk_mode);
@@ -595,6 +677,29 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
             {riskLabel}
           </span>
         </div>
+
+        {isUnavailable && (
+          <div style={{
+            background: '#f8fafc',
+            border: '1.5px solid #cbd5e1',
+            borderRadius: '12px',
+            padding: '0.85rem 1.15rem',
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+          }}>
+            <Clock size={20} color="#64748b" style={{ flexShrink: 0 }} />
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '0.84rem', color: '#334155' }}>
+                Kondisi Bukti Belum Tersedia (UNAVAILABLE) — Bukan Vonis Fraud
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px', lineHeight: 1.45 }}>
+                Kasus berstatus <strong>Belum Ada Kesimpulan (NO_CONCLUSION)</strong> karena berkas fisik rekam medis dari faskes belum tercatat di sistem. Ketiadaan bukti awal bukan merupakan vonis kecurangan (fraud), melainkan kesempatan melengkapi dokumen pendukung.
+              </div>
+            </div>
+          </div>
+        )}
 
         <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.65, margin: '0 0 1.25rem 0' }}>
           Klaim berkas <strong>{c.case_id}</strong> diajukan oleh <strong>{c.provider_name}</strong> atas pelayanan pasien <strong>{c.patient_id || 'Belum tersedia'}</strong> ({genderLabel}, {ageLabel}) dengan nilai tagihan <strong>{totalClaim}</strong>.
@@ -882,6 +987,37 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                             </div>
                             <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
                               Ref: {rec.reference || 'Referensi belum tersedia'} • Tanggal: {rec.createdAt ? formatDateIndo(rec.createdAt) : '-'}
+                              {rec.file && (
+                                <div style={{ marginTop: '4px' }}>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const opened = await openCaseFile(caseId, rec.file);
+                                        if (!opened) alert(`Berkas referensi: ${rec.file.fileName || rec.file.name}`);
+                                      } catch (err) {
+                                        alert(err.message);
+                                      }
+                                    }}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '5px',
+                                      background: '#f0fdfa',
+                                      border: '1px solid #99f6e4',
+                                      color: '#0f766e',
+                                      borderRadius: '6px',
+                                      padding: '2px 8px',
+                                      fontSize: '0.7rem',
+                                      fontWeight: 700,
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    <Paperclip size={11} />
+                                    <span>{rec.file.fileName || rec.file.name} ({rec.file.size}) — Buka File</span>
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -985,15 +1121,17 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
               Kanal klarifikasi resmi antara Rumah Sakit / Komite Medik dengan Verifikator BPJS Kesehatan
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowDisputeModal(true)}
-            className="med-pill-btn-primary"
-            style={{ padding: '0.5rem 1.1rem', fontSize: '0.78rem' }}
-          >
-            <Plus size={14} />
-            + Ajukan Sanggahan / Tanggapan Faskes
-          </button>
+          {currentUser?.role === 'staff_jkn' && (
+            <button
+              type="button"
+              onClick={() => setShowDisputeModal(true)}
+              className="med-pill-btn-primary"
+              style={{ padding: '0.5rem 1.1rem', fontSize: '0.78rem' }}
+            >
+              <Plus size={14} />
+              + Ajukan Sanggahan / Tanggapan Faskes
+            </button>
+          )}
         </div>
 
         {/* Dispute List */}
@@ -1067,7 +1205,14 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                           color: '#0f172a',
                           cursor: 'pointer'
                         }}
-                        onClick={() => alert(`Dokumen Terverifikasi: ${att.name}`)}
+                        onClick={async () => {
+                          try {
+                            const opened = await openCaseFile(caseId, att);
+                            if (!opened) alert(`Dokumen Terverifikasi: ${att.name}`);
+                          } catch (err) {
+                            alert(err.message);
+                          }
+                        }}
                         title="Klik untuk melihat dokumen lampiran"
                       >
                         <Paperclip size={13} color="#007a78" />
@@ -1278,6 +1423,25 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
               </div>
             )}
 
+            {c.assigned_to !== currentUser?.username && (
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '14px', padding: '0.85rem 1.1rem', marginBottom: '1rem', color: '#92400e', fontSize: '0.8rem', lineHeight: 1.45 }}>
+                <strong>Perhatian Penugasan:</strong>{' '}
+                {c.assigned_to
+                  ? `Berkas ini sedang ditugaskan kepada ${c.assigned_name || c.assigned_to}. Hanya dokter penelaah yang ditugaskan yang dapat menyimpan keputusan pada berkas ini.`
+                  : 'Berkas ini belum ditugaskan kepada dokter penelaah (Unassigned). Silakan lakukan disposisi terlebih dahulu melalui akun Staff JKN.'}
+              </div>
+            )}
+            {c.assigned_to === currentUser?.username && ['CONFIRMED', 'NOT_CONFIRMED', 'CLOSED'].includes(c.case_status) && (
+              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '14px', padding: '0.85rem 1.1rem', marginBottom: '1rem', color: '#1e40af', fontSize: '0.8rem', lineHeight: 1.45 }}>
+                <strong>Mode Revisi Putusan Telaah Klinis:</strong> Berkas ini telah memiliki status putusan <strong>{formatCaseStatus(c.case_status)}</strong>. Menyimpan kembali akan memperbarui putusan kasus dan mencatat riwayat revisi pada Audit Trail.
+              </div>
+            )}
+            {outcomeError && (
+              <div role="alert" style={{ background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '14px', padding: '0.85rem 1.1rem', marginBottom: '1rem', color: '#be123c', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertCircle size={17} />
+                <span>{outcomeError}</span>
+              </div>
+            )}
             <form onSubmit={handleSubmitOutcome}>
               <div style={{ marginBottom: '1.25rem' }}>
                 <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#334155', marginBottom: '0.6rem' }}>
@@ -1321,7 +1485,23 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
 
               <div style={{ marginBottom: '1.25rem' }}>
                 <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
-                  Catatan Pertimbangan Medis &amp; Rekomendasi Klinis
+                  Catatan Pertimbangan Medis &amp; Rekomendasi Klinis <span style={{ color: '#e11d48' }}>*</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const templates = {
+                        NEEDS_MORE_EVIDENCE: `Memerlukan konfirmasi berkas fisik tambahan dari ${c.provider_name} untuk menutup selisih pembuktian (${totalGapCount}) sebelum klaim dapat divalidasi.`,
+                        CONFIRMED: `Berdasarkan telaah klinis dan pencocokan rekam medis, ditemukan disparitas nyata pada klaim ${c.claim_id} (${totalGapCount} tanpa dokumen pendukung medis yang sah).`,
+                        NOT_CONFIRMED: `Berdasarkan pemeriksaan dokumen medis dan rincian tindakan, klaim ${c.claim_id} dinyatakan wajar dan sesuai indikasi medis.`,
+                        FALSE_POSITIVE: `Sinyal anomali berasal dari perbedaan pencatatan administrasi/aturan sistem; secara klinis pelayanan medis telah sesuai dan dapat dipertanggungjawabkan.`
+                      };
+                      setNotes(templates[outcome] || templates.NEEDS_MORE_EVIDENCE);
+                      setOutcomeError('');
+                    }}
+                    style={{ marginLeft: '8px', background: '#e6f6f5', color: '#007a78', border: '1px solid #99f6e4', borderRadius: '6px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    + Isi Draf Catatan Sesuai Pilihan
+                  </button>
                 </label>
                 <textarea
                   rows={3}
@@ -1565,12 +1745,57 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                   marginBottom: '1.5rem',
                   cursor: 'pointer'
                 }}>
-                  <Paperclip size={22} color="#007a78" style={{ marginBottom: '0.3rem' }} />
+                  <input
+                    ref={evidenceFileInputRef}
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.dcm,.dicom,application/pdf,image/jpeg,image/png,application/dicom"
+                    style={{ display: 'none' }}
+                    onChange={handleEvidenceFileChange}
+                  />
+                  {evidenceError && (
+                    <div role="alert" style={{ background: '#fff1f2', border: '1px solid #fecdd3', color: '#be123c', borderRadius: '10px', padding: '0.6rem 0.85rem', fontSize: '0.78rem', marginBottom: '0.75rem', textAlign: 'left' }}>
+                      {evidenceError}
+                    </div>
+                  )}
+                  <div onClick={() => evidenceFileInputRef.current?.click()} style={{ cursor: 'pointer' }}>
+                    <Paperclip size={22} color="#007a78" style={{ marginBottom: '0.3rem' }} />
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a' }}>
+                      {evidenceFile ? `File terpilih: ${evidenceFile.name} (${formatUploadSize(evidenceFile.size)})` : 'Klik untuk memilih berkas scan (PDF / JPG / PNG / DICOM — Maks. 10 MB)'}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>
+                      {evidenceFile ? 'File siap diunggah ke penyimpanan lokal kasus ini dan ditautkan ke rantai bukti.' : 'Pilih dokumen bukti pendukung medis untuk disimpan pada berkas kasus.'}
+                    </div>
+                    <div style={{ marginTop: '0.6rem', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          evidenceFileInputRef.current?.click();
+                        }}
+                        style={{ background: '#007a78', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '4px 12px', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        {evidenceFile ? 'Ganti File' : 'Pilih File Bukti'}
+                      </button>
+                      {evidenceFile && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEvidenceFile(null);
+                            if (evidenceFileInputRef.current) evidenceFileInputRef.current.value = '';
+                          }}
+                          style={{ background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: '8px', padding: '4px 10px', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer' }}
+                        >
+                          Hapus File
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a' }}>
-                    Klik untuk memilih berkas scan (PDF / JPG / DICOM)
+                    {/* file picker title handled above */}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>
-                    Tahap ini menyimpan referensi dan catatan dokumen, bukan isi file. Tidak ada OCR atau verifikasi integritas file otomatis.
+                    {/* file picker description handled above */}
                   </div>
                 </div>
 
@@ -1598,7 +1823,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
       )}
 
       {/* MODAL 2: Ajukan Sanggahan / Tanggapan Faskes */}
-      {showDisputeModal && (
+      {showDisputeModal && currentUser?.role === 'staff_jkn' && (
         <div style={{
           position: 'fixed',
           inset: 0,
@@ -1745,17 +1970,47 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
                   alignItems: 'center',
                   gap: '10px'
                 }}>
+                  <input
+                    ref={disputeFileInputRef}
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                    style={{ display: 'none' }}
+                    onChange={handleDisputeFileChange}
+                  />
                   <Paperclip size={18} color="#007a78" />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f172a' }}>
-                      Lampirkan Berkas Bukti Sanggahan (PDF Berstempel Faskes)
+                      {disputeFile ? `Lampiran terpilih: ${disputeFile.name} (${formatUploadSize(disputeFile.size)})` : 'Lampirkan Berkas Bukti Sanggahan (PDF / JPG / PNG Berstempel Faskes)'}
+                      {disputeError && (
+                        <div role="alert" style={{ color: '#be123c', fontSize: '0.72rem', fontWeight: 600, marginTop: '3px' }}>
+                          {disputeError}
+                        </div>
+                      )}
                     </div>
                     <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
                       Surat Pengantar Direktur RS &amp; Resume Medis Terlampir
                     </div>
                   </div>
                   <span style={{ fontSize: '0.72rem', background: '#e2e8f0', padding: '3px 8px', borderRadius: '6px', fontWeight: 600, color: '#475569' }}>
-                    Pilih File
+                      <button
+                        type="button"
+                        onClick={() => disputeFileInputRef.current?.click()}
+                        style={{ fontSize: '0.72rem', background: '#007a78', color: '#ffffff', border: 'none', padding: '5px 10px', borderRadius: '6px', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        {disputeFile ? 'Ganti File' : 'Pilih File'}
+                      </button>
+                      {disputeFile && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDisputeFile(null);
+                            if (disputeFileInputRef.current) disputeFileInputRef.current.value = '';
+                          }}
+                          style={{ marginLeft: '6px', fontSize: '0.72rem', background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', padding: '4px 8px', borderRadius: '6px', fontWeight: 700, cursor: 'pointer' }}
+                        >
+                          Hapus
+                        </button>
+                      )}
                   </span>
                 </div>
 

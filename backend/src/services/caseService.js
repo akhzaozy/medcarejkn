@@ -1,8 +1,19 @@
 import pool from '../config/db.js';
 import {randomUUID} from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {analyzeClaim} from '../../../shared/riskEngine.js';
 import {itemContract,evidenceContract,eventContract} from '../../../shared/caseContract.js';
 import {users} from '../../../shared/users.js';
+import {createNotification} from './notificationService.js';
+
+const UPLOADS_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../outputs/runtime-auth/uploads');
+function formatFileSize(bytes) {
+  if (!Number.isFinite(bytes) || bytes < 1024) return `${bytes || 0} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
 
 export async function getAllCases({ status, priority, riskMode, reasonCode, search, assignedTo, page = 1, limit = 12 } = {}) {
   const client = await pool.connect();
@@ -26,9 +37,21 @@ export async function getAllCases({ status, priority, riskMode, reasonCode, sear
       baseWhere += ` AND c.review_priority = $${params.length}`;
     }
 
-    if (riskMode && riskMode !== 'ALL') {
+    if (riskMode === 'PHANTOM_BILLING') {
+      params.push('PHANTOM_BILLING');
+      baseWhere += ` AND c.primary_risk_mode = $${params.length}`;
+    } else if (riskMode === 'UPCODING') {
+      params.push('UPCODING');
+      baseWhere += ` AND c.primary_risk_mode = $${params.length}`;
+    } else if (riskMode === 'EVIDENCE_REVIEW') {
+      baseWhere += ` AND (c.primary_risk_mode = 'EVIDENCE_REVIEW' OR (c.evidence_gap IS NOT NULL AND c.evidence_gap > 0))`;
+    } else if (riskMode === 'FOCUS' || riskMode === 'ALL_FOCUS') {
+      baseWhere += ` AND (c.primary_risk_mode IN ('PHANTOM_BILLING', 'UPCODING', 'EVIDENCE_REVIEW', 'UNAVAILABLE') OR (c.evidence_gap IS NOT NULL AND c.evidence_gap > 0)) AND (c.case_type IS NULL OR c.case_type != 'pattern')`;
+    } else if (riskMode && riskMode !== 'ALL' && riskMode !== 'ALL_HISTORICAL') {
       params.push(riskMode);
       baseWhere += ` AND c.primary_risk_mode = $${params.length}`;
+    } else if (riskMode !== 'ALL_HISTORICAL') {
+      baseWhere += ` AND (c.primary_risk_mode IS NULL OR c.primary_risk_mode != 'PATTERN_REVIEW') AND (c.case_type IS NULL OR c.case_type != 'pattern')`;
     }
 
     if(reasonCode&&reasonCode!=='ALL'){
@@ -195,16 +218,17 @@ export async function getCaseById(caseId) {
       ORDER BY created_at DESC
     `, [caseId]);
 
-    const evidenceLinks=evidenceRes.rows.map(evidenceContract);
-    const claimItems=itemsRes.rows.map(item=>itemContract(item,evidenceLinks));
     const docs=(await client.query('SELECT * FROM case_documents WHERE case_id=$1 ORDER BY created_at DESC',[caseId])).rows;
+    const docFileByEv=new Map(docs.filter(d=>d.kind==='evidence'&&d.payload?.file).map(d=>[d.id,d.payload.file]));
+    const evidenceLinks=evidenceRes.rows.map(r=>({...evidenceContract(r),file:docFileByEv.get(r.evidence_link_id)||null}));
+    const claimItems=itemsRes.rows.map(item=>({...itemContract(item,evidenceLinks),evidenceLinks:evidenceLinks.filter(e=>e.claimItemId===item.claim_item_id)}));
     const features={...(caseData.metadata?.features||{}),evidenceAvailable:claimItems.length>0&&claimItems.every(i=>i.calculatedStatus!=='UNAVAILABLE'),claimedQty:claimItems.reduce((n,i)=>n+i.claimedQuantity,0),supportedQty:claimItems.reduce((n,i)=>n+i.supportedQuantity,0)};
     const riskAnalysis=caseData.analysis||analyzeClaim(features);
     return {case:{...caseData,...(caseData.metadata||{})},diagnoses:dxRes.rows,claimItems,evidenceLinks,
       riskSignals:riskAnalysis.signals,reviewOutcomes:outcomesRes.rows,auditLogs:auditRes.rows.map(eventContract),
       disputes:docs.filter(d=>['dispute','clarification'].includes(d.kind)).map(d=>({...d.payload,id:d.id,actor:d.actor,date:d.created_at,status:'MENUNGGU_VERIFIKASI',attachments:d.payload.attachments||[]})),
       triageNotes:docs.filter(d=>d.kind==='copilot').map(d=>({...d.payload,createdAt:d.created_at,createdBy:d.actor})),
-      uploadedEvidences:docs.filter(d=>d.kind==='evidence').map(d=>d.payload),riskAnalysis,initialAnalysis:caseData.initial_analysis||null,
+      uploadedEvidences:docs.filter(d=>d.kind==='evidence').map(d=>({...d.payload,id:d.id,createdAt:d.created_at,actor:d.actor})),riskAnalysis,initialAnalysis:caseData.initial_analysis||null,
       scoreHistory:docs.filter(d=>d.kind==='score_history').map(d=>({...d.payload,timestamp:d.created_at})),
       mlRecommendation:{modelName:riskAnalysis.engine.version,confidenceScore:riskAnalysis.riskScore,predictedRiskLevel:riskAnalysis.reviewPriority,suggestedOutcome:'NEEDS_MORE_EVIDENCE',suggestedNotes:'Draf — wajib ditinjau dokter. '+riskAnalysis.reasons.join('; '),drivers:riskAnalysis.reasons}};
 
@@ -215,7 +239,7 @@ export async function getCaseById(caseId) {
 
 export async function getCaseEvidence(caseId) {const d=await getCaseById(caseId);return d?{caseId,claimItems:d.claimItems,evidenceLinks:d.evidenceLinks}:null;}
 
-export async function submitCaseOutcome(caseId, { outcome, notes, reviewerId, reviewerName }) {
+export async function submitCaseOutcome(caseId, { outcome, notes, reviewerId, reviewerName, allowRevision = false }) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -227,9 +251,9 @@ export async function submitCaseOutcome(caseId, { outcome, notes, reviewerId, re
     }
     const currentCase = caseRes.rows[0];
     if(currentCase.case_type==='pattern'){const error=new Error('Kasus pola memerlukan penelusuran agregat, bukan putusan klaim individual.');error.statusCode=400;throw error;}
+    if(['CONFIRMED','NOT_CONFIRMED','CLOSED'].includes(currentCase.case_status)){const error=new Error('Kasus sudah diputuskan; gunakan alur peninjauan ulang terpisah.');error.statusCode=409;throw error;}
     if(currentCase.assigned_to!==reviewerId){const error=new Error('Kasus belum ditugaskan kepada Anda.');error.statusCode=403;throw error;}
     if(!['CONFIRMED','NOT_CONFIRMED','NEEDS_MORE_EVIDENCE','FALSE_POSITIVE','ESCALATED'].includes(outcome)||!notes?.trim()){const error=new Error('Keputusan dan catatan telaah wajib diisi.');error.statusCode=400;throw error;}
-    if(['CONFIRMED','NOT_CONFIRMED','CLOSED'].includes(currentCase.case_status)){const error=new Error('Kasus sudah diputuskan; gunakan alur peninjauan ulang terpisah.');error.statusCode=409;throw error;}
     const prevStatus = currentCase.case_status;
 
     // 2. Generate review_id
@@ -266,6 +290,16 @@ export async function submitCaseOutcome(caseId, { outcome, notes, reviewerId, re
       INSERT INTO audit_logs (case_id, actor_id, action, detail, created_at)
       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
     `, [caseId, reviewerId, 'OUTCOME_SAVED', auditDetail]);
+
+    await createNotification(client, {
+      caseId,
+      recipientRole: 'staff_jkn',
+      senderUsername: reviewerId,
+      senderName: reviewerName || reviewerId,
+      title: `Hasil Telaah Klinis: ${caseId}`,
+      message: `${reviewerName || reviewerId} telah menetapkan hasil telaah [${outcome}] pada kasus ${caseId}. Catatan: "${notes || '-'}"`,
+      type: 'outcome'
+    });
 
     await client.query('COMMIT');
 
@@ -310,6 +344,17 @@ export async function assignCaseReviewer(caseId, { assignedTo, assignedName, not
       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
     `, [caseId, assignedBy, 'ASSIGNED_TO_CLINICIAN', auditDetail]);
 
+    await createNotification(client, {
+      caseId,
+      recipientUsername: assignedTo,
+      recipientRole: 'clinical_reviewer',
+      senderUsername: assignedBy,
+      senderName: assignedBy,
+      title: `Penugasan Berkas Kasus ${caseId}`,
+      message: `Staff [${assignedBy}] menugaskan kasus ${caseId} kepada Anda. Catatan: "${note || 'Harap lakukan verifikasi klinis dan telaah rekam medis'}"`,
+      type: 'assignment'
+    });
+
     await client.query('COMMIT');
     return {
       caseId,
@@ -332,7 +377,9 @@ export async function recordCaseAction(caseId,kind,payload,actor) {
     await client.query('BEGIN');
     const row=(await client.query('SELECT * FROM cases WHERE case_id=$1 FOR UPDATE',[caseId])).rows[0];
     if(!row){const e=new Error('Kasus tidak ditemukan');e.statusCode=404;throw e;}
-    if(['CONFIRMED','NOT_CONFIRMED','CLOSED'].includes(row.case_status)&&!['feedback','copilot'].includes(kind)){const e=new Error('Kasus sudah diputuskan; bukti baru memerlukan peninjauan ulang terpisah.');e.statusCode=409;throw e;}
+    if(kind==='dispute'&&actor?.role!=='staff_jkn'){const e=new Error('Peran Anda tidak berwenang melakukan tindakan ini.');e.statusCode=403;throw e;}
+    const isAllowedDisputeRevision = kind === 'dispute' && actor?.role === 'staff_jkn' && payload?.allowRevision === true;
+    if(['CONFIRMED','NOT_CONFIRMED','CLOSED'].includes(row.case_status)&&!['feedback','copilot'].includes(kind)&&!isAllowedDisputeRevision){const e=new Error('Kasus sudah diputuskan; bukti baru memerlukan peninjauan ulang terpisah.');e.statusCode=409;throw e;}
     const id=randomUUID();
     if(kind==='ownership')await client.query("UPDATE cases SET staff_handler=$1,case_status=CASE WHEN case_status IN ('OPEN','NEW') THEN 'TRIAGED' ELSE case_status END WHERE case_id=$2",[actor.username,caseId]);
     if(['dispute','clarification','evidence','copilot','schedule','feedback'].includes(kind)){
@@ -340,13 +387,17 @@ export async function recordCaseAction(caseId,kind,payload,actor) {
       if(JSON.stringify(payload).length>16000){const e=new Error('Catatan terlalu panjang.');e.statusCode=400;throw e;}
       if(kind==='schedule'&&(!/^\d{4}-\d{2}-\d{2}$/.test(payload.date||'')||!payload.time)){const e=new Error('Tanggal dan waktu jadwal wajib diisi.');e.statusCode=400;throw e;}
       if(kind==='evidence'){
-        const itemId=payload.claimItemId;
+        let itemId=payload.claimItemId;
+        if(!itemId){
+          const firstItem=(await client.query('SELECT claim_item_id FROM claim_items WHERE claim_id=$1 ORDER BY sequence_no ASC LIMIT 1',[row.claim_id])).rows[0];
+          if(firstItem)itemId=firstItem.claim_item_id;
+        }
         if(itemId){const item=(await client.query('SELECT * FROM claim_items WHERE claim_item_id=$1 AND claim_id=$2',[itemId,row.claim_id])).rows[0];if(!item){const e=new Error('Item bukti tidak sesuai kasus.');e.statusCode=400;throw e;}
           const verified=payload.verified===true,supported=verified?Number(payload.supportedQuantity||0):0;
           if(!Number.isFinite(supported)||supported<0||supported>Number(item.quantity)){const e=new Error('Kuantitas bukti tidak valid.');e.statusCode=400;throw e;}
           await client.query('INSERT INTO evidence_links(evidence_link_id,claim_item_id,evidence_type,source_id,match_status,match_quantity,availability,reason,created_by) VALUES($1,$2,$3,$4,$5,$6,\'YES\',$7,$8)',[id,itemId,String(payload.evidenceType||'MEDICAL_RECORD').slice(0,50),String(payload.title).slice(0,50),verified?'MATCHED':'PENDING',supported,String(payload.note||''),actor.username]);
         }
-        payload={...payload,status:'METADATA_RECORDED',availability:'YES',matchStatus:payload.verified?'MATCHED':'PENDING',evidenceId:id,reference:payload.title,scope:'metadata_only'};
+        payload={...payload,claimItemId:itemId||null,status:payload.file?.fileId?'FILE_ATTACHED':'METADATA_RECORDED',availability:'YES',matchStatus:payload.verified?'MATCHED':'PENDING',evidenceId:id,reference:payload.title,scope:payload.file?.fileId?'file_and_metadata':'metadata_only'};
       }
       if(kind==='feedback')await client.query('INSERT INTO ai_feedback(id,case_id,engine_version,risk_score,reason,note,actor) VALUES($1,$2,$3,$4,$5,$6,$7)',[id,caseId,row.engine_version,row.risk_score,payload.reason,payload.note||'',actor.username]);
       await client.query('INSERT INTO case_documents(id,case_id,kind,payload,actor) VALUES($1,$2,$3,$4,$5)',[id,caseId,kind,JSON.stringify(payload),actor.username]);
@@ -361,6 +412,139 @@ export async function recordCaseAction(caseId,kind,payload,actor) {
       await client.query('INSERT INTO case_documents(id,case_id,kind,payload,actor) VALUES($1,$2,\'score_history\',$3,$4)',[randomUUID(),caseId,JSON.stringify({before:row.analysis,after:analysis}),actor.username]);
       await client.query('UPDATE cases SET analysis=$1,risk_score=$2,review_priority=$3,evidence_coverage_pct=$4,evidence_gap=$5,review_focus=$7 WHERE case_id=$6',[JSON.stringify(analysis),analysis.riskScore,analysis.reviewPriority,analysis.evidenceCoveragePct,analysis.evidenceGap,caseId,analysis.reviewFocus]);
     }
+    if(kind==='dispute'){
+      await createNotification(client,{caseId,recipientRole:'staff_jkn',senderUsername:actor.username,senderName:actor.name||actor.username,title:`Sanggahan Faskes Masuk: ${caseId}`,message:`${payload.actor||actor.name||'Faskes'} menyampaikan sanggahan pada kasus ${caseId}: "${payload.title}"`,type:'dispute'});
+      if(row.assigned_to){await createNotification(client,{caseId,recipientUsername:row.assigned_to,recipientRole:'clinical_reviewer',senderUsername:actor.username,senderName:actor.name||actor.username,title:`Sanggahan Faskes Masuk: ${caseId}`,message:`${payload.actor||actor.name||'Faskes'} menyampaikan sanggahan pada kasus ${caseId}: "${payload.title}"`,type:'dispute'});}
+    }
+    if(kind==='evidence'){
+      const targetRole=actor.role==='staff_jkn'?'clinical_reviewer':'staff_jkn';
+      const targetUser=actor.role==='staff_jkn'?row.assigned_to:null;
+      await createNotification(client,{caseId,recipientUsername:targetUser,recipientRole:targetRole,senderUsername:actor.username,senderName:actor.name||actor.username,title:`Bukti Pendukung Ditambahkan: ${caseId}`,message:`Dokumen bukti "${payload.title}" telah ditambahkan pada berkas kasus ${caseId}.`,type:'evidence'});
+    }
+    if(kind==='clarification'){
+      await createNotification(client,{caseId,recipientUsername:payload.targetDoctorId||row.assigned_to,recipientRole:'clinical_reviewer',senderUsername:actor.username,senderName:actor.name||actor.username,title:`Permintaan Klarifikasi Medis: ${caseId}`,message:`Staff [${actor.name||actor.username}] meminta klarifikasi medis: "${payload.title}"`,type:'clarification'});
+    }
     await client.query('COMMIT');return {id,caseId,persisted:true,kind};
   }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
+}
+
+const ALLOWED_FILE_EXTENSIONS = {
+  evidence: new Set(['.pdf', '.jpg', '.jpeg', '.png', '.dcm', '.dicom']),
+  dispute: new Set(['.pdf', '.jpg', '.jpeg', '.png'])
+};
+
+export async function saveCaseFile(caseId, { buffer, originalName, mimeType, kind = 'evidence', actor = {} }) {
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    const e = new Error('File bukti wajib dipilih dan tidak boleh kosong.');
+    e.statusCode = 400;
+    throw e;
+  }
+  if (buffer.length > 10 * 1024 * 1024) {
+    const e = new Error('Ukuran file melebihi batas maksimum 10 MB.');
+    e.statusCode = 400;
+    throw e;
+  }
+  const cleanOriginal = path.basename(String(originalName || 'dokumen.pdf')).trim() || 'dokumen.pdf';
+  const ext = path.extname(cleanOriginal).toLowerCase();
+  const allowedSet = ALLOWED_FILE_EXTENSIONS[kind] || ALLOWED_FILE_EXTENSIONS.evidence;
+  if (!allowedSet.has(ext)) {
+    const e = new Error(
+      kind === 'dispute'
+        ? 'Format file lampiran tidak didukung. Gunakan file PDF, JPG, atau PNG.'
+        : 'Format file bukti tidak didukung. Gunakan file PDF, JPG/PNG, atau DICOM (.dcm).'
+    );
+    e.statusCode = 400;
+    throw e;
+  }
+
+  const client = await pool.connect();
+  try {
+    const existing = await client.query('SELECT case_id FROM cases WHERE case_id = $1', [caseId]);
+    if (existing.rows.length === 0) {
+      const e = new Error('Kasus tidak ditemukan.');
+      e.statusCode = 404;
+      throw e;
+    }
+
+    const fileId = `FILE-${randomUUID().replaceAll('-', '').slice(0, 16)}`;
+    const safeCaseDir = String(caseId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const safeFileName = cleanOriginal.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120);
+    const storedFileName = `${fileId}-${safeFileName}`;
+    const targetDir = path.join(UPLOADS_ROOT, safeCaseDir);
+    fs.mkdirSync(targetDir, { recursive: true });
+    const fullPath = path.join(targetDir, storedFileName);
+    fs.writeFileSync(fullPath, buffer);
+
+    const resolvedMime =
+      ext === '.pdf' ? 'application/pdf'
+      : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg'
+      : ext === '.png' ? 'image/png'
+      : ext === '.dcm' || ext === '.dicom' ? 'application/dicom'
+      : (mimeType || 'application/octet-stream');
+
+    const sizeLabel = formatFileSize(buffer.length);
+    const metaPayload = {
+      fileId,
+      name: cleanOriginal,
+      fileName: cleanOriginal,
+      storedFileName,
+      mimeType: resolvedMime,
+      fileSize: buffer.length,
+      size: sizeLabel,
+      kind,
+      downloadUrl: `/cases/${encodeURIComponent(caseId)}/files/${encodeURIComponent(fileId)}`,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: actor?.username || 'system',
+      uploaderName: actor?.name || actor?.username || 'Pengguna'
+    };
+
+    await client.query(
+      "INSERT INTO case_documents(id, case_id, kind, payload, actor) VALUES ($1, $2, 'uploaded_file', $3, $4)",
+      [randomUUID(), caseId, JSON.stringify(metaPayload), actor?.username || 'system']
+    );
+
+    return {
+      fileId: metaPayload.fileId,
+      name: metaPayload.fileName,
+      fileName: metaPayload.fileName,
+      mimeType: metaPayload.mimeType,
+      fileSize: metaPayload.fileSize,
+      size: metaPayload.size,
+      downloadUrl: metaPayload.downloadUrl,
+      uploadedAt: metaPayload.uploadedAt
+    };
+  } finally {
+    client.release();
+  }
+}
+
+export async function getCaseFile(caseId, fileId) {
+  const client = await pool.connect();
+  try {
+    const res = await client.query(
+      "SELECT payload FROM case_documents WHERE case_id = $1 AND kind = 'uploaded_file' AND payload->>'fileId' = $2 LIMIT 1",
+      [caseId, fileId]
+    );
+    if (res.rows.length === 0) {
+      const e = new Error('Berkas dokumen tidak ditemukan.');
+      e.statusCode = 404;
+      throw e;
+    }
+    const meta = res.rows[0].payload;
+    const safeCaseDir = String(caseId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filePath = path.join(UPLOADS_ROOT, safeCaseDir, path.basename(String(meta.storedFileName || '')));
+    if (!fs.existsSync(filePath)) {
+      const e = new Error('File fisik tidak ditemukan pada penyimpanan lokal.');
+      e.statusCode = 404;
+      throw e;
+    }
+    return {
+      filePath,
+      fileName: meta.fileName || 'dokumen.pdf',
+      mimeType: meta.mimeType || 'application/octet-stream',
+      fileSize: meta.fileSize || 0
+    };
+  } finally {
+    client.release();
+  }
 }

@@ -5,11 +5,13 @@
 
 export const RISK_MODE_LABELS = {
   'PHANTOM_BILLING': 'Indikasi Phantom Billing',
+  'UPCODING': 'Indikasi Upcoding',
+  'EVIDENCE_REVIEW': 'Kesenjangan Bukti Layanan',
+  'FOCUS': 'Semua Fokus Utama',
   'UNAVAILABLE_EVIDENCE': 'Berkas Fisik Belum Tersedia',
   'PATTERN_REVIEW': 'Tinjauan Pola Faskes',
   'WRONG_DIAGNOSIS': 'Ketidaksesuaian Diagnosa',
   'GHOST_ENROLLEE': 'Status Peserta Perlu Verifikasi',
-  'UPCODING': 'Indikasi Upcoding',
   'NO_FRAUD':'Tidak ada sinyal pada data tersedia',
   'UNAVAILABLE':'Bukti belum tersedia',
   'UNNECESSARY_PROCEDURES':'Indikasi Prosedur Perlu Telaah',

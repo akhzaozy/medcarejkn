@@ -5,6 +5,7 @@ const available=v=>v!==null&&v!==undefined&&v!=='';
 export function analyzeClaim(input={},configuration=catalog) {
   const f={...input};
   f.unsupportedQuantity=f.evidenceAvailable===true&&available(f.claimedQty)&&available(f.supportedQty)?Math.max(0,Number(f.claimedQty)-Number(f.supportedQty)):null;
+  f.tariffGap=available(f.tariffGap)?Number(f.tariffGap):(available(f.amountBilled)&&available(f.referenceTariff)&&f.referenceTariff!==''?Math.max(0,Number(f.amountBilled)-Number(f.referenceTariff)):null);
   const signals=configuration.rules.filter(rule=>rule.requiredFields.every(key=>available(f[key])) && available(f[rule.field]) && (rule.operator==='gt'?Number(f[rule.field])>rule.threshold:f[rule.field]===rule.threshold)).map(rule=>({id:rule.id,ruleVersion:rule.version||configuration.version,label:rule.label,compared:rule.requiredFields,observedValue:f[rule.field],expected:rule.threshold,rawWeight:rule.weight,contribution:rule.weight,contributionType:'rule_weight',dataStatus:'available',nextAction:rule.nextAction,fraudType:rule.fraudType}));
   const sum=signals.reduce((n,s)=>n+s.rawWeight,0),riskScore=Math.min(100,sum);
   for(const signal of signals)signal.contribution=sum>100?signal.rawWeight*100/sum:signal.rawWeight;

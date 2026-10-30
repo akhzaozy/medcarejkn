@@ -9,6 +9,7 @@ const CasesPage=lazy(()=>import('./pages/CasesPage'));
 const CaseDetailPage=lazy(()=>import('./pages/CaseDetailPage'));
 const ValidationPage=lazy(()=>import('./pages/ValidationPage'));
 const BpjsAuditPage=lazy(()=>import('./pages/BpjsAuditPage'));
+const ClaimAuditInputPage=lazy(()=>import('./pages/ClaimAuditInputPage'));
 const GuidePage=lazy(()=>import('./pages/GuidePage'));
 import LoginPage from './pages/LoginPage';
 const BpjsDataPage=lazy(()=>import('./pages/BpjsDataPage'));
@@ -199,10 +200,7 @@ export default function App() {
           )}
 
           {view === 'input' && (
-            <BpjsAuditPage
-              onTabChange={setAuditTab}
-              initialTab={auditTab}
-              initialCohort={auditCohort}
+            <ClaimAuditInputPage
               onSelectCase={handleSelectCase}
               onOpenQueue={handleOpenQueue}
               onBack={handleBackToLanding}
@@ -220,7 +218,7 @@ export default function App() {
                 >
                   ← Kembali ke Beranda
                 </button>
-                <button className="btn-pill-primary" style={{marginLeft:12}} onClick={()=>handleOpenBpjsAudit('Reguler','queue')}>Antrean audit pasien BPJS</button>
+                
               </div>
               <CasesPage onSelectCase={handleSelectCase} currentUser={currentUser} />
             </div>
