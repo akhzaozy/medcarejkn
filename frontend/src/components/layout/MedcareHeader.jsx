@@ -77,13 +77,11 @@ export default function MedcareHeader({
     }
   };
 
-  // 100% UNIFIED NAV ITEMS (SERUMPUN) ACROSS ALL PAGES
+  // 100% UNIFIED NAV ITEMS (SERUMPUN) ACROSS ALL PAGES - 3 FOCUS SCOPE
   const navItems = [
-    { key: 'landing', label: 'Dashboard', onClick: () => onNavigate && onNavigate('landing') },
-    { key: 'cases', label: 'Antrean Kasus Klaim', onClick: onOpenQueue },
-    { key: 'input', label: 'Audit Pasien BPJS', onClick: onOpenInput },
-    ...(onOpenBpjs ? [{ key: 'bpjs', label: 'Data BPJS', onClick: onOpenBpjs }] : []),
-    {key:'validation',label:'AI & Validasi',onClick:onOpenValidation},
+    { key: 'landing', label: 'Beranda', onClick: () => onNavigate && onNavigate('landing') },
+    { key: 'cases', label: 'Antrean Kasus', onClick: onOpenQueue },
+    { key: 'input', label: 'Uji Klaim Manual', onClick: onOpenInput },
     { key: 'guide', label: 'Panduan', onClick: onOpenGuide }
   ];
 

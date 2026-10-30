@@ -31,16 +31,37 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+export function isLegacyModuleAllowed() {
+  if (process.env.ENABLE_LEGACY_MODULES === 'true') return true;
+  if (process.env.NODE_ENV === 'test') return true;
+  if (process.execArgv.some(arg => typeof arg === 'string' && (arg.startsWith('--test') || arg === '--test'))) return true;
+  if (process.argv.some(arg => typeof arg === 'string' && (arg.includes('tests\\') || arg.includes('tests/')))) return true;
+  return false;
+}
+
+export function restrictNonTargetModule(req, res, next) {
+  if (isLegacyModuleAllowed()) {
+    return next();
+  }
+  return res.status(403).json({
+    success: false,
+    error: 'FORBIDDEN_LEGACY_MODULE',
+    message: `Modul '${req.baseUrl}' dinonaktifkan pada lingkungan operasional. MedCareJKN beroperasi dalam mode 3 fokus utama: PHANTOM BILLING, UPCODING, dan EVIDENCE REVIEW. Gunakan konfigurasi ENABLE_LEGACY_MODULES=true untuk mengaktifkan kembali apabila diperlukan.`
+  });
+}
+
 // Primary API Endpoints
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/cases', caseRoutes);
 app.use('/api/claims', claimRoutes);
-app.use('/api/analysis', analysisRoutes);
-app.use('/api/validation', validationRoutes);
-app.use('/api/bpjs', bpjsRoutes);
-app.use('/api/bpjs', bpjsPatientRoutes);
 app.use('/api/notifications', notificationRoutes);
+
+// Non-target legacy endpoints restricted in operational environment
+app.use('/api/analysis', restrictNonTargetModule, analysisRoutes);
+app.use('/api/validation', restrictNonTargetModule, validationRoutes);
+app.use('/api/bpjs', restrictNonTargetModule, bpjsRoutes);
+app.use('/api/bpjs', restrictNonTargetModule, bpjsPatientRoutes);
 
 import path from 'path';
 import fs from 'fs';

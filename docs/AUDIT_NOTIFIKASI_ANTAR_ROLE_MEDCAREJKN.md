@@ -1,14 +1,18 @@
 # AUDIT ARSITEKTUR & IMPLEMENTASI NOTIFIKASI MULTI-PERAN MEDCAREJKN
 
-## 1. PENDAHULUAN & RIWAYAT MASALAH
+Dokumen ini menjelaskan rancangan arsitektur, skema tabel, mekanisme konsumsi klien, isolasi penerima, serta hasil audit dan verifikasi sistem notifikasi antar-peran pada aplikasi **medCareJKN** berdasarkan kode aktif per **30 Oktober 2026**.
 
-Sistem notifikasi dalam aplikasi **medCareJKN** menjembatani koordinasi audit antara **Staff Auditor JKN** dan **Dokter Penelaah Medis**.
+---
+
+## 1. PENDAHULUAN & RIWAYAT PERUBAHAN SISTEM
+
+Sistem notifikasi dalam aplikasi **medCareJKN** menjembatani koordinasi audit antara **Staff Auditor JKN** (`staff_jkn`) dan **Dokter Penelaah Medis** (`clinical_reviewer`).
 
 ### Temuan Audit Awal (Sebelum Perbaikan):
 1. **Mock Sisi Klien Saja (*Client-Side Array*):** Notifikasi awal hanya disimpan sebagai array statis di `localStorage` peramban (`jkn_notifications_v1`). Data hilang saat cache peramban dibersihkan.
 2. **Tidak Ada Persistensi Basis Data:** Tidak terdapat tabel `notifications` di PostgreSQL.
 3. **Ketiadaan Komunikasi Lintas Peran:** Ketika staf menugaskan kasus, akun dokter tidak menerima pemberitahuan. Begitu pula saat dokter menyelesaikan telaah, staf tidak memperoleh notifikasi.
-4. **Klaim "Real-time" yang Keliru:** Penggunaan istilah "real-time push" sebelumnya tidak tepat karena tidak ada infrastruktur WebSocket atau Server-Sent Events (SSE).
+4. **Klaim "Real-time" yang Keliru:** Penggunaan istilah "real-time push" sebelumnya tidak tepat karena sistem tidak menggunakan infrastruktur WebSocket atau Server-Sent Events (SSE).
 
 ---
 
@@ -17,7 +21,7 @@ Sistem notifikasi dalam aplikasi **medCareJKN** menjembatani koordinasi audit an
 > [!NOTE]
 > **Keterangan Metode Verifikasi Diagram:** Diagram alur sekuens di bawah diperiksa melalui inspeksi teks dan struktur blok Mermaid. Karena utilitas parser Mermaid CLI (`mmdc`) tidak tersedia di komputer lokal tanpa dependensi tambahan, rendering diagram melalui parser belum diverifikasi secara terprogram.
 
-Notifikasi saat ini beroperasi menggunakan model **penyimpanan basis data relasional terpusat** yang dipadukan dengan **penarikan data berkala (periodic polling)** dari frontend:
+Notifikasi saat ini beroperasi menggunakan model **penyimpanan basis data relasional terpusat di PostgreSQL** yang dipadukan dengan **penarikan data berkala (periodic polling) setiap 15 detik** serta **penarikan seketika (on-demand refresh)** saat pengguna mengeklik ikon lonceng pada navbar:
 
 ```mermaid
 sequenceDiagram
@@ -50,7 +54,7 @@ sequenceDiagram
 
 ## 3. STRUKTUR TABEL BASIS DATA POSTGRESQL
 
-Tabel `notifications` diimplementasikan secara resmi melalui berkas migrasi [20261030_001_notifications.sql](file:///D:/medcare/database/migrations/20261030_001_notifications.sql):
+Tabel `notifications` diimplementasikan secara resmi melalui berkas migrasi [20261030_001_notifications.sql](file:///D:/medcare/database/migrations/20261030_001_notifications.sql) pada basis data `jkn_integrity`:
 
 ```sql
 CREATE TABLE IF NOT EXISTS notifications (
@@ -74,10 +78,10 @@ CREATE INDEX IF NOT EXISTS idx_notifications_role
 ON notifications(recipient_role, read, created_at DESC);
 ```
 
-### Penjelasan Partisi Penerima:
-- **Target Pengguna Spesifik (`recipient_username`):** Digunakan saat kasus ditugaskan secara personal kepada seorang dokter (misal `dr.anindya`). Hanya pengguna tersebut yang menerima notifikasi.
-- **Target Grup Peran (`recipient_role`):** Digunakan saat tindakan berdampak luas pada seluruh staf (misal penyelesaian telaah klinis dengan penerima `staff_jkn`). Seluruh pengguna dalam peran tersebut dapat melihat notifikasi.
-- **Integritas Relasional:** Kolom `case_id` memiliki *Foreign Key* ke tabel `cases(case_id)` dengan aturan `ON DELETE CASCADE`.
+### Penjelasan Relasi & Partisi Penerima:
+- **Target Pengguna Spesifik (`recipient_username`):** Digunakan saat kasus ditugaskan secara personal kepada seorang dokter (misal `dr.anindya`). Hanya pengguna tersebut yang dapat melihat dan menerima notifikasi ini.
+- **Target Grup Peran (`recipient_role`):** Digunakan saat tindakan berdampak luas pada seluruh staf (misal penyelesaian telaah klinis dengan penerima `staff_jkn`). Seluruh akun pengguna dalam peran tersebut dapat melihat notifikasi.
+- **Integritas Relasional:** Kolom `case_id` memiliki *Foreign Key* ke tabel `cases(case_id)` dengan aturan `ON DELETE CASCADE`. Jika berkas kasus dihapus, seluruh notifikasi terkait akan terhapus secara otomatis.
 
 ---
 
@@ -95,35 +99,44 @@ Penerbitan notifikasi dipicu secara tersinkronisasi di dalam transaksi database 
 
 ---
 
-## 5. MEKANISME KONSUMSI PADA FRONTEND
+## 5. MEKANISME KONSUMSI PADA FRONTEND & DEEP LINKING
 
-1. **Polling Berkala (15 Detik):** Pada komponen [MedcareHeader.jsx](file:///D:/medcare/frontend/src/components/layout/MedcareHeader.jsx), `useEffect` menjalankan interval polling setiap 15 detik selama terdapat sesi aktif (`currentUser`).
-2. **On-Demand Refresh:** Mengeklik tombol lonceng `#btn-navbar-notifications` memicu pemanggilan HTTP GET `/api/notifications` secara langsung. Tampilan daftar notifikasi dan lencana unread diperbarui setelah respons API berhasil diterima dan diproses oleh state React klien.
-3. **Penyimpanan Cache Lokal & Fallback:** Respons API disimpan di `localStorage` sebagai cache sinkronisasi. Jika panggilan jaringan mengalami kegagalan, sistem kembali membaca data cache lokal tanpa menghentikan peramban (*graceful degradation*).
-4. **Penandaan Dibaca (*Mark Read*):**
-   - Mengklik tombol *"Tandai dibaca"* memanggil `POST /api/notifications/read-all`.
-   - Mengklik kartu notifikasi individual memanggil `POST /api/notifications/:id/read` dan mengeksekusi navigasi langsung (*deep linking*) ke berkas kasus terkait via `onSelectCase(n.caseId)`.
+1. **Polling Berkala (Setiap 15 Detik):**
+   - Pada komponen [MedcareHeader.jsx](file:///D:/medcare/frontend/src/components/layout/MedcareHeader.jsx), `useEffect` menjalankan interval polling setiap 15 detik selama terdapat sesi aktif (`currentUser`).
+   - Polling memastikan pembaruan berkas dari peran lain termuat tanpa perlu memuat ulang seluruh halaman peramban.
+2. **On-Demand Refresh Saat Ikon Lonceng Diklik:**
+   - Mengeklik tombol lonceng `#btn-navbar-notifications` memicu pemanggilan HTTP `GET /api/notifications` secara langsung.
+   - Tampilan daftar notifikasi dan lencana unread diperbarui seketika setelah respons API berhasil diterima dan diproses oleh state React klien.
+3. **Penyimpanan Cache Lokal & Fallback Graceful:**
+   - Respons API disimpan di `localStorage` sebagai cache sinkronisasi cepat.
+   - Jika panggilan jaringan mengalami gangguan sementara, sistem kembali membaca data cache lokal tanpa menimbulkan galat pada antarmuka.
+4. **Navigasi Langsung (Deep Linking) ke Berkas Kasus:**
+   - Mengklik kartu notifikasi individual (`.notif-item-card`) memanggil API `POST /api/notifications/:id/read` untuk menandai pesan terbaca, sekaligus mengeksekusi fungsi `onSelectCase(n.caseId)` yang langsung membuka halaman **Detail Kasus** terkait.
+5. **Penandaan Massal (Mark All Read):**
+   - Mengklik tombol *"Tandai dibaca"* memanggil `POST /api/notifications/read-all`, mereset badge unread menjadi 0 seketika.
 
 ---
 
 ## 6. ANALISIS RISIKO & BATASAN OPERASIONAL
 
 1. **Pemisahan Pembuatan Record Backend vs Tampilan UI Klien:**
-   - **Pembuatan Record di Backend:** Record notifikasi dibuat di backend (tabel `notifications`) saat mutasi terkait (penugasan, putusan outcome, sanggahan, atau penambahan bukti) berhasil diproses dan dikomit di PostgreSQL.
-   - **Pemuatan oleh Klien (Polling & Fetch Manual):** Antarmuka pengguna (UI) tidak menggunakan koneksi push persisten (tidak memakai WebSocket maupun Server-Sent Events / SSE). UI memuat notifikasi melalui interval polling berkala setiap 15 detik atau pembaruan manual saat pengguna mengeklik ikon lonceng di navbar.
-   - **Pembaruan Tampilan Layar:** Tampilan daftar notifikasi dan lencana unread di peramban diperbarui setelah respons panggilan API HTTP diterima oleh klien, sehingga tidak menyiratkan bahwa daftar notifikasi pasti tampil seketika atau instan di layar pada detik yang sama dengan mutasi di database.
-2. **Risiko Duplikasi Notifikasi:** Jika suatu aksi mutasi (misalnya penugasan ulang kasus yang sama) dipicu berulang kali oleh staf, sistem mencatat record notifikasi baru pada setiap pemanggilan API. Tidak ada deduplikasi otomatis di level basis data.
-3. **Karakteristik Keamanan:** Notifikasi tersimpan di tabel basis data relasional PostgreSQL standar dengan pencatatan stempel waktu server (`TIMESTAMPTZ`). Sistem tidak menggunakan teknologi ledger kriptografi *blockchain*, melainkan mengandalkan kontrol akses otentikasi sesi JWT dan integritas tabel basis data.
+   - Record notifikasi dibuat di backend (tabel `notifications`) saat mutasi terkait (penugasan, putusan outcome, sanggahan, atau penambahan bukti) berhasil diproses dan dikomit di PostgreSQL.
+   - Antarmuka pengguna (UI) tidak menggunakan koneksi push persisten (tidak memakai WebSocket maupun SSE). Pembaruan tampilan layar terjadi saat siklus polling 15 detik atau saat pengguna mengeklik ikon lonceng di navbar.
+2. **Karakteristik Duplikasi Notifikasi:**
+   - Jika staf mengeksekusi penugasan ulang kasus yang sama berulang kali, record notifikasi baru tetap disisipkan untuk setiap pemanggilan API. Tidak ada deduplikasi otomatis di level basis data.
+3. **Karakteristik Keamanan:**
+   - Notifikasi terlindungi oleh kontrol akses Bearer token JWT dan query SQL berparameter terpartisi role/user.
 
 ---
 
-## 7. BUKTI PENGUJIAN END-TO-END
+## 7. BUKTI VERIFIKASI RUNTIME PLAYWRIGHT & ISOLASI E2E
 
-Pengujian multi-role runtime dilakukan langsung pada backend aktif menggunakan kasus uji `CASE-0009`:
-- Login sebagai `staff.ahmad` (HTTP 200).
-- Login sebagai `dr.anindya` (HTTP 200).
-- Staf menugaskan kasus `CASE-0009` ke `dr.anindya` via `POST /api/cases/CASE-0009/assign` (HTTP 200). Record notifikasi penugasan tersimpan di database.
-- Dokter memeriksa notifikasi: pemanggilan API `/api/notifications` mengembalikan data penugasan baru dengan status `read: false`, dan tampilan klien memperbarui lencana merah setelah respons diterima.
-- Dokter menandai notifikasi dibaca via `POST /api/notifications/:id/read` (HTTP 200).
-- Dokter menyimpan putusan telaah klinis via `POST /api/cases/CASE-0009/outcome` (HTTP 200). Record notifikasi hasil telaah tersimpan di database.
-- Staf memeriksa notifikasi: notifikasi hasil telaah klinis `[NOT_CONFIRMED]` dari dr. Anindya Kusuma berhasil dimuat oleh klien setelah respons API diterima (HTTP 200).
+Pengujian fungsionalitas notifikasi telah diverifikasi secara runtime:
+1. **Automated Playwright Browser Test (`scratch/playwright_audit.py`):**
+   - Verifikasi dropdown popover notifikasi pada akun Staff JKN (`staff.ahmad`) dan Dokter Penelaah (`dr.anindya`).
+   - Verifikasi on-demand refresh pemanggilan API `/api/notifications` saat ikon lonceng diklik.
+   - Verifikasi klik kartu notifikasi berhasil mengeksekusi deep-linking membuka berkas kasus terkait tanpa error console.
+2. **Uji Alur E2E Terisolasi Database (`scratch/isolated_e2e_test.mjs`):**
+   - Penugasan kasus ke `dr.anindya` berhasil menyisipkan baris notifikasi ke database uji dengan `recipient_username = 'dr.anindya'`.
+   - Penyelesaian telaah klinis dengan outcome `CONFIRMED` berhasil menyisipkan notifikasi ke database dengan `recipient_role = 'staff_jkn'`.
+   - Pemanggilan notifikasi terbukti mengembalikan data terpartisi secara akurat sesuai hak akses token.

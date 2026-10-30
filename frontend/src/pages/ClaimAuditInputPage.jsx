@@ -5,65 +5,80 @@ import { auditCheckClaim } from '../api/client';
 import { 
   ShieldAlert, CheckCircle2, AlertTriangle, UserX, 
   DollarSign, ArrowRight, Activity, Smartphone, FileSearch, 
-  Stethoscope, Calendar, RefreshCw, Send, Check
+  Stethoscope, Calendar, RefreshCw, Send, Check, Clock
 } from 'lucide-react';
 
 const PRESETS = [
   {
     id: 'phantom',
-    title: 'Klaim Fiktif (Phantom Billing)',
-    badge: 'Disparitas Berkas',
+    title: 'Indikasi Phantom Billing (PB-01)',
+    badge: 'Disparitas Kuantitas',
     badgeColor: '#e11d48',
     badgeBg: '#fff1f2',
     icon: ShieldAlert,
-    desc: 'Tagihan tindakan rawat jalan tanpa didukung bukti fisik rekam medis.',
+    desc: 'Tindakan/obat ditagihkan kuantitas 10, tetapi bukti tindakan hanya mendukung 2. Kesenjangan = 8.',
     data: {
       patientId: 'JKN-90214',
       gender: 'F',
       age: 45,
       dateEncounter: '2025-03-10',
       dateDischarge: '2025-03-10',
-      diagnosis: 'HTN CAUSE MALARIA ANEAMIA',
-      amountBilled: 25000, evidenceAvailable: true, claimedQty: 1, supportedQty: 0,
-      providerId: 'PROV-002'
+      diagnosis: 'HTN DENGAN ANEAMIA',
+      amountBilled: 25000000,
+      referenceTariff: '',
+      evidenceAvailable: true,
+      claimedQty: 10,
+      supportedQty: 2,
+      providerId: 'PROV-002',
+      riskMode: 'PHANTOM_BILLING'
     }
   },
   {
-    id: 'wrong_diag',
-    title: 'Inkonsistensi Diagnosa',
-    badge: 'Validitas Klinis',
+    id: 'upcoding',
+    title: 'Indikasi Upcoding (UC-01)',
+    badge: 'Disparitas Tarif INA-CBG',
     badgeColor: '#d97706',
     badgeBg: '#fffbeb',
-    icon: AlertTriangle,
-    desc: 'Field telaah skenario menandai ketidaksesuaian diagnosis dan prosedur.',
+    icon: DollarSign,
+    desc: 'Tagihan Rp32.000.000 melebihi tarif acuan standar INA-CBG Rp22.400.000 (selisih tarif Rp9.600.000).',
     data: {
       patientId: 'JKN-44102',
       gender: 'M',
       age: 35,
       dateEncounter: '2025-02-13',
       dateDischarge: '2025-02-13',
-      diagnosis: 'CYESIS LMP',
-      amountBilled: 6160, diagnosisProcedureMatch: false, evidenceAvailable: true, claimedQty: 1, supportedQty: 1,
-      providerId: 'PROV-001'
+      diagnosis: 'SEVERITY LEVEL DISPARITY',
+      amountBilled: 32000000,
+      referenceTariff: 22400000,
+      evidenceAvailable: true,
+      claimedQty: 1,
+      supportedQty: 1,
+      providerId: 'PROV-001',
+      riskMode: 'UPCODING'
     }
   },
   {
-    id: 'ghost',
-    title: 'Peserta Tanpa Presensi',
-    badge: 'Uji Kehadiran',
-    badgeColor: '#2563eb',
-    badgeBg: '#eff6ff',
-    icon: UserX,
-    desc: 'Status peserta pada skenario membutuhkan verifikasi ulang.',
+    id: 'evidence_gap',
+    title: 'Kesenjangan Bukti Layanan',
+    badge: 'Evidence Review',
+    badgeColor: '#0284c7',
+    badgeBg: '#f0f9ff',
+    icon: FileSearch,
+    desc: 'Bukti fisik parsial. Ditagihkan 5 unit, bukti valid 2 unit (cakupan 40%, kesenjangan 3 unit).',
     data: {
       patientId: 'JKN-11093',
       gender: 'M',
       age: 48,
       dateEncounter: '2025-02-18',
       dateDischarge: '2025-02-18',
-      diagnosis: 'TONSILITIS OBSTRUCTIVE SLEEP APEANA',
-      amountBilled: 0, enrollmentValid: false, evidenceAvailable: false,
-      providerId: 'PROV-003'
+      diagnosis: 'PARTIAL EVIDENCE RECONCILIATION',
+      amountBilled: 15000000,
+      referenceTariff: '',
+      evidenceAvailable: true,
+      claimedQty: 5,
+      supportedQty: 2,
+      providerId: 'PROV-003',
+      riskMode: 'EVIDENCE_REVIEW'
     }
   },
   {
@@ -73,16 +88,45 @@ const PRESETS = [
     badgeColor: '#059669',
     badgeBg: '#ecfdf5',
     icon: CheckCircle2,
-    desc: 'Pelayanan poli refraksi reguler dengan rekam jejak pemeriksaan lengkap.',
+    desc: 'Pelayanan poli terverifikasi lengkap. Kuantitas didukung 100%, tarif sesuai acuan.',
     data: {
       patientId: 'JKN-77301',
       gender: 'F',
       age: 58,
       dateEncounter: '2025-02-18',
       dateDischarge: '2025-02-18',
-      diagnosis: 'REFRACTIVE ERROR',
-      amountBilled: 8400, evidenceAvailable: true, claimedQty: 1, supportedQty: 1,
-      providerId: 'PROV-004'
+      diagnosis: 'REFRACTIVE ERROR REGULER',
+      amountBilled: 8400000,
+      referenceTariff: 8400000,
+      evidenceAvailable: true,
+      claimedQty: 1,
+      supportedQty: 1,
+      providerId: 'PROV-004',
+      riskMode: 'ALL'
+    }
+  },
+  {
+    id: 'unavailable',
+    title: 'Berkas Fisik Belum Tersedia',
+    badge: 'Safety Guardrail',
+    badgeColor: '#64748b',
+    badgeBg: '#f1f5f9',
+    icon: Clock,
+    desc: 'Ketiadaan berkas fisik tidak otomatis divonis fraud; memicu status NO_CONCLUSION untuk konfirmasi berkas.',
+    data: {
+      patientId: 'JKN-88201',
+      gender: 'F',
+      age: 52,
+      dateEncounter: '2025-03-01',
+      dateDischarge: '2025-03-01',
+      diagnosis: 'PENDING CLINICAL DOSSIER',
+      amountBilled: 12000000,
+      referenceTariff: '',
+      evidenceAvailable: false,
+      claimedQty: 1,
+      supportedQty: 0,
+      providerId: 'PROV-005',
+      riskMode: 'PHANTOM_BILLING'
     }
   }
 ];
@@ -94,10 +138,15 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
     age: 45,
     dateEncounter: '2025-03-10',
     dateDischarge: '2025-03-10',
-    diagnosis: 'HTN CAUSE MALARIA ANEAMIA',
-    amountBilled: 25000, evidenceAvailable: true, claimedQty: 1, supportedQty: 0,
-    providerId: 'PROV-001',
-    saveCase: true
+    diagnosis: 'HTN DENGAN ANEAMIA',
+    amountBilled: 25000000,
+    referenceTariff: '',
+    evidenceAvailable: true,
+    claimedQty: 10,
+    supportedQty: 2,
+    providerId: 'PROV-002',
+    saveCase: true,
+    riskMode: 'ALL'
   });
 
   const [loading, setLoading] = useState(false);
@@ -170,13 +219,13 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
             marginBottom: '0.6rem'
           }}>
             <Smartphone size={14} />
-            <span>SIMULASI PELAPORAN & RIWAYAT MOBILE JKN</span>
+            <span>UJI KLAIM MANUAL — 3 DOMAIN FOKUS</span>
           </div>
           <h1 className="med-greeting-title">
-            Simulasi Klaim & <strong>Phantom Checker</strong>
+            Uji Klaim: <strong>Phantom Billing, Upcoding & Rekonsiliasi Bukti</strong>
           </h1>
           <p className="med-greeting-subtitle">
-            Input proksi riwayat pelayanan Mobile JKN untuk mendeteksi secara langsung apakah transaksi klaim terindikasi <strong>Phantom Billing</strong>, inkonsistensi medis, atau wajar.
+            Simulasi dan evaluasi mandiri data klaim JKN untuk mendeteksi indikasi <strong>Phantom Billing (PB-01)</strong>, <strong>Upcoding (UC-01)</strong>, serta analisis kesenjangan bukti layanan.
           </p>
         </div>
 
@@ -186,8 +235,8 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
               <Stethoscope size={20} />
             </div>
             <div>
-              <div className="med-vital-val">Aturan tercatat</div>
-              <div className="med-vital-lbl">Skor dapat ditelusuri</div>
+              <div className="med-vital-val">PB-01 & UC-01</div>
+              <div className="med-vital-lbl">Aturan Baku Terdokumentasi</div>
             </div>
           </div>
           <div className="med-vital-pill">
@@ -195,8 +244,8 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
               <Activity size={20} />
             </div>
             <div>
-              <div className="med-vital-val">Seketika</div>
-              <div className="med-vital-lbl">Telaah Field Terstruktur</div>
+              <div className="med-vital-val">Deterministik</div>
+              <div className="med-vital-lbl">Rekonsiliasi Bukti & Tarif</div>
             </div>
           </div>
         </div>
@@ -274,13 +323,45 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
         {/* Form Card */}
         <div className="med-subpage-card" style={{ marginBottom: 0 }}>
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--mc-text-heading)', marginBottom: '0.35rem' }}>
-            Formulir Riwayat Pelayanan
+            Formulir Uji Klaim Manual
           </h3>
           <p style={{ fontSize: '0.82rem', color: 'var(--mc-text-muted)', marginBottom: '1.75rem' }}>
-            Masukkan data encounter medis untuk memverifikasi ada/tidaknya indikasi Phantom Billing.
+            Masukkan data layanan dan rekonsiliasi bukti untuk mendeteksi indikasi anomali pada 3 domain fokus.
           </p>
 
           <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: '1.25rem', background: '#f8fafc', padding: '0.85rem 1rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+              <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 800, color: 'var(--mc-text-heading)', marginBottom: '0.45rem' }}>
+                Mode Evaluasi Risiko (riskMode):
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '0.5rem' }}>
+                {[
+                  { id: 'ALL', label: 'Semua Fokus (ALL)' },
+                  { id: 'PHANTOM_BILLING', label: 'Phantom Billing' },
+                  { id: 'UPCODING', label: 'Upcoding' },
+                  { id: 'EVIDENCE_REVIEW', label: 'Evidence Review' }
+                ].map(m => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => handleInputChange('riskMode', m.id)}
+                    style={{
+                      padding: '0.45rem 0.65rem',
+                      borderRadius: '8px',
+                      fontSize: '0.74rem',
+                      fontWeight: formData.riskMode === m.id ? 800 : 600,
+                      border: `1.5px solid ${formData.riskMode === m.id ? 'var(--mc-teal-primary)' : '#cbd5e1'}`,
+                      background: formData.riskMode === m.id ? 'var(--mc-teal-light)' : '#ffffff',
+                      color: formData.riskMode === m.id ? 'var(--mc-teal-dark)' : '#475569',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem', marginBottom: '1rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--mc-text-heading)', marginBottom: '0.35rem' }}>
@@ -378,7 +459,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
               </label>
               <input
                 type="text"
-                placeholder="Contoh: HTN, CYESIS LMP, WAX IMPACTION, REFRACTIVE ERROR..."
+                placeholder="Contoh: HTN DENGAN ANEAMIA, RAWAT INAP KELAS 1..."
                 value={formData.diagnosis}
                 onChange={e => handleInputChange('diagnosis', e.target.value)}
                 className="med-pill-input"
@@ -386,24 +467,86 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
               />
             </div>
 
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--mc-text-heading)', marginBottom: '0.35rem' }}>
-                Nominal Tagihan Klaim (Amount Billed)
-              </label>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '16px', top: '10px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--mc-text-muted)' }}>Rp</span>
-                <input
-                  type="number"
-                  value={formData.amountBilled}
-                  onChange={e => handleInputChange('amountBilled', e.target.value)}
-                  className="med-pill-input"
-                  style={{ paddingLeft: '2.6rem', fontWeight: 700 }}
-                  required
-                />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--mc-text-heading)', marginBottom: '0.35rem' }}>
+                  Nominal Tagihan Klaim (Amount Billed)
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '10px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--mc-text-muted)' }}>Rp</span>
+                  <input
+                    type="number"
+                    value={formData.amountBilled}
+                    onChange={e => handleInputChange('amountBilled', e.target.value)}
+                    className="med-pill-input"
+                    style={{ paddingLeft: '2.6rem', fontWeight: 700 }}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--mc-text-heading)', marginBottom: '0.35rem' }}>
+                  Tarif Acuan Standar INA-CBG (Pembanding Upcoding)
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '10px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--mc-text-muted)' }}>Rp</span>
+                  <input
+                    type="number"
+                    placeholder="Kosongkan jika tidak ada"
+                    value={formData.referenceTariff || ''}
+                    onChange={e => handleInputChange('referenceTariff', e.target.value)}
+                    className="med-pill-input"
+                    style={{ paddingLeft: '2.6rem', fontWeight: 700 }}
+                  />
+                </div>
               </div>
             </div>
 
-            <fieldset className="structured-evidence"><legend>Bukti layanan</legend><label><input type="checkbox" checked={formData.evidenceAvailable===true} onChange={e=>handleInputChange('evidenceAvailable',e.target.checked)}/> Bukti tersedia untuk ditelaah</label><label>Kuantitas tagihan<input type="number" min="1" value={formData.claimedQty??1} onChange={e=>handleInputChange('claimedQty',Number(e.target.value))}/></label><label>Kuantitas didukung<input type="number" min="0" value={formData.supportedQty??0} onChange={e=>handleInputChange('supportedQty',Number(e.target.value))}/></label><label>Status kecocokan diagnosis/prosedur<select value={formData.diagnosisProcedureMatch===true?'true':formData.diagnosisProcedureMatch===false?'false':''} onChange={e=>handleInputChange('diagnosisProcedureMatch',e.target.value===''?null:e.target.value==='true')}><option value="">Belum ditelaah</option><option value="true">Sesuai hasil telaah</option><option value="false">Perlu klarifikasi hasil telaah</option></select></label><label>Status verifikasi peserta<select value={formData.enrollmentValid===true?'true':formData.enrollmentValid===false?'false':''} onChange={e=>handleInputChange('enrollmentValid',e.target.value===''?null:e.target.value==='true')}><option value="">Belum diverifikasi</option><option value="true">Sesuai sumber verifikasi</option><option value="false">Perlu verifikasi ulang</option></select></label><p>Data skenario; bukan pembacaan dokumen otomatis.</p></fieldset>
+            <fieldset className="structured-evidence" style={{ marginBottom: '1.25rem', padding: '1rem 1.25rem', borderRadius: '16px', border: '1px solid var(--mc-card-border)' }}>
+              <legend style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--mc-teal-primary)', padding: '0 8px' }}>Rekonsiliasi Bukti Layanan</legend>
+              <div style={{ marginBottom: '0.75rem' }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.84rem', fontWeight: 600 }}>
+                  <input 
+                    type="checkbox" 
+                    checked={formData.evidenceAvailable===true} 
+                    onChange={e=>handleInputChange('evidenceAvailable',e.target.checked)}
+                    style={{ width: '16px', height: '16px', accentColor: 'var(--mc-teal-primary)' }}
+                  /> 
+                  Bukti fisik / berkas rekam medis tersedia untuk ditelaah
+                </label>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--mc-text-heading)', marginBottom: '0.35rem' }}>
+                    Kuantitas Layanan Ditagihkan
+                  </label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    value={formData.claimedQty??1} 
+                    onChange={e=>handleInputChange('claimedQty',Number(e.target.value))}
+                    className="med-pill-input"
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--mc-text-heading)', marginBottom: '0.35rem' }}>
+                    Kuantitas Didukung Bukti Klinis
+                  </label>
+                  <input 
+                    type="number" 
+                    min="0" 
+                    value={formData.supportedQty??0} 
+                    onChange={e=>handleInputChange('supportedQty',Number(e.target.value))}
+                    className="med-pill-input"
+                  />
+                </div>
+              </div>
+              <p style={{ fontSize: '0.74rem', color: 'var(--mc-text-muted)', marginTop: '0.6rem', marginBottom: 0 }}>
+                Jika kuantitas ditagihkan melebihi kuantitas pendukung dan bukti tersedia, sistem memicu Rule PB-01 (Phantom Billing). Jika ketersediaan bukti tidak dicentang, sistem memicu guardrail NO_CONCLUSION.
+              </p>
+            </fieldset>
+
             <div style={{ marginBottom: '1.5rem', background: 'var(--mc-bg)', padding: '0.85rem 1.25rem', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <input
                 type="checkbox"
@@ -456,10 +599,10 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
                 <Stethoscope size={28} />
               </div>
               <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--mc-text-heading)', margin: '0 0 0.4rem 0' }}>
-                Siap Melakukan Deteksi
+                Siap Melakukan Deteksi 3 Fokus
               </h4>
               <p style={{ fontSize: '0.85rem', color: 'var(--mc-text-muted)', maxWidth: '380px', margin: '0 auto', lineHeight: 1.5 }}>
-                Pilih salah satu contoh preset di atas atau ketik langsung data riwayat pelayanan untuk mengecek apakah tergolong Phantom Billing.
+                Pilih salah satu preset skenario di atas (Phantom Billing, Upcoding, Evidence Review, atau Valid) untuk mengevaluasi klaim secara langsung.
               </p>
             </div>
           )}
@@ -518,7 +661,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
                     <AuditResultHeadline analysis={result}/>
                   </div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--mc-text-body)', marginTop: '2px' }}>
-                    Skor aturan: <strong>{result.riskScore}/100</strong> (bukan probabilitas) | Primary Risk Mode: <code>{result.primaryRiskMode}</code>
+                    Skor aturan: <strong>{result.riskScore}/100</strong> (bukan probabilitas) | Mode Risiko: <code>{result.primaryRiskMode}</code>
                   </div>
                 </div>
               </div>
@@ -526,11 +669,11 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
               {/* Metric Highlights */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid var(--mc-card-border)' }}>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--mc-text-muted)', fontWeight: 700 }}>EVIDENCE DISPARITY (GAP)</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--mc-text-muted)', fontWeight: 700 }}>KESENJANGAN BUKTI (GAP)</div>
                   <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--mc-text-heading)', marginTop: '2px' }}>
                     {result.evidenceGap==null?'Belum dapat dihitung':`${result.evidenceGap} item`}
                   </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--mc-text-muted)', marginTop: '2px' }}>Kuantitas tanpa dukungan bukti tercatat</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--mc-text-muted)', marginTop: '2px' }}>Kuantitas tanpa dukungan bukti fisik</div>
                 </div>
 
                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid var(--mc-card-border)' }}>
@@ -538,14 +681,14 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
                   <div style={{ fontSize: '1.25rem', fontWeight: 800, color: result.evidenceCoveragePct >= 80 ? '#10b981' : '#dc2626', marginTop: '2px' }}>
                     {result.evidenceCoveragePct==null?'Belum tersedia':`${result.evidenceCoveragePct}%`}
                   </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--mc-text-muted)', marginTop: '2px' }}>Tingkat ketercukupan bukti</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--mc-text-muted)', marginTop: '2px' }}>Tingkat ketercukupan berkas bukti</div>
                 </div>
               </div>
 
               {/* Reasons */}
               <div style={{ marginBottom: '1.5rem' }}>
                 <h5 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--mc-text-heading)', margin: '0 0 0.5rem 0' }}>
-                  Temuan & Indikasi Anomali:
+                  Temuan Aturan Terpicu:
                 </h5>
                 <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.8rem', color: 'var(--mc-text-body)', lineHeight: 1.6 }}>
                   {(result.reasons || []).map((r, i) => (
@@ -557,7 +700,7 @@ export default function ClaimAuditInputPage({ onSelectCase, onOpenQueue, onBack 
               {/* Review Guidance */}
               <div style={{ background: '#f0fdfa', border: '1px solid #ccfbf1', padding: '1.1rem', borderRadius: '16px', marginBottom: '1.5rem' }}>
                 <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#0f766e', marginBottom: '4px' }}>
-                  PANDUAN REKONSILIASI AUDITOR:
+                  PANDUAN TELAAH REKONSILIASI:
                 </div>
                 <div style={{ fontSize: '0.8rem', color: '#115e59', lineHeight: 1.5 }}>
                   {result.reviewFocus}

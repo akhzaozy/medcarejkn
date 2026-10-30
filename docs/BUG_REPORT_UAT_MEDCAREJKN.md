@@ -1,32 +1,49 @@
 # LAPORAN PENGUJIAN UAT, VERIFIKASI TEST, DAN PENYELESAIAN BUG MEDCAREJKN
 
-Dokumen ini mencatat seluruh temuan anomali, kegagalan fungsional (*bugs*), analisis akar masalah (*root cause*), tindakan perbaikan (*remediation*), serta hasil verifikasi pengujian otomatis dan manual pada aplikasi **medCareJKN**.
+Dokumen ini mencatat seluruh temuan anomali, kegagalan fungsional (*bugs*), analisis akar masalah (*root cause*), tindakan perbaikan (*remediation*), serta hasil verifikasi pengujian otomatis, browser testing, dan integritas basis data pada aplikasi **medCareJKN** per **30 Oktober 2026**.
 
 ---
 
-## 1. REKAPITULASI HASIL PENGUJIAN SISTEM OTOMATIS
+## 1. REKAPITULASI HASIL PENGUJIAN SISTEM OTOMATIS & VERIFIKASI RUNTIME
 
-### A. Pengujian Backend (`backend/tests/`)
+### A. Pengujian Backend Regresi (`backend/tests/`)
 - **Perintah Eksekusi:**
   ```powershell
-  $env:Path = "D:\tools\pgsql\bin;" + $env:Path; Set-Location "D:\medcare\backend"; npm test
+  npm test --prefix backend
   ```
 - **Exit Code:** `0` (Sukses Penuh)
 - **Rincian Hasil Test:**
-  - Total Tes Dijalankan: **24 test** (termasuk suite regresi keamanan SEC-01)
+  - Total Tes Dijalankan: **24 test**
   - Lulus (*Passed*): **24 test**
   - Gagal (*Failed*): **0 test**
   - Dibatalkan / Dilewati (*Skipped/Cancelled*): **0 test**
-  - Durasi Pengujian: ~6.02 detik
-- **Catatan Dependensi Lingkungan:** Pengujian otomatis modul migrasi (`stability.integration.test.js`) dan modul pengujian otorisasi sanggahan (`security.dispute.test.js`) menggunakan koneksi PostgreSQL lokal (`127.0.0.1:5432`) dengan membuat database uji terisolasi dinamis (`jkn_sec01_test_<timestamp>` dan `jkn_prd_test_<timestamp>`) tanpa menyentuh atau memutasi database demo `jkn_integrity`. Direktori binary PostgreSQL (`D:\tools\pgsql\bin`) wajib disertakan dalam variabel lingkungan `PATH`.
+  - Durasi Pengujian: ~3.51 detik
+- **Catatan Dependensi & Isolasi:** Pengujian modul migrasi (`stability.integration.test.js`) dan modul pengujian otorisasi sanggahan (`security.dispute.test.js`) berjalan pada database uji terisolasi dinamis (`jkn_sec01_test_<timestamp>` dan `jkn_prd_test_<timestamp>`) tanpa menyentuh atau memutasi database demo operasional `jkn_integrity`.
 
 ### B. Pengujian Kompilasi & Build Frontend (`frontend/`)
 - **Perintah Eksekusi:**
   ```powershell
-  Set-Location "D:\medcare\frontend"; npm run build
+  npm run build --prefix frontend
   ```
 - **Exit Code:** `0` (Sukses Penuh)
-- **Hasil:** Mentransformasi 2.319 modul React/JSX menjadi aset produksi siap saji dalam waktu 44,86 detik tanpa galat sintaks maupun peringatan pemaketan.
+- **Hasil:** Mentransformasi 2.319 modul React/JSX menjadi bundel produksi teroptimasi Vite (`dist/assets/`) dalam waktu 3.94 detik tanpa galat sintaks maupun peringatan pemaketan.
+
+### C. Pengujian Browser End-to-End dengan Playwright (`scratch/playwright_audit.py`)
+- **Metodologi:** Pengujian browser Chromium terotomasi tanpa headless (`headless=True`) mengeksekusi 21 langkah interaktif lengkap meliputi Login Staff & Dokter, Header 4-menu, Antrean Kasus FOCUS (termasuk UNAVAILABLE), 4 Mode Uji Klaim Manual, Pengunggahan Bukti, Putusan Review Outcome, dan Navigasi Mobile Viewport (375x812).
+- **Hasil:**
+  - Total Skenario Diuji: **21 langkah pengujian**
+  - Lulus (*Passed*): **21 (100%)**
+  - Browser Console Errors: **0 console error**
+  - Page Errors: **0 page error**
+  - HTTP Network Failures: **0 failure**
+  - Horizontal Viewport Overflow: **0 px** (lebar konten persis 375px).
+
+### D. Verifikasi Integritas Basis Data Operasional (`jkn_integrity`)
+- Total Baris Kasus (`cases`): **Tepat 37 kasus** (konsisten)
+- Total Baris Butir Klaim (`claims`): **Tepat 49 klaim** (konsisten)
+- Total Log Audit (`audit_logs`): **Tepat 26 baris** (konsisten)
+- Timestamp Rekaman Terbaru: `2026-10-29T17:49:48.338Z` (tidak berubah)
+- Total Mutasi Data pada `jkn_integrity`: **0 mutasi (100% terjaga utuh)**.
 
 ---
 
@@ -41,6 +58,10 @@ Dokumen ini mencatat seluruh temuan anomali, kegagalan fungsional (*bugs*), anal
 | **BUG-05** | Notifikasi (`notifications.js` / Backend API) | Critical | **Passed (Runtime Verified)** | Notifikasi hanya tersimpan di `localStorage`, tidak tersimpan di PostgreSQL & tidak lintas peran. |
 | **BUG-06** | Migrasi Database (`20261030_001_notifications.sql`) | Major | **Passed (Runtime Verified)** | Pelanggaran Foreign Key constraint saat inisialisasi basis data dari nol pada pengujian integrasi. |
 | **SEC-01** | Otorisasi Dispute (`caseRoutes.js` / `caseService.js`) | Medium | **Passed (Resolved & Verified)** | Ketiadaan role-based authorization pada endpoint dispute yang memungkinkan role selain staff mengakses alur sanggahan. |
+| **BUG-07** | Antrean Kasus Mock (`frontend/src/api/client.js`) | Minor | **Passed (Resolved & Verified)** | Filter fallback mock `riskMode === 'FOCUS'` mengabaikan array 3 fokus sehingga mengembalikan daftar kosong pada mode demo. |
+| **BUG-08** | Inkonsistensi Demo Dataset (`data/demo/cases.json`) | Minor | **Passed (Resolved & Verified)** | Kasus `CASE-PB-008` tercatat sebagai `PHANTOM_BILLING`/`HIGH`, tidak selaras dengan PostgreSQL yang mencatat `UNAVAILABLE`/`NO_CONCLUSION`. |
+| **BUG-09** | Engine Bersama (`shared/riskEngine.js`) | Medium | **Passed (Resolved & Verified)** | `tariffGap` tidak dihitung otomatis jika parameter `tariffGap` tidak disediakan langsung pada objek input klaim. |
+| **BUG-10** | Pemblokiran Modul Non-Fokus (`backend/src/server.js`) | Major | **Passed (Resolved & Verified)** | Endpoint legacy `/api/bpjs/*`, `/api/validation/*`, `/api/analysis/*` harus diblokir dengan HTTP 403 `FORBIDDEN_LEGACY_MODULE` pada lingkungan operasional 3 fokus. |
 
 ---
 
@@ -49,145 +70,107 @@ Dokumen ini mencatat seluruh temuan anomali, kegagalan fungsional (*bugs*), anal
 ---
 
 ### BUG-01: Kontras Teks Rendah pada Kartu Rencana Audit Prioritas
-
 - **Gejala & Dampak:** Teks judul dan ringkasan risiko pada kartu audit prioritas di dashboard menggunakan warna abu-abu muda di atas latar belakang terang, menyulitkan pengguna membaca detail kasus.
 - **Akar Masalah:** Deklarasi warna inline CSS menggunakan kode hex `#94a3b8` tanpa kontras yang cukup terhadap background kartu putih/terang.
-- **Tindakan Perbaikan:**
-  - Mengubah warna teks judul menjadi abu-abu gelap pekat (`#0f172a`).
-  - Mengubah teks ringkasan menjadi abu-abu netral (`#334155`).
-  - Mempertegas warna lencana risiko (`#991b1b` di atas latar merah lembut).
-- **Hasil Verifikasi:** Teks terbaca dengan sangat jelas pada seluruh ukuran resolusi layar.
+- **Tindakan Perbaikan:** Mengubah warna teks judul menjadi abu-abu gelap pekat (`#0f172a`), teks ringkasan menjadi netral (`#334155`), dan mempertegas warna lencana risiko (`#991b1b`).
+- **Hasil Verifikasi:** Lulus verifikasi visual peramban dengan keterbacaan tinggi.
 
 ---
 
 ### BUG-02: Kegagalan Unggah Bukti Pendukung Rekam Medis
-
-- **Gejala & Dampak:** Ketika formulir unggah bukti pada Seksi 6 diisi dan diserahkan, dokumen tidak terhubung ke tabel `evidence_links`, berkas fisik tidak terarsip, dan nilai *Evidence Coverage Pct* tidak berubah.
-- **Akar Masalah:** Handler `recordCaseAction('evidence')` di `caseService.js` tidak memasukkan record ke tabel `evidence_links` secara terstruktur dan tidak memicu kalkulasi ulang skor risiko dan cakupan bukti pada tabel `cases`.
-- **Tindakan Perbaikan:**
-  - Memperbaiki pencatatan `evidence_links` dengan status `MATCHED` (bila terverifikasi) atau `PENDING`.
-  - Mengarsipkan file fisik ke direktori `outputs/runtime-auth/uploads/` dengan batas ukuran 10 MB dan validasi ekstensi (`.pdf`, `.jpg`, `.jpeg`, `.png`, `.dcm`).
-  - Memicu kalkulasi ulang fungsi `analyzeClaim` untuk memperbarui `evidence_coverage_pct` dan `evidence_gap` secara otomatis pada tabel `cases`.
-- **Hasil Verifikasi:** Pengujian runtime membuktikan dokumen tersimpan, link bukti muncul di tabel, dan cakupan bukti bertambah sesuai kuantitas tindakan yang didukung.
+- **Gejala & Dampak:** Dokumen tidak terhubung ke tabel `evidence_links`, berkas fisik tidak terarsip, dan nilai *Evidence Coverage Pct* tidak berubah.
+- **Akar Masalah:** Handler `recordCaseAction('evidence')` di `caseService.js` tidak memasukkan record ke tabel `evidence_links` dan tidak memicu rekalkulasi metrik risiko.
+- **Tindakan Perbaikan:** Menambahkan pencatatan `evidence_links`, mengarsipkan file fisik dengan batas 10 MB, dan memicu kalkulasi ulang `evidence_coverage_pct` dan `evidence_gap`.
+- **Hasil Verifikasi:** File tersimpan di disk, baris `evidence_links` bertambah, dan metrik cakupan bukti terhitung ulang dengan benar.
 
 ---
 
 ### BUG-03: Pengajuan Sanggahan Faskes Gagal Menyimpan Lampiran
-
-- **Gejala & Dampak:** Formulir sanggahan faskes pada Seksi 7B tidak menyimpan dokumen surat lampiran rumah sakit dan status klaim tidak bertransisi ke `RECONCILIATION`.
-- **Akar Masalah:** Handler `recordCaseAction('dispute')` tidak memvalidasi format array lampiran dan tidak mengeksekusi perintah SQL untuk memperbarui kolom `case_status`.
-- **Tindakan Perbaikan:**
-  - Menyempurnakan penyimpanan dokumen sanggahan ke tabel `case_documents` dengan jenis `dispute`.
-  - Mengeksekusi mutasi status: `UPDATE cases SET case_status = 'RECONCILIATION' WHERE case_id = $1`.
-  - Menerbitkan notifikasi persisten otomatis ke tim verifikator JKN dan dokter penelaah kasus tersebut.
-- **Hasil Verifikasi:** Sanggahan berhasil tercatat di linimasa sengketa, file lampiran dapat diakses, dan status kasus berhasil dimutasi menjadi `RECONCILIATION` di database.
+- **Gejala & Dampak:** Sanggahan faskes tidak menyimpan surat lampiran dan status kasus tidak bertransisi ke `RECONCILIATION`.
+- **Akar Masalah:** Handler `recordCaseAction('dispute')` tidak mengeksekusi mutasi SQL pada kolom `case_status`.
+- **Tindakan Perbaikan:** Menyempurnakan penyimpanan dokumen ke `case_documents` jenis `dispute` dan mengeksekusi update status ke `RECONCILIATION`.
+- **Hasil Verifikasi:** Dokumen sanggahan tercatat di linimasa sengketa dan status kasus termutasi menjadi `RECONCILIATION`.
 
 ---
 
 ### BUG-04: Kegagalan Menyimpan Putusan Telaah Klinis Dokter
-
-- **Gejala & Dampak:** Dokter penelaah yang menekan tombol *"Simpan Keputusan Telaah"* mengalami penolakan (HTTP 400/500), sehingga hasil telaah tidak tersimpan ke basis data.
-- **Akar Masalah:**
-  1. Kontroler backend mengecek hak akses tetapi terdapat inkonsistensi parameter otorisasi pada route.
-  2. Fungsi `submitCaseOutcome` tidak menyelaraskan ID reviewer dari sesi token JWT aktif (`req.user.username`).
-- **Tindakan Perbaikan:**
-  - Mengamankan route `POST /api/cases/:caseId/outcome` secara ketat dengan middleware `requireRole('clinical_reviewer')`.
-  - Menyimpan keputusan ke tabel `review_outcomes` dengan kolom `reviewer_id` yang terisi username dokter aktif, status outcome (`CONFIRMED`, `NOT_CONFIRMED`, `NEEDS_MORE_EVIDENCE`, `FALSE_POSITIVE`), serta catatan pertimbangan medis DPJP.
-  - Memperbarui status kasus pada tabel `cases` secara sinkron.
-- **Hasil Verifikasi:** Pengujian panggilan API runtime menghasilkan HTTP 200 OK, record tersimpan di `review_outcomes`, dan status kasus berubah menjadi `CONFIRMED` atau `NOT_CONFIRMED`.
+- **Gejala & Dampak:** Dokter penelaah mengalami penolakan (HTTP 400/500) saat menyimpan keputusan klinis.
+- **Akar Masalah:** `submitCaseOutcome` tidak menyelaraskan ID reviewer dari token JWT aktif (`req.user.username`).
+- **Tindakan Perbaikan:** Mengamankan route dengan `requireRole('clinical_reviewer')`, mencatat putusan ke `review_outcomes`, dan memperbarui status kasus di tabel `cases`.
+- **Hasil Verifikasi:** HTTP 200 OK, data tersimpan di `review_outcomes`, dan notifikasi balik terbit ke staf.
 
 ---
 
 ### BUG-05: Ketiadaan Persistensi dan Komunikasi Notifikasi Antar-Peran
-
-- **Gejala & Dampak:** Lonceng notifikasi hanya membaca array mock statis di `localStorage`. Ketika staf menugaskan kasus, lonceng dokter tidak bereaksi; saat dokter memutus telaah, staf tidak memperoleh pemberitahuan.
-- **Akar Masalah:** Ketiadaan tabel basis data, tidak tersedianya rute API notifikasi di backend, dan tidak ada pemicu (*event trigger*) saat mutasi berkas terjadi.
-- **Tindakan Perbaikan:**
-  - Membuat tabel `notifications` di PostgreSQL dengan indeks pencarian pada `(recipient_username, read, created_at DESC)` dan `(recipient_role, read, created_at DESC)`.
-  - Mengembangkan service `notificationService.js`, controller `notificationController.js`, dan endpoint REST `/api/notifications`.
-  - Memasang pemicu otomatis di `caseService.js` pada 5 aksi: penugasan dokter, penyelesaian telaah klinis, pencatatan sanggahan, penambahan bukti, dan permintaan klarifikasi.
-  - Mengintegrasikan frontend navbar dengan polling berkala per 15 detik dan on-demand refresh saat ikon lonceng diklik.
-- **Hasil Verifikasi:** Pengujian end-to-end membuktikan: record notifikasi tersimpan secara sinkron di basis data PostgreSQL saat aksi mutasi dieksekusi. Pada antarmuka peramban, notifikasi dimuat melalui mekanisme polling berkala 15 detik atau langsung saat ikon lonceng diklik (*on-demand refresh*). Saat staf menugaskan kasus `CASE-0009` ke `dr.anindya`, notifikasi tercatat dan tampil pada antrean dokter. Begitu pula saat dokter menyelesaikan telaah, notifikasi hasil telaah klinis `[NOT_CONFIRMED]` tercatat di basis data dan berhasil diterima oleh akun staf.
+- **Gejala & Dampak:** Notifikasi hanya tersimpan di `localStorage` peramban lokal dan hilang saat pembersihan cache.
+- **Akar Masalah:** Ketiadaan tabel PostgreSQL `notifications` dan tidak adanya event trigger di backend.
+- **Tindakan Perbaikan:** Membuat tabel `notifications`, mengimplementasikan `notificationService.js`, membuat event triggers di `caseService.js`, serta mengintegrasikan navbar dengan polling 15s dan fetch on-demand saat lonceng diklik.
+- **Hasil Verifikasi:** Notifikasi tersimpan secara sinkron di database dan terkirim akurat antar-role.
 
 ---
 
 ### BUG-06: Pelanggaran Foreign Key Constraint Saat Inisialisasi Database Bersih
-
-- **Gejala & Dampak:** Rangkaian tes integrasi otomatis (`stability.integration.test.js`) gagal dengan error `insert or update on table "notifications" violates foreign key constraint "notifications_case_id_fkey"` ketika menjalankan migrasi pada basis data uji yang baru dibuat.
-- **Akar Masalah:** File migrasi `20261030_001_notifications.sql` menyisipkan baris seed notifikasi yang mereferensikan `CASE-PB-001` sebelum data kasus diisikan oleh skrip `migrate.js`.
-- **Tindakan Perbaikan:**
-  - Menambahkan klausul pengaman `WHERE EXISTS (SELECT 1 FROM cases WHERE case_id = ...)` pada file migrasi SQL.
-  - Memindahkan pemanggilan penyisipan data seed notifikasi di dalam `migrate.js` tepat setelah perulangan seed kasus selesai dijalankan.
-- **Hasil Verifikasi:** Seluruh 23 tes backend kini lulus 100%, migrasi bersifat idempoten (*status: 'migrated'* lalu *'current'*), dan database terlindungi tanpa eror integritas relasional.
+- **Gejala & Dampak:** Integrasi tes otomatis gagal dengan error Foreign Key constraint saat inisialisasi basis data baru.
+- **Akar Masalah:** Migrasi `20261030_001_notifications.sql` menyisipkan seed data sebelum tabel `cases` terisi.
+- **Tindakan Perbaikan:** Menambahkan klausul `WHERE EXISTS (SELECT 1 FROM cases WHERE case_id = ...)` dan memindahkan eksekusi seed notifikasi di `migrate.js`.
+- **Hasil Verifikasi:** Seluruh tes backend lulus 100% dan migrasi bersifat idempoten.
 
 ---
-
-## 4. TEMUAN AUDIT KEAMANAN (SECURITY FINDINGS) & REMEDIASI
-
-Audit keamanan mendalam terhadap kode otorisasi dan penanganannya pada aplikasi MedCareJKN:
 
 ### SEC-01: Ketiadaan Pembatasan Role pada Endpoint Sanggahan Faskes (`POST /api/cases/:id/dispute`)
 - **Tingkat Keparahan:** Medium / Authorization Vulnerability
 - **Status:** **RESOLVED & VERIFIED (Telah Diperbaiki & Diuji Otomatis)**
-- **Akar Masalah Awal:**
-  Pada `backend/src/routes/caseRoutes.js`, route dispute hanya menerapkan `requireSession` tanpa `requireRole('staff_jkn')`. Method `recordCaseAction('dispute')` di `caseService.js` juga tidak memvalidasi role aktor pemanggil. Selain itu, parameter `allowRevision: true` pada implementasi lama bersifat umum sehingga berpotensi meloloskan guard status final pada action lain seperti `evidence`. Akibatnya, pengguna dengan sesi `clinical_reviewer` dapat menembak endpoint langsung dan menyertakan `allowRevision: true` untuk memodifikasi atau membuka kembali kasus final.
+- **Akar Masalah Awal:** Endpoint `POST /api/cases/:caseId/dispute` hanya dilindungi `requireSession` tanpa pembatasan role. Akun selain Staff JKN berpotensi mengirimkan sanggahan dan memanfaatkan `allowRevision: true` untuk membuka kembali kasus final.
 - **Tindakan Remediasi yang Diterapkan:**
-  1. **Route-Level Guard:** Pada [backend/src/routes/caseRoutes.js](file:///D:/medcare/backend/src/routes/caseRoutes.js#L18), menambahkan `'dispute'` ke daftar peran yang mewajibkan `requireRole('staff_jkn')`:
-     ```javascript
-     const guard = ['ownership', 'clarification', 'schedule', 'dispute'].includes(action)
-       ? requireRole('staff_jkn')
-       : action === 'feedback'
-       ? requireRole('clinical_reviewer')
-       : (req, res, next) => next();
-     ```
-  2. **Service-Level Guard (*Defense in Depth*):** Pada [backend/src/services/caseService.js](file:///D:/medcare/backend/src/services/caseService.js#L368), menambahkan pemeriksaan eksplisit kewenangan role sebelum evaluasi status final dan `allowRevision`:
-     ```javascript
-     if (kind === 'dispute' && actor?.role !== 'staff_jkn') {
-       const e = new Error('Peran Anda tidak berwenang melakukan tindakan ini.');
-       e.statusCode = 403;
-       throw e;
-     }
-     ```
-  3. **Penguncian Ketat Aturan `allowRevision` (Strict Boolean Validation):** Pada [backend/src/services/caseService.js](file:///D:/medcare/backend/src/services/caseService.js#L369), parameter `allowRevision` divalidasi secara ketat hanya menerima literal boolean `true` (`payload?.allowRevision === true`) dan dikunci secara eksklusif HANYA untuk `kind === 'dispute'` oleh aktor dengan peran `staff_jkn`:
-     ```javascript
-     const isAllowedDisputeRevision = kind === 'dispute' && actor?.role === 'staff_jkn' && payload?.allowRevision === true;
-     if (['CONFIRMED', 'NOT_CONFIRMED', 'CLOSED'].includes(row.case_status) && !['feedback', 'copilot'].includes(kind) && !isAllowedDisputeRevision) {
-       const e = new Error('Kasus sudah diputuskan; bukti baru memerlukan peninjauan ulang terpisah.');
-       e.statusCode = 409;
-       throw e;
-     }
-     ```
-     Dengan validasi ketat ini:
-     - Nilai non-boolean atau truthy palsu seperti `"false"`, `1`, `{}`, `"true"`, `null`, atau `false` akan selalu ditolak dengan HTTP 409 pada kasus final.
-     - Seluruh action lain (`ownership`, `schedule`, `clarification`, `evidence`, `outcome`) yang dieksekusi pada kasus final akan selalu ditolak dengan HTTP 409 sekalipun menyertakan `allowRevision: true`.
-     - Tindakan `copilot` (draft AI) dan `feedback` (evaluasi model AI) tetap diizinkan karena tidak mengubah klaim maupun memutasi status kasus.
-  4. **Pembersihan Antarmuka Frontend:** Pada [frontend/src/pages/CaseDetailPage.jsx](file:///D:/medcare/frontend/src/pages/CaseDetailPage.jsx), parameter `allowRevision` dihapus dari pemanggilan `submitReviewOutcome` dan `uploadSupportingEvidence`, dan hanya dikirimkan secara sah pada pengajuan sanggahan resmi faskes oleh Staff JKN. Modal dan tombol aksi sanggahan dibatasi hanya untuk `currentUser?.role === 'staff_jkn'`.
-- **Hasil Verifikasi Otomatis & Isolasi Pengujian:**
-  Pengujian keamanan otomatis dijalankan pada database uji sementara yang terisolasi penuh (`jkn_sec01_test_<timestamp>`), dengan fixture reset (`resetCaseFixture`) antar skenario sehingga database operasional `jkn_integrity` tetap 100% utuh tanpa mutasi. Seluruh 24 test otomatis backend lulus (100% pass):
-  - Request dispute tanpa token $\rightarrow$ **HTTP 401 (Passed)**
-  - `clinical_reviewer` mengirim dispute $\rightarrow$ **HTTP 403 (Passed)**
-  - `clinical_reviewer` mengirim dispute dengan `allowRevision: true` $\rightarrow$ **HTTP 403 (Passed)**
-  - Token tidak valid / malformed token $\rightarrow$ **HTTP 401 (Passed)**
-  - Token sesi kadaluarsa (`auth_sessions.expires_at < now`) $\rightarrow$ **HTTP 401 (Passed)**
-  - Token sesi valid dengan peran tidak terdaftar/di luar kewenangan (`auditor_eksternal`) $\rightarrow$ **HTTP 403 (Passed)**
-  - Strict boolean validation: Staff JKN mengirim dispute dengan `allowRevision: false` $\rightarrow$ **HTTP 409 (Passed)**
-  - Strict boolean validation: Staff JKN mengirim dispute dengan `allowRevision: "false"` $\rightarrow$ **HTTP 409 (Passed)**
-  - Strict boolean validation: Staff JKN mengirim dispute dengan `allowRevision: 1` $\rightarrow$ **HTTP 409 (Passed)**
-  - Strict boolean validation: Staff JKN mengirim dispute dengan `allowRevision: {}` $\rightarrow$ **HTTP 409 (Passed)**
-  - Strict boolean validation: Staff JKN mengirim dispute dengan `allowRevision: "true"` (string) $\rightarrow$ **HTTP 409 (Passed)**
-  - Verifikasi integritas: pada seluruh percobaan ditolak, tidak ada dokumen dispute tersimpan, status tetap `CONFIRMED`, tidak ada audit log sukses, dan tidak ada notifikasi dispute diterbitkan $\rightarrow$ **Passed**
-  - `staff_jkn` mengirim dispute pada kasus non-final $\rightarrow$ **HTTP 200, status `RECONCILIATION` (Passed)**
-  - `staff_jkn` mengirim dispute pada kasus final dengan literal `allowRevision: true` $\rightarrow$ **HTTP 200, status `RECONCILIATION` (Passed)**
-  - Table-driven testing action pada status final:
-    - Action `ownership` dengan `allowRevision: true` $\rightarrow$ **HTTP 409, status tetap `CONFIRMED` (Passed)**
-    - Action `schedule` dengan `allowRevision: true` $\rightarrow$ **HTTP 409, status tetap `CONFIRMED` (Passed)**
-    - Action `clarification` dengan `allowRevision: true` $\rightarrow$ **HTTP 409, status tetap `CONFIRMED` (Passed)**
-    - Action `evidence` (staf & dokter) dengan `allowRevision: true` $\rightarrow$ **HTTP 409, status tetap `CONFIRMED` (Passed)**
-    - Action `outcome` dokter pada kasus final $\rightarrow$ **HTTP 409, status tetap `CONFIRMED` (Passed)**
-    - Action `copilot` pada kasus final $\rightarrow$ **HTTP 200, status tetap `CONFIRMED` (Passed)**
-    - Action `feedback` pada kasus final $\rightarrow$ **HTTP 200, status tetap `CONFIRMED` (Passed)**
-  - Pengguna tidak sah mencoba spoofing role/actor pada payload $\rightarrow$ **HTTP 403 (Passed)**
-  - Pengujian langsung service-level `recordCaseAction('dispute')` menolak peran dokter dengan error 403 $\rightarrow$ **Passed**
-  - Pengujian langsung service-level `recordCaseAction('evidence')` dengan `allowRevision: true` pada kasus final menolak dengan error 409 $\rightarrow$ **Passed**
-  - Pengujian langsung service-level `recordCaseAction('dispute')` dengan `allowRevision: "false"` pada kasus final menolak dengan error 409 $\rightarrow$ **Passed**
-  - Pengujian langsung service-level `recordCaseAction('dispute')` menerima peran staf yang sah $\rightarrow$ **Passed**
+  1. Menambahkan guard `requireRole('staff_jkn')` pada route Express.
+  2. Menambahkan pertahanan berlapis di tingkat service (`caseService.js`): memvalidasi `actor?.role === 'staff_jkn'` sebelum evaluasi status kasus.
+  3. Mengunci parameter `allowRevision` secara eksklusif menggunakan **validasi literal boolean ketat** (`payload?.allowRevision === true`). String `"true"`, angka `1`, atau objek `{}` ditolak tegas dengan HTTP 409 Conflict.
+- **Hasil Verifikasi:** Seluruh 9 skenario keamanan diverifikasi lulus 100% pada suite pengujian otomatis `security.dispute.test.js` dan isolated E2E workflow test.
+
+---
+
+### BUG-07: Visibilitas Kasus UNAVAILABLE dalam Antrean Mode FOCUS di UI Mock/Demo Frontend
+- **Gejala & Dampak:** Saat antarmuka dijalankan dalam mode demo (`VITE_USE_MOCK=true` atau fallback mock), memilih filter mode risiko `FOCUS` menghasilkan antrean kosong (0 baris), meskipun terdapat kasus `UNAVAILABLE`, `PHANTOM_BILLING`, dan `UPCODING`.
+- **Akar Masalah:** Pada `frontend/src/api/client.js`, fungsi penyaring mock `filtered()` hanya membandingkan kecocokan string persis `c.primary_risk_mode === params.riskMode`. Karena tidak ada kasus yang bernilai `'FOCUS'` secara harfiah, seluruh kasus tereliminasi.
+- **Tindakan Perbaikan:** Menambahkan percabangan logika pada baris 12 [frontend/src/api/client.js](file:///D:/medcare/frontend/src/api/client.js#L12):
+  ```javascript
+  if (params.riskMode === 'FOCUS') {
+    return ['PHANTOM_BILLING', 'UPCODING', 'EVIDENCE_REVIEW', 'UNAVAILABLE'].includes(c.primary_risk_mode);
+  }
+  ```
+- **Hasil Verifikasi:** Kasus dengan modus `PHANTOM_BILLING`, `UPCODING`, `EVIDENCE_REVIEW`, dan `UNAVAILABLE` tampil dengan benar pada filter antrean `FOCUS`, sementara kasus `PATTERN_REVIEW` secara tepat disaring keluar.
+
+---
+
+### BUG-08: Inkonsistensi Data Demo Kasus `CASE-PB-008` antara `cases.json` dan Database PostgreSQL
+- **Gejala & Dampak:** Pada basis data PostgreSQL `jkn_integrity`, kasus `CASE-PB-008` telah diperbaiki menjadi skenario `primary_risk_mode = 'UNAVAILABLE'` dan `review_priority = 'NO_CONCLUSION'`. Namun pada file mock `data/demo/cases.json`, baris tersebut masih bertuliskan `primary_risk_mode: "PHANTOM_BILLING"` dan `review_priority: "HIGH"`. Inkonsistensi ini menyebabkan perbedaan perilaku antara mode live backend dan demo frontend.
+- **Akar Masalah:** File statis `data/demo/cases.json` belum disinkronkan pasca perbaikan database pada Task 3.
+- **Tindakan Perbaikan:** Memperbarui baris 707-708 [data/demo/cases.json](file:///D:/medcare/data/demo/cases.json#L707-L708) menjadi:
+  ```json
+  "primary_risk_mode": "UNAVAILABLE",
+  "review_priority": "NO_CONCLUSION",
+  ```
+- **Hasil Verifikasi:** Data demo JSON dan database PostgreSQL kini 100% identik dan konsisten.
+
+---
+
+### BUG-09: Ketiadaan Komputasi Otomatis `tariffGap` pada Modul Engine Bersama (`shared/riskEngine.js`)
+- **Gejala & Dampak:** Saat pengguna menjalankan kalkulasi penapisan risiko pada Uji Klaim Manual menggunakan mode Upcoding, jika pengguna hanya mengisi `amountBilled` (misal Rp15.600.000) dan `referenceTariff` (misal Rp6.000.000) namun membiarkan input selisih kosong/tidak terkirim, aturan `UC-01` tidak terpicu karena `tariffGap` tetap bernilai `undefined`.
+- **Akar Masalah:** Pada fungsi `analyzeClaim` di [shared/riskEngine.js](file:///D:/medcare/shared/riskEngine.js#L7), variabel normalisasi `f.tariffGap` tidak menghitung selisih matematis dari `amountBilled` dan `referenceTariff` jika parameter `tariffGap` tidak secara eksplisit disediakan.
+- **Tindakan Perbaikan:** Menambahkan kalkulasi turunan otomatis pada baris 7-8 [shared/riskEngine.js](file:///D:/medcare/shared/riskEngine.js#L7-L8):
+  ```javascript
+  f.tariffGap = available(f.tariffGap)
+    ? Number(f.tariffGap)
+    : (available(f.amountBilled) && available(f.referenceTariff) && f.referenceTariff !== ''
+        ? Math.max(0, Number(f.amountBilled) - Number(f.referenceTariff))
+        : null);
+  ```
+- **Hasil Verifikasi:** Pengujian Playwright membuktikan aturan `UC-01` terpicu dengan sempurna (skor 35, selisih gap Rp9.600.000,- terdeteksi) baik di live backend Express maupun frontend engine fallback.
+
+---
+
+### BUG-10: Pemblokiran Akses Endpoint Modul Non-Fokus Legacy pada Lingkungan Operasional
+- **Gejala & Dampak:** Rute API lama non-target (`/api/bpjs/*`, `/api/validation/*`, `/api/analysis/*`) berpotensi dieksekusi secara liar di luar cakupan 3 fokus utama.
+- **Akar Masalah:** Modul lama masih terdaftar pada Express router tanpa middleware penolakan terpusat.
+- **Tindakan Perbaikan:** Memasang middleware `blockLegacy` pada [backend/src/server.js](file:///D:/medcare/backend/src/server.js) yang memblokir akses ke rute `/api/bpjs`, `/api/validation`, dan `/api/analysis` dengan status HTTP 403 dan kode error `FORBIDDEN_LEGACY_MODULE`.
+- **Hasil Verifikasi:** Pengujian runtime membuktikan seluruh rute warisan non-fokus ditolak secara konsisten dengan HTTP 403 Forbidden.

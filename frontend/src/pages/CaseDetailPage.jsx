@@ -397,7 +397,7 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
   const { case: c, claimItems, evidenceLinks, riskSignals, reviewOutcomes, auditLogs } = details;
 
   const isPhantom = c.primary_risk_mode === 'PHANTOM_BILLING';
-  const isUnavailable = c.review_priority === 'NO_CONCLUSION' || c.primary_risk_mode === 'UNAVAILABLE_EVIDENCE';
+  const isUnavailable = c.review_priority === 'NO_CONCLUSION' || c.primary_risk_mode === 'UNAVAILABLE_EVIDENCE' || c.primary_risk_mode === 'UNAVAILABLE';
   const isPattern = c.primary_risk_mode === 'PATTERN_REVIEW';
 
   const riskLabel = formatRiskMode(c.primary_risk_mode);
@@ -677,6 +677,29 @@ export default function CaseDetailPage({ caseId, onBack, currentUser }) {
             {riskLabel}
           </span>
         </div>
+
+        {isUnavailable && (
+          <div style={{
+            background: '#f8fafc',
+            border: '1.5px solid #cbd5e1',
+            borderRadius: '12px',
+            padding: '0.85rem 1.15rem',
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+          }}>
+            <Clock size={20} color="#64748b" style={{ flexShrink: 0 }} />
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '0.84rem', color: '#334155' }}>
+                Kondisi Bukti Belum Tersedia (UNAVAILABLE) — Bukan Vonis Fraud
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px', lineHeight: 1.45 }}>
+                Kasus berstatus <strong>Belum Ada Kesimpulan (NO_CONCLUSION)</strong> karena berkas fisik rekam medis dari faskes belum tercatat di sistem. Ketiadaan bukti awal bukan merupakan vonis kecurangan (fraud), melainkan kesempatan melengkapi dokumen pendukung.
+              </div>
+            </div>
+          </div>
+        )}
 
         <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.65, margin: '0 0 1.25rem 0' }}>
           Klaim berkas <strong>{c.case_id}</strong> diajukan oleh <strong>{c.provider_name}</strong> atas pelayanan pasien <strong>{c.patient_id || 'Belum tersedia'}</strong> ({genderLabel}, {ageLabel}) dengan nilai tagihan <strong>{totalClaim}</strong>.

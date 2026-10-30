@@ -37,9 +37,21 @@ export async function getAllCases({ status, priority, riskMode, reasonCode, sear
       baseWhere += ` AND c.review_priority = $${params.length}`;
     }
 
-    if (riskMode && riskMode !== 'ALL') {
+    if (riskMode === 'PHANTOM_BILLING') {
+      params.push('PHANTOM_BILLING');
+      baseWhere += ` AND c.primary_risk_mode = $${params.length}`;
+    } else if (riskMode === 'UPCODING') {
+      params.push('UPCODING');
+      baseWhere += ` AND c.primary_risk_mode = $${params.length}`;
+    } else if (riskMode === 'EVIDENCE_REVIEW') {
+      baseWhere += ` AND (c.primary_risk_mode = 'EVIDENCE_REVIEW' OR (c.evidence_gap IS NOT NULL AND c.evidence_gap > 0))`;
+    } else if (riskMode === 'FOCUS' || riskMode === 'ALL_FOCUS') {
+      baseWhere += ` AND (c.primary_risk_mode IN ('PHANTOM_BILLING', 'UPCODING', 'EVIDENCE_REVIEW', 'UNAVAILABLE') OR (c.evidence_gap IS NOT NULL AND c.evidence_gap > 0)) AND (c.case_type IS NULL OR c.case_type != 'pattern')`;
+    } else if (riskMode && riskMode !== 'ALL' && riskMode !== 'ALL_HISTORICAL') {
       params.push(riskMode);
       baseWhere += ` AND c.primary_risk_mode = $${params.length}`;
+    } else if (riskMode !== 'ALL_HISTORICAL') {
+      baseWhere += ` AND (c.primary_risk_mode IS NULL OR c.primary_risk_mode != 'PATTERN_REVIEW') AND (c.case_type IS NULL OR c.case_type != 'pattern')`;
     }
 
     if(reasonCode&&reasonCode!=='ALL'){

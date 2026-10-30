@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCases } from '../api/client';
 import rules from '../../../config/risk_rules.json';
-const ReasonChips=({analysis,onFilter})=><span className="reason-chips">{analysis?.signals?.filter(s=>rules.rules.some(r=>r.id===s.id)).slice(0,3).map(s=><button type="button" key={s.id} title={s.label} onClick={()=>onFilter(s.id)}>{s.id}</button>)}</span>;
+const ReasonChips=({analysis,onFilter})=><span className="reason-chips">{analysis?.signals?.filter(s=>['PB-01','UC-01'].includes(s.id)).slice(0,3).map(s=><button type="button" key={s.id} title={s.label} onClick={()=>onFilter(s.id)}>{s.id}</button>)}</span>;
 import { PriorityBadge } from '../components/common/Badge';
 import { 
   formatRiskMode, formatCaseStatus, formatEncounterType, 
@@ -31,7 +31,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
     search: '',
     priority: 'ALL',
     status: 'ALL',
-    riskMode: 'ALL',
+    riskMode: 'FOCUS',
     reasonCode: 'ALL',
     assignedTo: isClinician ? currentUser.username : 'ALL'
   });
@@ -336,8 +336,8 @@ export default function CasesPage({ onSelectCase, currentUser }) {
             </div>
           </div>
 
-          <div><label htmlFor="queue-reason">Kode alasan</label><select id="queue-reason" className="med-pill-input" value={filters.reasonCode} onChange={e=>handleFilterChange('reasonCode',e.target.value)}><option value="ALL">Semua kode alasan</option>{rules.rules.map(r=><option key={r.id} value={r.id}>{r.id} · {r.label}</option>)}</select></div>
-          <div><label htmlFor="queue-risk-mode">Filter Mode Risiko</label><select id="queue-risk-mode" className="med-pill-input" value={filters.riskMode} onChange={e=>handleFilterChange('riskMode',e.target.value)}>{['ALL','PHANTOM_BILLING','UPCODING','UNNECESSARY_PROCEDURES','DUPLICATE_CLAIM','WRONG_DIAGNOSIS','GHOST_ENROLLEE','UNAVAILABLE'].map(mode=><option key={mode} value={mode}>{mode==='ALL'?'Semua mode risiko':formatRiskMode(mode)}</option>)}</select></div>
+          <div><label htmlFor="queue-reason" style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--mc-text-heading)', marginBottom: '0.45rem' }}>Kode Alasan Target</label><select id="queue-reason" className="med-pill-input" value={filters.reasonCode} onChange={e=>handleFilterChange('reasonCode',e.target.value)}><option value="ALL">Semua Kode Alasan</option><option value="PB-01">PB-01 · Item ditagihkan melebihi bukti layanan</option><option value="UC-01">UC-01 · Tarif tagihan melampaui tarif pembanding</option></select></div>
+          <div><label htmlFor="queue-risk-mode" style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--mc-text-heading)', marginBottom: '0.45rem' }}>Filter Fokus Pemeriksaan</label><select id="queue-risk-mode" className="med-pill-input" value={filters.riskMode} onChange={e=>handleFilterChange('riskMode',e.target.value)}><option value="FOCUS">Semua Fokus Utama</option><option value="PHANTOM_BILLING">Indikasi Phantom Billing</option><option value="UPCODING">Indikasi Upcoding</option><option value="EVIDENCE_REVIEW">Kesenjangan Bukti Layanan</option></select></div>
           {/* Priority */}
           <div>
             <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--mc-text-heading)', marginBottom: '0.45rem' }}>
@@ -542,6 +542,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                     const isPhantom = c.primary_risk_mode === 'PHANTOM_BILLING';
                     const isGhost = c.primary_risk_mode === 'GHOST_ENROLLEE';
                     const isWrong = c.primary_risk_mode === 'WRONG_DIAGNOSIS';
+                    const isUnavailable = c.primary_risk_mode === 'UNAVAILABLE' || c.review_priority === 'NO_CONCLUSION';
 
                     return (
                       <div
@@ -651,7 +652,7 @@ export default function CasesPage({ onSelectCase, currentUser }) {
                               </span>
                             </div>
                             <p style={{ fontSize: '0.78rem', color: '#334155', lineHeight: 1.45, margin: 0 }}>
-                              {c.review_focus || c.affected_items || 'Pemeriksaan rekonsiliasi data klaim terhadap berkas rekam medis faskes.'}
+                              {isUnavailable ? 'Bukti fisik belum tersedia untuk verifikasi (Bukan vonis fraud). Menunggu kelengkapan dokumen dari faskes.' : (c.review_focus || c.affected_items || 'Pemeriksaan rekonsiliasi data klaim terhadap berkas rekam medis faskes.')}
                             </p>
                           </div>
 

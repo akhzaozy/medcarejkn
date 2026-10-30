@@ -4,8 +4,8 @@ import pool from '../config/db.js';
 export async function getDashboardMetrics({assignedTo, role}={}) {
   const personal=role==='clinical_reviewer';
   const params=personal?[assignedTo]:[];
-  const where=personal?'WHERE c.assigned_to=$1':'';
-  const scoped=`SELECT c.*,cl.total_amount,p.provider_name FROM cases c LEFT JOIN claims cl ON cl.claim_id=c.claim_id LEFT JOIN providers p ON p.provider_id=cl.provider_id ${where}`;
+  const personalCondition=personal?'AND c.assigned_to=$1':'';
+  const scoped=`SELECT c.*,cl.total_amount,p.provider_name FROM cases c LEFT JOIN claims cl ON cl.claim_id=c.claim_id LEFT JOIN providers p ON p.provider_id=cl.provider_id WHERE (c.case_type IS NULL OR c.case_type != 'pattern') AND (c.primary_risk_mode IS NULL OR c.primary_risk_mode != 'PATTERN_REVIEW') ${personalCondition}`;
   const client=await pool.connect();
   try {
     const aggregate=await client.query(`WITH scoped AS (${scoped}) SELECT COUNT(*)::int AS count,COUNT(DISTINCT claim_id)::int AS claims,COUNT(*) FILTER(WHERE review_priority='HIGH' AND case_status NOT IN('CONFIRMED','NOT_CONFIRMED','FALSE_POSITIVE','CLOSED'))::int AS high,COUNT(*) FILTER(WHERE case_status IN('CONFIRMED','NOT_CONFIRMED','FALSE_POSITIVE','CLOSED'))::int AS completed,COUNT(*) FILTER(WHERE case_status='IN_REVIEW')::int AS reviewing,COUNT(*) FILTER(WHERE assigned_to IS NULL)::int AS unassigned,COUNT(*) FILTER(WHERE evidence_coverage_pct IS NOT NULL AND case_type='claim')::int AS measured,AVG(evidence_coverage_pct) FILTER(WHERE case_type='claim') AS coverage,SUM(total_amount) AS billed FROM scoped`,params);
