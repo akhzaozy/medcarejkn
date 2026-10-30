@@ -5,7 +5,7 @@ import {
   FileText, CheckCheck, Clock, ChevronRight, Check
 } from 'lucide-react';
 import {initials} from '../../../../shared/userIdentity.js';
-import { isDemoMode, getNotifications, markNotificationsAsRead } from '../../api/client';
+import { isDemoMode, getNotifications, fetchNotifications, markNotificationsAsRead, markNotificationAsRead } from '../../api/client';
 
 export default function MedcareHeader({ 
   activeSection = 'landing', 
@@ -24,6 +24,16 @@ export default function MedcareHeader({
   const displayRole = isClinician ? 'Reviewer Klinis' : (currentUser?.roleLabel || 'Staff JKN');
 
   const [notifications, setNotifications] = useState(() => getNotifications());
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchNotifications().then(setNotifications).catch(() => {});
+      const interval = setInterval(() => {
+        fetchNotifications().then(setNotifications).catch(() => {});
+      }, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [currentUser]);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const notifRef = useRef(null);
 
@@ -50,12 +60,15 @@ export default function MedcareHeader({
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const handleMarkAllRead = () => {
-    const updated = markNotificationsAsRead();
+  const handleMarkAllRead = async () => {
+    const updated = await markNotificationsAsRead();
     setNotifications(updated);
   };
 
-  const handleNotificationClick = (n) => {
+  const handleNotificationClick = async (n) => {
+    if (!n.read) {
+      await markNotificationAsRead(n.id);
+    }
     setShowNotifDropdown(false);
     if (n.caseId && onSelectCase) {
       onSelectCase(n.caseId);
@@ -149,7 +162,13 @@ export default function MedcareHeader({
             <button
               type="button"
               id="btn-navbar-notifications"
-              onClick={() => setShowNotifDropdown(prev => !prev)}
+              onClick={() => {
+                setShowNotifDropdown(prev => {
+                  const next = !prev;
+                  if (next) fetchNotifications().then(setNotifications).catch(() => {});
+                  return next;
+                });
+              }}
               title="Notifikasi sanggahan & progres audit"
               style={{
                 background: showNotifDropdown ? '#e6f6f5' : '#ffffff',

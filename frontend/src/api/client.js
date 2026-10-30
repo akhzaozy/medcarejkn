@@ -1,7 +1,7 @@
 import {MOCK_CASES,MOCK_USERS,getMockCaseDetails} from './mockData';
 import {auditResponse,normalizeAuditResult,catalog} from '../../../shared/riskEngine.js';
 import {publicUser} from '../../../shared/userIdentity.js';
-export {getNotifications,addNotification,markNotificationsAsRead} from './notifications';
+export {getNotifications,addNotification,markNotificationsAsRead,fetchNotifications,markNotificationAsRead} from './notifications';
 const API_BASE=import.meta.env.VITE_API_BASE_URL||'/api';
 export function isDemoMode(){try{return localStorage.getItem('jkn_demo_mode')==='true';}catch{return false;}}
 export function setDemoMode(value){if(value)localStorage.setItem('jkn_demo_mode','true');else localStorage.removeItem('jkn_demo_mode');}
@@ -45,6 +45,8 @@ export const takeCaseOwnership=(id)=>mutate(id,'ownership');
 export const sendClarificationRequestToClinician=(id,payload)=>mutate(id,'clarification',payload);
 export const submitDisputeRebuttal=(id,payload)=>mutate(id,'dispute',payload);
 export const uploadSupportingEvidence=(id,payload)=>mutate(id,'evidence',payload);
+export async function uploadCaseFile(caseId,file,kind='evidence'){if(isDemoMode()){const sz=file.size<1048576?`${(file.size/1024).toFixed(1)} KB`:`${(file.size/1048576).toFixed(2)} MB`;return {fileId:`local-file-${Date.now()}`,name:file.name,fileName:file.name,mimeType:file.type||'application/pdf',fileSize:file.size,size:sz,downloadUrl:null,persisted:false};}let response;try{response=await fetch(`${API_BASE}/cases/${encodeURIComponent(caseId)}/files`,{method:'POST',headers:{'Content-Type':file.type||'application/octet-stream','X-File-Name':encodeURIComponent(file.name),'X-File-Kind':kind,...(localStorage.getItem('jkn_token')?{Authorization:`Bearer ${localStorage.getItem('jkn_token')}`}:{})},body:file});}catch{throw new Error('Layanan tidak dapat dihubungi saat mengunggah file.');}const data=await response.json().catch(()=>({}));if(!response.ok){if(response.status===401)window.dispatchEvent(new Event('jkn_session_expired'));const error=new Error(data.message||'Gagal mengunggah file ke server.');error.status=response.status;throw error;}return data.data;}
+export async function openCaseFile(caseId,fileMeta){if(!fileMeta?.fileId||String(fileMeta.fileId).startsWith('local-file-'))return false;const response=await fetch(`${API_BASE}/cases/${encodeURIComponent(caseId)}/files/${encodeURIComponent(fileMeta.fileId)}`,{headers:localStorage.getItem('jkn_token')?{Authorization:`Bearer ${localStorage.getItem('jkn_token')}`}:{}});if(!response.ok){const d=await response.json().catch(()=>({}));throw new Error(d.message||'Gagal membuka dokumen terlampir.');}const blob=await response.blob();const url=URL.createObjectURL(blob);const mime=(fileMeta.mimeType||blob.type||'').toLowerCase();if(mime.includes('pdf')||mime.startsWith('image/')){window.open(url,'_blank','noopener,noreferrer');}else{const a=document.createElement('a');a.href=url;a.download=fileMeta.fileName||fileMeta.name||'dokumen-bukti';document.body.appendChild(a);a.click();a.remove();}setTimeout(()=>URL.revokeObjectURL(url),60000);return true;}
 export const triggerAnalysis=()=>apiRequest('/analysis/run',{method:'POST'}).then(r=>r.data);
 export async function fetchValidationBenchmark(){
   if(!isDemoMode())return apiRequest('/validation').then(r=>r.data);

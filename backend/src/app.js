@@ -9,6 +9,7 @@ import validationRoutes from './routes/validationRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import bpjsRoutes from './routes/bpjsRoutes.js';
 import bpjsPatientRoutes from './routes/bpjsPatientRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
@@ -39,6 +40,7 @@ app.use('/api/analysis', analysisRoutes);
 app.use('/api/validation', validationRoutes);
 app.use('/api/bpjs', bpjsRoutes);
 app.use('/api/bpjs', bpjsPatientRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 import path from 'path';
 import fs from 'fs';

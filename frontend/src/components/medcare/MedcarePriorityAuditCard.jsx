@@ -36,7 +36,7 @@ export default function MedcarePriorityAuditCard({ onOpenQueue, priorityCount = 
           </div>
         </div>
 
-        <p style={{color:'var(--mc-text-muted)',fontSize:'.84rem'}}>Total {pendingCount.toLocaleString('id-ID')} kasus masih memerlukan telaah. Prioritas membantu pengurutan, keputusan tetap pada penelaah.</p>
+        <p style={{color:'#e2faf8',fontSize:'0.86rem',lineHeight:1.55,margin:'0.35rem 0 1.1rem 0',fontWeight:500}}>Total {pendingCount.toLocaleString('id-ID')} kasus masih memerlukan telaah. Prioritas membantu pengurutan, keputusan tetap pada penelaah.</p>
 
         {/* Action Button */}
         <button

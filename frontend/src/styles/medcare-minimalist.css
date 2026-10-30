@@ -948,6 +948,7 @@
   box-shadow: var(--mc-shadow-teal);
 }
 
+.med-treatment-card p { color: #e2faf8; }
 .med-treatment-card .med-card-title {
   color: #ffffff;
 }

@@ -14,7 +14,7 @@ export async function migrate({backup=true}={}) {
   const client=await pool.connect();
   try {
     await client.query('SELECT pg_advisory_lock(29102026)');
-    const version='20261029_003';
+    const version='20261030_001';
     const exists=(await client.query("SELECT to_regclass('public.schema_migrations') AS name")).rows[0].name;
     if(exists&&(await client.query('SELECT 1 FROM schema_migrations WHERE version=$1',[version])).rows.length){await seedAuth(client);await logRules(client);return {status:'current',version};}
     if(backup){
@@ -29,6 +29,7 @@ export async function migrate({backup=true}={}) {
     await client.query(fs.readFileSync(path.join(root,'database/migrations/20261029_001_stability.sql'),'utf8'));
     await client.query('CREATE TABLE IF NOT EXISTS schema_migrations(version TEXT PRIMARY KEY,applied_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)');
     await client.query(fs.readFileSync(path.join(root,'database/migrations/20261029_002_patterns.sql'),'utf8'));
+    await client.query(fs.readFileSync(path.join(root,'database/migrations/20261030_001_notifications.sql'),'utf8'));
     const seeds=JSON.parse(fs.readFileSync(path.join(root,'data/demo/cases.json'),'utf8'));
     for(const detail of seeds){
       const c=detail.case;
@@ -49,6 +50,27 @@ export async function migrate({backup=true}={}) {
       }
       await client.query("INSERT INTO audit_logs(case_id,actor_id,action,detail) VALUES($1,'system.seed','CASE_CREATED','Kasus skenario sintetis; bukan klaim BPJS individual.')",[c.case_id]);
     }
+    await client.query(`
+      INSERT INTO notifications (id, case_id, recipient_username, recipient_role, sender_username, sender_name, title, message, type, read, created_at)
+      SELECT 'notif-seed-001', 'CASE-PB-001', 'dr.anindya', 'clinical_reviewer', 'staff.ahmad', 'Ahmad Fauzi, S.E.', 'Disposisi Berkas Kasus Prioritas', 'Staff Ahmad menugaskan kasus CASE-PB-001 (RS Hermina) untuk telaah rekam medis.', 'assignment', FALSE, NOW() - INTERVAL '30 minutes'
+      WHERE EXISTS (SELECT 1 FROM cases WHERE case_id = 'CASE-PB-001')
+      ON CONFLICT (id) DO NOTHING;
+
+      INSERT INTO notifications (id, case_id, recipient_username, recipient_role, sender_username, sender_name, title, message, type, read, created_at)
+      SELECT 'notif-seed-002', 'CASE-PB-003', 'dr.budi', 'clinical_reviewer', 'staff.ahmad', 'Ahmad Fauzi, S.E.', 'Disposisi Berkas Kasus Prioritas', 'Staff Ahmad menugaskan kasus CASE-PB-003 (RSUD Dr. Soetomo) untuk telaah rekam medis.', 'assignment', FALSE, NOW() - INTERVAL '1 hour'
+      WHERE EXISTS (SELECT 1 FROM cases WHERE case_id = 'CASE-PB-003')
+      ON CONFLICT (id) DO NOTHING;
+
+      INSERT INTO notifications (id, case_id, recipient_username, recipient_role, sender_username, sender_name, title, message, type, read, created_at)
+      SELECT 'notif-seed-003', 'CASE-PB-003', 'staff.ahmad', 'staff_jkn', 'komite.medik', 'Komite Medik RSUD Dr. Soetomo', 'Sanggahan Faskes Masuk', 'Fasilitas kesehatan telah mengajukan berkas sanggahan klarifikasi tindakan pada CASE-PB-003.', 'dispute', FALSE, NOW() - INTERVAL '15 minutes'
+      WHERE EXISTS (SELECT 1 FROM cases WHERE case_id = 'CASE-PB-003')
+      ON CONFLICT (id) DO NOTHING;
+
+      INSERT INTO notifications (id, case_id, recipient_username, recipient_role, sender_username, sender_name, title, message, type, read, created_at)
+      SELECT 'notif-seed-004', 'CASE-PB-004', 'staff.ahmad', 'staff_jkn', 'dr.ratna', 'dr. Ratna Dewi, Sp.PD', 'Hasil Telaah Klinis Dokter Selesai', 'dr. Ratna Dewi telah menetapkan keputusan telaah klinis pada CASE-PB-004.', 'outcome', TRUE, NOW() - INTERVAL '2 hours'
+      WHERE EXISTS (SELECT 1 FROM cases WHERE case_id = 'CASE-PB-004')
+      ON CONFLICT (id) DO NOTHING;
+    `);
     // Existing imported cases receive a dated migration baseline; prior decisions are not relabelled as prospective validation.
     const legacy=(await client.query(`SELECT c.case_id,c.metadata,COALESCE((SELECT json_agg(i) FROM claim_items i WHERE i.claim_id=c.claim_id),'[]'::json) AS items,COALESCE((SELECT json_agg(e) FROM evidence_links e JOIN claim_items i USING(claim_item_id) WHERE i.claim_id=c.claim_id),'[]'::json) AS links FROM cases c WHERE c.initial_analysis IS NULL AND c.case_type='claim'`)).rows;
     const snapshots=legacy.map(row=>{const items=row.items.map(i=>itemContract(i,row.links));return {case_id:row.case_id,analysis:{...analyzeClaim({...row.metadata?.features,evidenceAvailable:items.length>0&&items.every(i=>i.calculatedStatus!=='UNAVAILABLE'),claimedQty:items.reduce((n,i)=>n+i.claimedQuantity,0),supportedQty:items.reduce((n,i)=>n+i.supportedQuantity,0)}),baselineSource:'migration_snapshot',capturedAt:new Date().toISOString()}};});
